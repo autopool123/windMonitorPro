@@ -1,13 +1,41 @@
 {
-  "id": "{C6A4B3AC-91EF-449A-AE3F-AC123F0B986C}",
+  "id": "{C6A4B3AC-91EF-449A-AE3F-AC123F0B986C}",      // Eindeutige Modul-ID
   "name": "windMonitorPro",
-  "type": 3,
-  "vendor": "Custom",
+  "type": 3,                                           // 3 = Gerätemodul mit eigener Instanz
+  "vendor": "Willi",
+  "author": "Willi",
   "version": "1.0",
-  "compatibility": {
-    "version": "5.0"
-  },
-  "files": [
-    "module.php"
-  ]
+  "build": 0,
+  "date": "2024-07-01",
+  "url": "https://github.com/autopool123/windMonitorPro",
+  "prefix": "WMP",                                     // Wird für interne Funktion/Variablenpräfixe genutzt
+  "parentRequirements": [],
+  "childRequirements": [],
+  "implemented": [],
+  "configuration": {
+    "form": "form.json",                               // Pfad zum Einstellungsformular (kommt gleich)
+    "open": true,
+    "status": [
+      {
+        "code": 101,
+        "icon": "active",
+        "caption": "Modul wird gestartet"
+      },
+      {
+        "code": 102,
+        "icon": "inactive",
+        "caption": "Modul gestoppt"
+      },
+      {
+        "code": 104,
+        "icon": "gear",
+        "caption": "Konfiguration wird gespeichert"
+      },
+      {
+        "code": 200,
+        "icon": "ok",
+        "caption": "Alles OK"
+      }
+    ]
+  }
 }

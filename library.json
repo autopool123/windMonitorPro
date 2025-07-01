@@ -1,19 +1,19 @@
 {
-  "id": "{48AD581A-3B93-294C-4713-9BB0ABEBDE19}",
-  "name": "windMonitorPro",
-  "author": "Willi",
-  "url": "https://github.com/autopool123/windMonitorPro",
+  "id": "{48AD581A-3B93-294C-4713-9BB0ABEBDE19}",      // Eindeutige ID für die gesamte Modulbibliothek
+  "name": "windMonitorPro",                           // Anzeigename
+  "author": "Willi",                                  // Dein Name oder Entwicklername
+  "url": "https://github.com/autopool123/windMonitorPro", // GitHub-Link zur Repo (wichtig für Modulmanager)
   "compatibility": {
-    "version": "7.1"
+    "version": "7.1"                                  // Mindestkompatibilität (Symcon-Version)
   },
-  "version": "1.0",
-  "build": 0,
-  "date": "2024-07-01",
+  "version": "1.0",                                   // Bibliotheksversion
+  "build": 0,                                         // Build-Nummer (nützlich bei späteren Updates)
+  "date": "2024-07-01",                               // Veröffentlichungsdatum
   "modules": [
     {
-      "id": "{C6A4B3AC-91EF-449A-AE3F-AC123F0B986C}",
-      "name": "windMonitorPro",
-      "filename": "module.json"
+      "id": "{C6A4B3AC-91EF-449A-AE3F-AC123F0B986C}", // ID deines Moduls
+      "name": "windMonitorPro",                       // Anzeigename im Modulbaum
+      "filename": "module.json"                       // Zeigt auf die Modul-Beschreibung
     }
   ]
 }
