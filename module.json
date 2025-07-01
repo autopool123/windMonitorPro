@@ -1,19 +1,19 @@
 {
-  "id": "{C6A4B3AC-91EF-449A-AE3F-AC123F0B986C}",      // Eindeutige Modul-ID
+  "id": "{C6A4B3AC-91EF-449A-AE3F-AC123F0B986C}",      
   "name": "windMonitorPro",
-  "type": 3,                                           // 3 = Gerätemodul mit eigener Instanz
+  "type": 3,                                           
   "vendor": "Willi",
   "author": "Willi",
   "version": "1.0",
   "build": 0,
   "date": "2024-07-01",
   "url": "https://github.com/autopool123/windMonitorPro",
-  "prefix": "WMP",                                     // Wird für interne Funktion/Variablenpräfixe genutzt
+  "prefix": "WMP",                                     
   "parentRequirements": [],
   "childRequirements": [],
   "implemented": [],
   "configuration": {
-    "form": "form.json",                               // Pfad zum Einstellungsformular (kommt gleich)
+    "form": "form.json",                               
     "open": true,
     "status": [
       {
