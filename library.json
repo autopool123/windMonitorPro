@@ -9,11 +9,4 @@
     "version": "1.0",
     "build": 0,
     "date": 1
-    "modules": [
-  {
-    "id": "{C6A4B3AC-91EF-449A-AE3F-AC123F0B986C}",
-    "name": "windMonitorPro",
-    "filename": "module.json"
-  }
-]
 }
