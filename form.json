@@ -1,5 +1,76 @@
 {
-  "elements": [],
-  "actions": [],
-  "status": []
+  "elements": [
+    {
+      "name": "APIKey",
+      "type": "ValidationTextBox",
+      "caption": "API-Schlüssel von meteoblue"
+    },
+    {
+      "name": "Latitude",
+      "type": "NumberSpinner",
+      "caption": "Breitengrad (lat)",
+      "digits": 6
+    },
+    {
+      "name": "Longitude",
+      "type": "NumberSpinner",
+      "caption": "Längengrad (lon)",
+      "digits": 6
+    },
+    {
+      "name": "Altitude",
+      "type": "NumberSpinner",
+      "caption": "Höhe über Meer (m)"
+    },
+    {
+      "name": "Zielhoehe",
+      "type": "NumberSpinner",
+      "caption": "Zielhöhe für Umrechnung (m)",
+      "minimum": 1,
+      "maximum": 100
+    },
+    {
+      "name": "Referenzhoehe",
+      "type": "NumberSpinner",
+      "caption": "Sensorhöhe (Referenz, m)",
+      "minimum": 1,
+      "maximum": 200
+    },
+    {
+      "name": "Alpha",
+      "type": "NumberSpinner",
+      "caption": "Rauigkeitsparameter (α)",
+      "digits": 3,
+      "minimum": 0.0,
+      "maximum": 1.0
+    },
+    {
+      "name": "UpdateInterval",
+      "type": "NumberSpinner",
+      "caption": "Abrufintervall (Minuten)",
+      "minimum": 5,
+      "maximum": 720
+    },
+
+    {
+      "name": "Modus",
+      "type": "Select",
+      "caption": "Modulmodus",
+      "options": [
+      {
+        "caption": "Daten abrufen & speichern",
+        "value": "fetch"
+      },
+      {
+        "caption": "Nur Daten lokal auswerten",
+        "value": "readfile"
+      }
+      ]
+    },
+    {
+      "name": "Aktiv",
+      "type": "CheckBox",
+      "caption": "Modul aktivieren"
+    }
+  ]
 }

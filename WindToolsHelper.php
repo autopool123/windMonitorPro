@@ -42,3 +42,7 @@ class WindToolsHelper
     // public static function irgendwas(...) { ... }
 }
 
+
+
+
+
