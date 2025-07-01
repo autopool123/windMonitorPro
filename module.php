@@ -1,6 +1,7 @@
 <?php
 
-require_once(__DIR__ . "/WindToolsHelper.php"); // ⬅️ Dein Helferlein (kommt später)
+require_once(__DIR__ . "/WindToolsHelper.php"); // ⬅️ Dein Helferlein 
+
 
 class windMonitorPro extends IPSModule {
 
