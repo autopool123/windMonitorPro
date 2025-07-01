@@ -1,19 +1,12 @@
 {
-  "id": "{48AD581A-3B93-294C-4713-9BB0ABEBDE19}",      
-  "name": "windMonitorPro",                           
-  "author": "Willi",                                  
-  "url": "https://github.com/autopool123/windMonitorPro", 
-  "compatibility": {
-    "version": "7.1"                                  
-  },
-  "version": "1.0",                                   
-  "build": 0,                                         
-  "date": "2024-07-01",                               
-  "modules": [
-    {
-      "id": "{C6A4B3AC-91EF-449A-AE3F-AC123F0B986C}", 
-      "name": "windMonitorPro",                       
-      "filename": "module.json"                       
-    }
-  ]
+    "id": "{48AD581A-3B93-294C-4713-9BB0ABEBDE19}",
+    "name": "windMonitorPro",
+    "author": "Wfe",
+    "url": "https://github.com/autopool123/windMonitorPro",
+    "compatibility": {
+        "version": "7.1"
+    },
+    "version": "1.0",
+    "build": 0,
+    "date": 1
 }
