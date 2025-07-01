@@ -1,0 +1,14 @@
+{
+  "author": "Willi",
+  "url": "https://github.com/autopool123/windMonitorPro",
+  "version": "1.0",
+  "build": 1,
+  "date": "2024-06-01",
+  "libs": [
+    {
+      "id": "{C6A4B3AC-91EF-449A-AE3F-AC123F0B986C}",
+      "name": "windMonitorPro",
+      "filename": "module.json"
+    }
+  ]
+}
