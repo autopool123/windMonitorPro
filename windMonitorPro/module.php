@@ -8,9 +8,7 @@ class windMonitorPro extends IPSModule {
     public function Create() {
         parent::Create(); // 🧬 Pflicht: Symcon-Basisklasse initialisieren
 
-        // Beispiel: Variable für Windgeschwindigkeit
-        $this->RegisterPropertyInteger("UpdateInterval", 15);  // Minuten
-
+       
         // 🧾 Modul-Konfiguration (aus form.json)
         $this->RegisterPropertyString("APIKey", "");
         $this->RegisterPropertyFloat("Latitude", 49.9842);
@@ -20,10 +18,10 @@ class windMonitorPro extends IPSModule {
         $this->RegisterPropertyInteger("Referenzhoehe", 80);
         $this->RegisterPropertyFloat("Alpha", 0.22);
         $this->RegisterPropertyBoolean("Aktiv", true);
-        $this->RegisterPropertyInteger("NachwirkzeitMin", 15); // Nachwirkzeit in Minuten
+
         $this->RegisterPropertyInteger("FetchIntervall", 120);  // z. B. alle 2h
         $this->RegisterPropertyInteger("ReadIntervall", 15);    // alle 15min
-        $this->RegisterPropertyInteger("NachwirkzeitMin", 20);  // Nachwirkzeit in Minuten
+        $this->RegisterPropertyInteger("NachwirkzeitMin", 10);  // Nachwirkzeit in Minuten
 
 
 
