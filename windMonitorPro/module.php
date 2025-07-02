@@ -34,6 +34,10 @@ class windMonitorPro extends IPSModule {
         parent::ApplyChanges(); // 🔁 Pflicht: sorgt für Aktualisierung nach Änderungen
 
         // Variablenprofile erstellen
+
+
+
+        // Wind-Geschwindigkeit (bereits vorhanden, zur Vollständigkeit)
         if (!IPS_VariableProfileExists("WindPro.Speed.1")) {
             IPS_CreateVariableProfile("WindPro.Speed.1", VARIABLETYPE_FLOAT);
             IPS_SetVariableProfileDigits("WindPro.Speed.1", 1);
@@ -41,15 +45,57 @@ class windMonitorPro extends IPSModule {
             IPS_SetVariableProfileIcon("WindPro.Speed.1", "WindSpeed");
         }
 
+        // Windrichtung in Grad
         if (!IPS_VariableProfileExists("WindPro.Direction.Degree")) {
             IPS_CreateVariableProfile("WindPro.Direction.Degree", VARIABLETYPE_INTEGER);
             IPS_SetVariableProfileText("WindPro.Direction.Degree", "", "°");
             IPS_SetVariableProfileIcon("WindPro.Direction.Degree", "WindDirection");
         }
 
+        // Luftdruck in hPa
+        if (!IPS_VariableProfileExists("~AirPressure.F")) {
+            IPS_CreateVariableProfile("~AirPressure.F", VARIABLETYPE_FLOAT);
+            IPS_SetVariableProfileText("~AirPressure.F", "", " hPa");
+            IPS_SetVariableProfileDigits("~AirPressure.F", 1);
+            IPS_SetVariableProfileIcon("~AirPressure.F", "Gauge");
+        }
+
+        // Luftdichte – eigenes Profil
+        if (!IPS_VariableProfileExists("~Density")) {
+            IPS_CreateVariableProfile("~Density", VARIABLETYPE_FLOAT);
+            IPS_SetVariableProfileText("~Density", "", " kg/m³");
+            IPS_SetVariableProfileDigits("~Density", 3);
+            IPS_SetVariableProfileIcon("~Density", "Gauge");
+        }
+
+        // Temperatur – Standardprofil
+        if (!IPS_VariableProfileExists("~Temperature")) {
+            IPS_CreateVariableProfile("~Temperature", VARIABLETYPE_FLOAT);
+            IPS_SetVariableProfileText("~Temperature", "", " °C");
+            IPS_SetVariableProfileDigits("~Temperature", 1);
+            IPS_SetVariableProfileIcon("~Temperature", "Temperature");
+        }
+
+
+
+
+
+
+
+
+
         $this->RegisterVariableFloat("Wind80m", "Windgeschwindigkeit (80 m)", "WindPro.Speed.1");
         $this->RegisterVariableFloat("Gust80m", "Böe (80 m)", "WindPro.Speed.1");
         $this->RegisterVariableInteger("WindDirection80m", "Windrichtung (80 m)", "WindPro.Direction.Degree");
+        $this->RegisterVariableFloat("AirPressure", "Luftdruck", "~AirPressure.F");
+        $this->RegisterVariableFloat("AirDensity", "Luftdichte", "~Density");
+        $this->RegisterVariableFloat("CurrentTemperature", "Temperatur", "~Temperature");
+        $this->RegisterVariableBoolean("IsDaylight", "Tageslicht", "");
+        $this->RegisterVariableString("CurrentTime", "Zeitstempel", "");
+        $this->RegisterVariableInteger("UVIndex", "UV-Index", "");
+        $this->RegisterVariableString("WindDirText", "Windrichtung (Text)", "");
+        $this->RegisterVariableString("WindDirArrow", "Windrichtung (Symbol)", "");
+
 
 
 
@@ -158,5 +204,48 @@ class windMonitorPro extends IPSModule {
     public function UpdateWindSpeed(float $value) {
         SetValue($this->GetIDForIdent("Wind80m"), $value);
     }
+
+    public function FetchAndStoreMeteoblueData(): void {
+        $logtag = "WindFetcher";
+
+        $apiKey = $this->ReadPropertyString("APIKey");
+        $lat = $this->ReadPropertyFloat("Latitude");
+        $lon = $this->ReadPropertyFloat("Longitude");
+        $alti = $this->ReadPropertyInteger("Altitude");
+        $file = $this->ReadPropertyString("Dateipfad");
+        $stringVar = $this->ReadPropertyInteger("StringVarID");
+
+        if ($apiKey == "") {
+            IPS_LogMessage($logtag, "❌ Kein API-Key gesetzt");
+            return;
+        }
+
+        // 📡 URL aufbauen
+        $url = "https://my.meteoblue.com/packages/basic-1h_wind-15min,current" .
+            "?lat=$lat&lon=$lon&altitude=$alti&apikey=$apiKey&format=json";
+
+        // 🌐 Daten abrufen
+        $json = @file_get_contents($url);
+        if (!$json) {
+            IPS_LogMessage($logtag, "❌ meteoblue-Datenabruf fehlgeschlagen");
+            return;
+        }
+
+        // 💾 Speichern
+        $ok = @file_put_contents($file, $json);
+        if (!$ok) {
+            IPS_LogMessage($logtag, "❌ Speichern nach $file fehlgeschlagen");
+            return;
+        }
+
+        // 🗒️ Optional: String-Variable aktualisieren
+        if (IPS_VariableExists($stringVar) && $stringVar > 0) {
+            SetValueString($stringVar, $json);
+        }
+
+        IPS_LogMessage($logtag, "✅ Daten von meteoblue gespeichert unter: $file");
+    }
+
+
 }
 ?>
