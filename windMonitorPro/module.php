@@ -25,6 +25,7 @@ class windMonitorPro extends IPSModule {
         $this->RegisterPropertyString("Modus", "fetch"); // "fetch" oder "readfile"
         $this->RegisterPropertyString("Dateipfad", "/var/lib/symcon/user/winddata_15min.json");
         $this->RegisterPropertyInteger("StringVarID", 0); // Optional: ~TextBox-ID
+        $this->RegisterTimer("FetchTimer", 0, 'WMP_UpdateFromMeteoblue($_IPS[\'TARGET\']);');
 
     }
 
