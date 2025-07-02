@@ -26,12 +26,6 @@ class windMonitorPro extends IPSModule {
         $this->RegisterPropertyString("Dateipfad", "/var/lib/symcon/user/winddata_15min.json");
         $this->RegisterPropertyInteger("StringVarID", 0); // Optional: ~TextBox-ID
 
-
-
-        // 📊 Beispielhafte Modulvariablen (kürzen wir hier ab)
-        $this->RegisterVariableFloat("Wind80m", "Windgeschwindigkeit (80 m)", "WindPro.Speed.1");
-        $this->RegisterVariableFloat("Gust80m", "Böe (80 m)", "WindPro.Speed.1");
-        $this->RegisterVariableInteger("WindDirection80m", "Windrichtung (80 m)", "WindPro.Direction.Degree");
     }
 
         // Weitere folgen später…
@@ -46,6 +40,15 @@ class windMonitorPro extends IPSModule {
             IPS_SetVariableProfileText("WindPro.Speed.1", "", " km/h");
             IPS_SetVariableProfileIcon("WindPro.Speed.1", "WindSpeed");
         }
+
+        $this->RegisterVariableFloat("Wind80m", "Windgeschwindigkeit (80 m)", "WindPro.Speed.1");
+        $this->RegisterVariableFloat("Gust80m", "Böe (80 m)", "WindPro.Speed.1");
+        $this->RegisterVariableInteger("WindDirection80m", "Windrichtung (80 m)", "WindPro.Direction.Degree");
+
+
+
+
+        
 
         // Timer erzeugen (bei Modul-Reload oder Property-Änderung)
         $this->RegisterTimer("FetchTimer", 0, 'WMP_UpdateFromMeteoblue($_IPS[\'TARGET\']);');
