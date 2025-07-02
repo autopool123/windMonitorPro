@@ -30,95 +30,65 @@ class windMonitorPro extends IPSModule {
 
         // Weitere folgen später…
 
-    public function ApplyChanges() {
-        parent::ApplyChanges(); // 🔁 Pflicht: sorgt für Aktualisierung nach Änderungen
+public function ApplyChanges() {
+    parent::ApplyChanges();
 
-        // Variablenprofile erstellen
-
-
-
-        // Wind-Geschwindigkeit (bereits vorhanden, zur Vollständigkeit)
-        if (!IPS_VariableProfileExists("WindPro.Speed.1")) {
-            IPS_CreateVariableProfile("WindPro.Speed.1", VARIABLETYPE_FLOAT);
-            IPS_SetVariableProfileDigits("WindPro.Speed.1", 1);
-            IPS_SetVariableProfileText("WindPro.Speed.1", "", " km/h");
-            IPS_SetVariableProfileIcon("WindPro.Speed.1", "WindSpeed");
-        }
-
-        // Windrichtung in Grad
-        if (!IPS_VariableProfileExists("WindPro.Direction.Degree")) {
-            IPS_CreateVariableProfile("WindPro.Direction.Degree", VARIABLETYPE_INTEGER);
-            IPS_SetVariableProfileText("WindPro.Direction.Degree", "", "°");
-            IPS_SetVariableProfileIcon("WindPro.Direction.Degree", "WindDirection");
-        }
-
-        // Luftdruck in hPa
-        if (!IPS_VariableProfileExists("WMP.AirPressure")) {
-            IPS_CreateVariableProfile("WMP.AirPressure", VARIABLETYPE_FLOAT);
-            IPS_SetVariableProfileText("WMP.AirPressure", "", " hPa");
-            IPS_SetVariableProfileDigits("WMP.AirPressure", 1);
-            IPS_SetVariableProfileIcon("WMP.AirPressure", "Gauge");
-        }
-
-        // Luftdichte – eigenes Profil
-        if (!IPS_VariableProfileExists("WMP.Density")) {
-            IPS_CreateVariableProfile("WMP.Density", VARIABLETYPE_FLOAT);
-            IPS_SetVariableProfileText("WMP.Density", "", " kg/m³");
-            IPS_SetVariableProfileDigits("WMP.Density", 3);
-            IPS_SetVariableProfileIcon("WMP.Density", "Gauge");
-        }
-
-
-
-        // Temperatur – Standardprofil
-        if (!IPS_VariableProfileExists("WMP.Temperature")) {
-            IPS_CreateVariableProfile("WMP.Temperature", VARIABLETYPE_FLOAT);
-            IPS_SetVariableProfileText("WMP.Temperature", "", " °C");
-            IPS_SetVariableProfileDigits("WMP.Temperature", 1);
-            IPS_SetVariableProfileIcon("WMP.Temperature", "Temperature");
-        }
-
-
-
-
-
-
-
-
-
-        $this->RegisterVariableFloat("Wind80m", "Windgeschwindigkeit (80 m)", "WindPro.Speed.1");
-        $this->RegisterVariableFloat("Gust80m", "Böe (80 m)", "WindPro.Speed.1");
-        $this->RegisterVariableInteger("WindDirection80m", "Windrichtung (80 m)", "WindPro.Direction.Degree");
-        $this->RegisterVariableFloat("AirPressure", "Luftdruck", "WMP.AirPressure");
-        $this->RegisterVariableFloat("AirDensity", "Luftdichte", "WMP.Density");
-        $this->RegisterVariableFloat("CurrentTemperature", "Temperatur", "WMP.Temperature");
-        $this->RegisterVariableBoolean("IsDaylight", "Tageslicht", "");
-        $this->RegisterVariableString("CurrentTime", "Zeitstempel", "");
-        $this->RegisterVariableInteger("UVIndex", "UV-Index", "");
-        $this->RegisterVariableString("WindDirText", "Windrichtung (Text)", "");
-        $this->RegisterVariableString("WindDirArrow", "Windrichtung (Symbol)", "");
-
-
-
-
-
-
-
-
-        
-
-        // Timer erzeugen (bei Modul-Reload oder Property-Änderung)
-        $this->RegisterTimer("FetchTimer", 0, 'WMP_UpdateFromMeteoblue($_IPS[\'TARGET\']);');
-
-        // Intervall aus Property lesen
-        $interval = $this->ReadPropertyInteger("UpdateInterval");
-        if ($interval > 0) {
-            $this->SetTimerInterval("FetchTimer", $interval * 60 * 1000); // in ms
-        } else {
-            $this->SetTimerInterval("FetchTimer", 0); // deaktivieren
-        }
-
+    // 🔧 Profile erstellen
+    if (!IPS_VariableProfileExists("WindPro.Speed.1")) {
+        IPS_CreateVariableProfile("WindPro.Speed.1", VARIABLETYPE_FLOAT);
+        IPS_SetVariableProfileDigits("WindPro.Speed.1", 1);
+        IPS_SetVariableProfileText("WindPro.Speed.1", "", " km/h");
+        IPS_SetVariableProfileIcon("WindPro.Speed.1", "WindSpeed");
     }
+
+    if (!IPS_VariableProfileExists("WindPro.Direction.Degree")) {
+        IPS_CreateVariableProfile("WindPro.Direction.Degree", VARIABLETYPE_INTEGER);
+        IPS_SetVariableProfileText("WindPro.Direction.Degree", "", "°");
+        IPS_SetVariableProfileIcon("WindPro.Direction.Degree", "WindDirection");
+    }
+
+    if (!IPS_VariableProfileExists("WMP.AirPressure")) {
+        IPS_CreateVariableProfile("WMP.AirPressure", VARIABLETYPE_FLOAT);
+        IPS_SetVariableProfileText("WMP.AirPressure", "", " hPa");
+        IPS_SetVariableProfileDigits("WMP.AirPressure", 1);
+        IPS_SetVariableProfileIcon("WMP.AirPressure", "Gauge");
+    }
+
+    if (!IPS_VariableProfileExists("WMP.Density")) {
+        IPS_CreateVariableProfile("WMP.Density", VARIABLETYPE_FLOAT);
+        IPS_SetVariableProfileText("WMP.Density", "", " kg/m³");
+        IPS_SetVariableProfileDigits("WMP.Density", 3);
+        IPS_SetVariableProfileIcon("WMP.Density", "Gauge");
+    }
+
+    if (!IPS_VariableProfileExists("WMP.Temperature")) {
+        IPS_CreateVariableProfile("WMP.Temperature", VARIABLETYPE_FLOAT);
+        IPS_SetVariableProfileText("WMP.Temperature", "", " °C");
+        IPS_SetVariableProfileDigits("WMP.Temperature", 1);
+        IPS_SetVariableProfileIcon("WMP.Temperature", "Temperature");
+    }
+
+    // 🧾 Variablen registrieren
+    $this->RegisterVariableFloat("Wind80m", "Windgeschwindigkeit (80 m)", "WindPro.Speed.1");
+    $this->RegisterVariableFloat("Gust80m", "Böe (80 m)", "WindPro.Speed.1");
+    $this->RegisterVariableInteger("WindDirection80m", "Windrichtung (80 m)", "WindPro.Direction.Degree");
+    $this->RegisterVariableFloat("AirPressure", "Luftdruck", "WMP.AirPressure");
+    $this->RegisterVariableFloat("AirDensity", "Luftdichte", "WMP.Density");
+    $this->RegisterVariableFloat("CurrentTemperature", "Temperatur", "WMP.Temperature");
+    $this->RegisterVariableBoolean("IsDaylight", "Tageslicht", "");
+    $this->RegisterVariableString("CurrentTime", "Zeitstempel", "");
+    $this->RegisterVariableInteger("UVIndex", "UV-Index", "");
+    $this->RegisterVariableString("WindDirText", "Windrichtung (Text)", "");
+    $this->RegisterVariableString("WindDirArrow", "Windrichtung (Symbol)", "");
+
+    // ⏱️ Timer-Intervall setzen (aber nicht registrieren!)
+    $aktiv = $this->ReadPropertyBoolean("Aktiv");
+    $intervall = $this->ReadPropertyInteger("UpdateInterval");
+
+    $ms = ($aktiv && $intervall > 0) ? $intervall * 60 * 1000 : 0;
+    $this->SetTimerInterval("FetchTimer", $ms);
+}
+
 
 
     public function ReadFromFileAndUpdate(): void {
