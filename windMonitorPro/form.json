@@ -51,21 +51,22 @@
       "minimum": 5,
       "maximum": 720
     },
-
     {
-      "name": "Modus",
       "type": "Select",
-      "caption": "Modulmodus",
+      "name": "Modus",
+      "caption": "Abrufmodus",
       "options": [
-      {
-        "caption": "Daten abrufen & speichern",
-        "value": "fetch"
-      },
-      {
-        "caption": "Nur Daten lokal auswerten",
-        "value": "readfile"
-      }
+        { "caption": "Live-Daten von meteoblue laden (fetch)", "value": "fetch" },
+        { "caption": "Lokale Datei verarbeiten (readfile)", "value": "readfile" }
       ]
+    },
+    {
+      "type": "SelectVariable",
+      "name": "StringVarID",
+      "caption": "Ziel-String-Variable",
+      "width": "400px",
+      "validVariableTypes": [3],
+      "allowCreation": true
     },
     {
       "name": "Aktiv",
