@@ -53,27 +53,29 @@ class windMonitorPro extends IPSModule {
         }
 
         // Luftdruck in hPa
-        if (!IPS_VariableProfileExists("~AirPressure.F")) {
-            IPS_CreateVariableProfile("~AirPressure.F", VARIABLETYPE_FLOAT);
-            IPS_SetVariableProfileText("~AirPressure.F", "", " hPa");
-            IPS_SetVariableProfileDigits("~AirPressure.F", 1);
-            IPS_SetVariableProfileIcon("~AirPressure.F", "Gauge");
+        if (!IPS_VariableProfileExists("WMP.AirPressure")) {
+            IPS_CreateVariableProfile("WMP.AirPressure", VARIABLETYPE_FLOAT);
+            IPS_SetVariableProfileText("WMP.AirPressure", "", " hPa");
+            IPS_SetVariableProfileDigits("WMP.AirPressure", 1);
+            IPS_SetVariableProfileIcon("WMP.AirPressure", "Gauge");
         }
 
         // Luftdichte – eigenes Profil
-        if (!IPS_VariableProfileExists("~Density")) {
-            IPS_CreateVariableProfile("~Density", VARIABLETYPE_FLOAT);
-            IPS_SetVariableProfileText("~Density", "", " kg/m³");
-            IPS_SetVariableProfileDigits("~Density", 3);
-            IPS_SetVariableProfileIcon("~Density", "Gauge");
+        if (!IPS_VariableProfileExists("WMP.Density")) {
+            IPS_CreateVariableProfile("WMP.Density", VARIABLETYPE_FLOAT);
+            IPS_SetVariableProfileText("WMP.Density", "", " kg/m³");
+            IPS_SetVariableProfileDigits("WMP.Density", 3);
+            IPS_SetVariableProfileIcon("WMP.Density", "Gauge");
         }
 
+
+
         // Temperatur – Standardprofil
-        if (!IPS_VariableProfileExists("~Temperature")) {
-            IPS_CreateVariableProfile("~Temperature", VARIABLETYPE_FLOAT);
-            IPS_SetVariableProfileText("~Temperature", "", " °C");
-            IPS_SetVariableProfileDigits("~Temperature", 1);
-            IPS_SetVariableProfileIcon("~Temperature", "Temperature");
+        if (!IPS_VariableProfileExists("WMP.Temperature")) {
+            IPS_CreateVariableProfile("WMP.Temperature", VARIABLETYPE_FLOAT);
+            IPS_SetVariableProfileText("WMP.Temperature", "", " °C");
+            IPS_SetVariableProfileDigits("WMP.Temperature", 1);
+            IPS_SetVariableProfileIcon("WMP.Temperature", "Temperature");
         }
 
 
@@ -87,9 +89,9 @@ class windMonitorPro extends IPSModule {
         $this->RegisterVariableFloat("Wind80m", "Windgeschwindigkeit (80 m)", "WindPro.Speed.1");
         $this->RegisterVariableFloat("Gust80m", "Böe (80 m)", "WindPro.Speed.1");
         $this->RegisterVariableInteger("WindDirection80m", "Windrichtung (80 m)", "WindPro.Direction.Degree");
-        $this->RegisterVariableFloat("AirPressure", "Luftdruck", "~AirPressure.F");
-        $this->RegisterVariableFloat("AirDensity", "Luftdichte", "~Density");
-        $this->RegisterVariableFloat("CurrentTemperature", "Temperatur", "~Temperature");
+        $this->RegisterVariableFloat("AirPressure", "Luftdruck", "WMP.AirPressure");
+        $this->RegisterVariableFloat("AirDensity", "Luftdichte", "WMP.Density");
+        $this->RegisterVariableFloat("CurrentTemperature", "Temperatur", "WMP.Temperature");
         $this->RegisterVariableBoolean("IsDaylight", "Tageslicht", "");
         $this->RegisterVariableString("CurrentTime", "Zeitstempel", "");
         $this->RegisterVariableInteger("UVIndex", "UV-Index", "");
