@@ -41,9 +41,18 @@ class windMonitorPro extends IPSModule {
             IPS_SetVariableProfileIcon("WindPro.Speed.1", "WindSpeed");
         }
 
+        if (!IPS_VariableProfileExists("WindPro.Direction.Degree")) {
+            IPS_CreateVariableProfile("WindPro.Direction.Degree", VARIABLETYPE_INTEGER);
+            IPS_SetVariableProfileText("WindPro.Direction.Degree", "", "°");
+            IPS_SetVariableProfileIcon("WindPro.Direction.Degree", "WindDirection");
+        }
+
         $this->RegisterVariableFloat("Wind80m", "Windgeschwindigkeit (80 m)", "WindPro.Speed.1");
         $this->RegisterVariableFloat("Gust80m", "Böe (80 m)", "WindPro.Speed.1");
         $this->RegisterVariableInteger("WindDirection80m", "Windrichtung (80 m)", "WindPro.Direction.Degree");
+
+
+
 
 
 
