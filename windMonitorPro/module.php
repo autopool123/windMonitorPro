@@ -21,6 +21,10 @@ class windMonitorPro extends IPSModule {
         $this->RegisterPropertyFloat("Alpha", 0.22);
         $this->RegisterPropertyBoolean("Aktiv", true);
         $this->RegisterPropertyInteger("NachwirkzeitMin", 15); // Nachwirkzeit in Minuten
+        $this->RegisterPropertyInteger("FetchIntervall", 120);  // z. B. alle 2h
+        $this->RegisterPropertyInteger("ReadIntervall", 15);    // alle 15min
+        $this->RegisterPropertyInteger("NachwirkzeitMin", 20);  // Nachwirkzeit in Minuten
+
 
 
         // 📦 Einstellungen für das Abruf-/Auswerteverhalten
@@ -96,15 +100,16 @@ public function ApplyChanges() {
     $this->RegisterVariableString("LetzteAuswertung", "Letzte Dateiverarbeitung", "~TextBox");
     $this->RegisterVariableString("NachwirkEnde", "Nachwirkzeit endet um", "~TextBox");
 
+    //Abrufintervalle und Nachwirkzeit
+    $this->RegisterVariableString("FetchIntervalInfo", "Abrufintervall (Info)", "~TextBox");
+    $this->RegisterVariableString("ReadIntervalInfo", "Dateileseintervall (Info)", "~TextBox");
+    $this->RegisterVariableString("NachwirkzeitInfo", "Nachwirkzeit (Info)", "~TextBox");
+    // Werte aktualisieren
+    SetValueString($this->GetIDForIdent("FetchIntervalInfo"), $this->ReadPropertyInteger("FetchIntervall") . " Minuten");
+    SetValueString($this->GetIDForIdent("ReadIntervalInfo"), $this->ReadPropertyInteger("ReadIntervall") . " Minuten");
+    SetValueString($this->GetIDForIdent("NachwirkzeitInfo"), $this->ReadPropertyInteger("NachwirkzeitMin") . " Minuten");
 
 
-
-    // ⏱️ Timer-Intervall setzen (aber nicht registrieren!)
-    $aktiv = $this->ReadPropertyBoolean("Aktiv");
-    $intervall = $this->ReadPropertyInteger("UpdateInterval");
-
-    $ms = ($aktiv && $intervall > 0) ? $intervall * 60 * 1000 : 0;
-    $this->SetTimerInterval("FetchTimer", $ms);
 
 
     // Timerinterval aus Properties berechnen
@@ -120,9 +125,6 @@ public function ApplyChanges() {
         $this->SetTimerInterval("ReadTimer",  0);
     }
 
-    SetValueString($this->GetIDForIdent("FetchIntervalInfo"), $fetchMin . " Minuten");
-    SetValueString($this->GetIDForIdent("ReadIntervalInfo"), $readMin . " Minuten");
-    SetValueString($this->GetIDForIdent("NachwirkzeitInfo"), $this->ReadPropertyInteger("NachwirkzeitMin") . " Minuten");
 
 }
 
