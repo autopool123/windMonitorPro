@@ -52,18 +52,9 @@
     {
       "name": "UpdateInterval",
       "type": "NumberSpinner",
-      "caption": "Abrufintervall (Minuten)",
+      "caption": "FetchIntervall (Minuten)",
       "minimum": 5,
       "maximum": 720
-    },
-    {
-      "type": "Select",
-      "name": "Modus",
-      "caption": "Abrufmodus",
-      "options": [
-        { "caption": "Live-Daten von meteoblue laden (fetch)", "value": "fetch" },
-        { "caption": "Lokale Datei verarbeiten (readfile)", "value": "readfile" }
-      ]
     },
     {
       "type": "NumberSpinner",
