@@ -1,5 +1,5 @@
 {
-    "id": "{9DF9F4CF-BF01-4B8B-73AE-9FADF74F116D}",
+    "id": "{EFB9BC58-CC9D-9958-391C-340B51289FFD}",
     "name": "windMonitorPro",
     "type": 3,
     "vendor": "MeinModul",
@@ -8,5 +8,5 @@
     "childRequirements": [],
     "implemented": [],
     "prefix": "MBW",
-    "url": "https://github.com/autopool123/windMonitorPro/edit/main/module.json"
+    "url": "https://github.com/autopool123/windMonitorPro"
 }
