@@ -1,41 +1,12 @@
 {
-  "id": "{C6A4B3AC-91EF-449A-AE3F-AC123F0B986C}",      
-  "name": "windMonitorPro",
-  "type": 1,                                           
-  "vendor": "Willi",
-  "author": "Willi",
-  "version": "1.0",
-  "build": 0,
-  "date": "2024-07-01",
-  "url": "https://github.com/autopool123/windMonitorPro",
-  "prefix": "WMP",                                     
-  "parentRequirements": [],
-  "childRequirements": [],
-  "implemented": [],
-  "configuration": {
-    "form": "form.json",                               
-    "open": true,
-    "status": [
-      {
-        "code": 101,
-        "icon": "active",
-        "caption": "Modul wird gestartet"
-      },
-      {
-        "code": 102,
-        "icon": "inactive",
-        "caption": "Modul gestoppt"
-      },
-      {
-        "code": 104,
-        "icon": "gear",
-        "caption": "Konfiguration wird gespeichert"
-      },
-      {
-        "code": 200,
-        "icon": "ok",
-        "caption": "Alles OK"
-      }
-    ]
-  }
+    "id": "{9DF9F4CF-BF01-4B8B-73AE-9FADF74F116D}",
+    "name": "windMonitorPro",
+    "type": 3,
+    "vendor": "MeinModul",
+    "aliases": [],
+    "parentRequirements": [],
+    "childRequirements": [],
+    "implemented": [],
+    "prefix": "MBW",
+    "url": "https://github.com/autopool123/windMonitorPro/edit/main/module.json"
 }
