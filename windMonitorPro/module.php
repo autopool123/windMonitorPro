@@ -20,12 +20,15 @@ class windMonitorPro extends IPSModule {
         $this->RegisterPropertyInteger("Referenzhoehe", 80);
         $this->RegisterPropertyFloat("Alpha", 0.22);
         $this->RegisterPropertyBoolean("Aktiv", true);
+        $this->RegisterPropertyInteger("NachwirkzeitMin", 15); // Nachwirkzeit in Minuten
+
 
         // 📦 Einstellungen für das Abruf-/Auswerteverhalten
         $this->RegisterPropertyString("Modus", "fetch"); // "fetch" oder "readfile"
         $this->RegisterPropertyString("Dateipfad", "/var/lib/symcon/user/winddata_15min.json");
         $this->RegisterPropertyInteger("StringVarID", 0); // Optional: ~TextBox-ID
         $this->RegisterTimer("FetchTimer", 0, 'WMP_UpdateFromMeteoblue($_IPS[\'TARGET\']);');
+        
 
     }
 
@@ -81,6 +84,10 @@ public function ApplyChanges() {
     $this->RegisterVariableInteger("UVIndex", "UV-Index", "");
     $this->RegisterVariableString("WindDirText", "Windrichtung (Text)", "");
     $this->RegisterVariableString("WindDirArrow", "Windrichtung (Symbol)", "");
+    $this->RegisterVariableInteger("LetzteWarnungTS", "Letzter Warnzeitpunkt", "");
+    $this->RegisterVariableBoolean("WarnungAktiv", "Schutz aktiv", "~Alert");
+    $this->RegisterVariableString("SchutzHTML", "Schutzstatus (HTML)", "~HTMLBox");
+
 
     // ⏱️ Timer-Intervall setzen (aber nicht registrieren!)
     $aktiv = $this->ReadPropertyBoolean("Aktiv");
@@ -142,7 +149,16 @@ public function ApplyChanges() {
             $arrow = WindToolsHelper::gradZuPfeil($winddir);
             SetValue($this->GetIDForIdent("WindDirText"), $txt);
             SetValue($this->GetIDForIdent("WindDirArrow"), $arrow);
+
+            // 🔐 Schutzlogik
+            $windGrenze = 10.0; // Schwelle in m/s, individuell anpassbar
+            $boeGrenze = 14.0;
+
+            $warnungAktiv = ($wind80 >= $windGrenze || $gust80 >= $boeGrenze);
+            $this->AktualisiereSchutzstatus($warnungAktiv, $winddir);
         }
+
+
 
         IPS_LogMessage($logtag, "✅ Datei erfolgreich verarbeitet – Zeitstempel: $zeit");
     }
@@ -218,6 +234,33 @@ public function ApplyChanges() {
 
         IPS_LogMessage($logtag, "✅ Daten von meteoblue gespeichert unter: $file");
     }
+
+    public function AktualisiereSchutzstatus(bool $warnungGeradeAktiv, int $grad) {
+        $nachwirkZeitSek = $this->ReadPropertyInteger("NachwirkzeitMin") * 60;
+        $now = time();
+
+        $lastTS = GetValueInteger($this->GetIDForIdent("LetzteWarnungTS"));
+        $warAktiv = GetValueBoolean($this->GetIDForIdent("WarnungAktiv"));
+
+        // ⏱️ Wenn neue Warnung → Zeitstempel setzen
+        if ($warnungGeradeAktiv) {
+            $lastTS = $now;
+            SetValueInteger($this->GetIDForIdent("LetzteWarnungTS"), $lastTS);
+        }
+
+        // 🧠 Nachwirkzeit berücksichtigen
+        $schutzAktiv = ($now - $lastTS) < $nachwirkZeitSek;
+
+        // 🛡️ Schutzstatus setzen
+        SetValueBoolean($this->GetIDForIdent("WarnungAktiv"), $schutzAktiv);
+
+        // 🖼️ HTML-Ausgabe aktualisieren
+        require_once(__DIR__ . "/WindToolsHelper.php"); // damit erzeugeSchutzHTML verfügbar ist
+
+        $html = erzeugeSchutzHTML($schutzAktiv, $lastTS, $nachwirkZeitSek, $grad);
+        SetValueString($this->GetIDForIdent("SchutzHTML"), $html);
+}
+
 
 
 }

@@ -72,6 +72,14 @@
       "name": "Aktiv",
       "type": "CheckBox",
       "caption": "Modul aktivieren"
+    },
+    {
+      "name": "NachwirkzeitMin",
+      "type": "NumberSpinner",
+      "caption": "Nachwirkzeit (Minuten)",
+      "minimum": 1,
+      "maximum": 180
     }
+
   ]
 }
