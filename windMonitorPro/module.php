@@ -27,7 +27,12 @@ class windMonitorPro extends IPSModule {
         $this->RegisterPropertyString("Modus", "fetch"); // "fetch" oder "readfile"
         $this->RegisterPropertyString("Dateipfad", "/var/lib/symcon/user/winddata_15min.json");
         $this->RegisterPropertyInteger("StringVarID", 0); // Optional: ~TextBox-ID
-        $this->RegisterTimer("FetchTimer", 0, 'WMP_UpdateFromMeteoblue($_IPS[\'TARGET\']);');
+
+        // Timer für API-Abruf (meteoblue)
+        $this->RegisterTimer("FetchTimer", 0, 'WMP_FetchMeteoblue($_IPS[\'TARGET\']);');
+        // Timer für Datei-Auswertung
+        $this->RegisterTimer("ReadTimer", 0, 'WMP_ReadFromFile($_IPS[\'TARGET\']);');
+
         
 
     }
@@ -87,6 +92,11 @@ public function ApplyChanges() {
     $this->RegisterVariableInteger("LetzteWarnungTS", "Letzter Warnzeitpunkt", "");
     $this->RegisterVariableBoolean("WarnungAktiv", "Schutz aktiv", "~Alert");
     $this->RegisterVariableString("SchutzHTML", "Schutzstatus (HTML)", "~HTMLBox");
+    $this->RegisterVariableString("LetzterFetch", "Letzter API-Abruf", "~TextBox");
+    $this->RegisterVariableString("LetzteAuswertung", "Letzte Dateiverarbeitung", "~TextBox");
+    $this->RegisterVariableString("NachwirkEnde", "Nachwirkzeit endet um", "~TextBox");
+
+
 
 
     // ⏱️ Timer-Intervall setzen (aber nicht registrieren!)
@@ -95,6 +105,25 @@ public function ApplyChanges() {
 
     $ms = ($aktiv && $intervall > 0) ? $intervall * 60 * 1000 : 0;
     $this->SetTimerInterval("FetchTimer", $ms);
+
+
+    // Timerinterval aus Properties berechnen
+    $fetchMin = $this->ReadPropertyInteger("FetchIntervall");
+    $readMin  = $this->ReadPropertyInteger("ReadIntervall");
+
+    // Nur aktivieren, wenn Instanz "aktiv" ist
+    if ($this->ReadPropertyBoolean("Aktiv")) {
+        $this->SetTimerInterval("FetchTimer", $fetchMin * 60 * 1000);
+        $this->SetTimerInterval("ReadTimer",  $readMin  * 60 * 1000);
+    } else {
+        $this->SetTimerInterval("FetchTimer", 0); // deaktivieren
+        $this->SetTimerInterval("ReadTimer",  0);
+    }
+
+    SetValueString($this->GetIDForIdent("FetchIntervalInfo"), $fetchMin . " Minuten");
+    SetValueString($this->GetIDForIdent("ReadIntervalInfo"), $readMin . " Minuten");
+    SetValueString($this->GetIDForIdent("NachwirkzeitInfo"), $this->ReadPropertyInteger("NachwirkzeitMin") . " Minuten");
+
 }
 
 
@@ -194,6 +223,10 @@ public function ApplyChanges() {
         SetValue($this->GetIDForIdent("Wind80m"), $value);
     }
 
+
+
+
+    
     public function FetchAndStoreMeteoblueData(): void {
         $logtag = "WindFetcher";
 
@@ -242,17 +275,24 @@ public function ApplyChanges() {
         $lastTS = GetValueInteger($this->GetIDForIdent("LetzteWarnungTS"));
         $warAktiv = GetValueBoolean($this->GetIDForIdent("WarnungAktiv"));
 
+
         // ⏱️ Wenn neue Warnung → Zeitstempel setzen
         if ($warnungGeradeAktiv) {
             $lastTS = $now;
             SetValueInteger($this->GetIDForIdent("LetzteWarnungTS"), $lastTS);
         }
 
+
+
         // 🧠 Nachwirkzeit berücksichtigen
         $schutzAktiv = ($now - $lastTS) < $nachwirkZeitSek;
 
         // 🛡️ Schutzstatus setzen
         SetValueBoolean($this->GetIDForIdent("WarnungAktiv"), $schutzAktiv);
+
+        $ablaufTS = $lastTS + $nachwirkZeitSek;
+        $ablaufDT = (new DateTime("@$ablaufTS"))->setTimezone(new DateTimeZone('Europe/Berlin'))->format("d.m.Y H:i:s");
+        SetValueString($this->GetIDForIdent("NachwirkEnde"), $ablaufDT);        
 
         // 🖼️ HTML-Ausgabe aktualisieren
         require_once(__DIR__ . "/WindToolsHelper.php"); // damit erzeugeSchutzHTML verfügbar ist
@@ -261,6 +301,24 @@ public function ApplyChanges() {
         SetValueString($this->GetIDForIdent("SchutzHTML"), $html);
 }
 
+    public function WMP_FetchMeteoblue() {
+        $this->FetchAndStoreMeteoblueData(); // holt Daten & speichert JSON
+
+        // Zeitpunkt setzen
+        $now = (new DateTime("now", new DateTimeZone("Europe/Berlin")))->format("d.m.Y H:i:s");
+        SetValueString($this->GetIDForIdent("LetzterFetch"), $now);
+        }
+
+
+
+
+    public function WMP_ReadFromFile() {
+        $this->ReadFromFileAndUpdate(); // liest JSON & aktualisiert Variablen
+
+        // Zeitpunkt setzen
+        $now = (new DateTime("now", new DateTimeZone("Europe/Berlin")))->format("d.m.Y H:i:s");
+        SetValueString($this->GetIDForIdent("LetzteAuswertung"), $now);
+    }
 
 
 }
