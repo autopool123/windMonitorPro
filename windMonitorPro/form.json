@@ -1,6 +1,11 @@
 {
   "elements": [
     {
+      "name": "Aktiv",
+      "type": "CheckBox",
+      "caption": "Modul aktivieren"
+    },
+    {
       "name": "APIKey",
       "type": "ValidationTextBox",
       "caption": "API-Schlüssel von meteoblue"
@@ -61,25 +66,26 @@
       ]
     },
     {
-      "type": "SelectVariable",
-      "name": "StringVarID",
-      "caption": "Ziel-String-Variable",
-      "width": "400px",
-      "validVariableTypes": [3],
-      "allowCreation": true
-    },
-    {
-      "name": "Aktiv",
-      "type": "CheckBox",
-      "caption": "Modul aktivieren"
-    },
+      "type": "NumberSpinner",
+      "name": "ReadIntervall",
+      "caption": "Datei-Auswertungsintervall (Minuten)",
+      "minimum": 1,
+      "maximum": 120
+  },
     {
       "name": "NachwirkzeitMin",
       "type": "NumberSpinner",
       "caption": "Nachwirkzeit (Minuten)",
       "minimum": 1,
       "maximum": 180
+    },    
+    {
+      "type": "SelectVariable",
+      "name": "StringVarID",
+      "caption": "Ziel-String-Variable",
+      "width": "400px",
+      "validVariableTypes": [3],
+      "allowCreation": true
     }
-
   ]
 }
