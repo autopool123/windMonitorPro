@@ -1,12 +1,12 @@
 {
-    "id": "{232202C7-82E7-432F-E506-7029A5AC00AE}",
-    "name": "Wettermodule",
+    "id": "{783A8C23-A511-D372-C7ED-44755AA1D4BB}",
+    "name": "windMonitorPro",
     "author": "WFE",
-    "url": "https://github.com/autopool123/windMonitorPro/edit/main/module.json",
+    "url": "https://github.com/autopool123/windMonitorPro",
     "compatibility": {
         "version": "7.1"
     },
     "version": "1.0",
     "build": 0,
-    "date": 1
+    "date": 0
 }
