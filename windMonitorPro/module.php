@@ -117,7 +117,7 @@ public function ApplyChanges() {
     SetValueString($this->GetIDForIdent("FetchIntervalInfo"), $this->ReadPropertyInteger("FetchIntervall") . " Minuten");
     SetValueString($this->GetIDForIdent("ReadIntervalInfo"), $this->ReadPropertyInteger("ReadIntervall") . " Minuten");
     SetValueString($this->GetIDForIdent("NachwirkzeitInfo"), $this->ReadPropertyInteger("NachwirkzeitMin") . " Minuten");
-    SetValue($this->GetIDForIdent("LetzteAktion"), "Grenzwert gesetzt auf $wert");
+  
 
 
 
@@ -379,10 +379,15 @@ public function RequestAction($Ident, $Value) {
         }
         IPS_LogMessage("WindMonitorPro", "🧼 Warnanzeige geleert");
     }
-    
+
     private float $Grenzwert = 12.0; // Standardwert
     private function SetzeGrenzwert(float $wert): bool {
         $this->Grenzwert = $wert;
+        // Rückmeldung schreiben
+        $text = "🎚️ Grenzwert gesetzt auf " . number_format($wert, 1) . " m/s am " . date("d.m.Y H:i:s");
+        $this->SetValue("LetzteAktion", $text);
+
+        // Optional: Logging
         IPS_LogMessage("WindMonitorPro", "🔧 Grenzwert gesetzt auf $wert");
         return true;
     }
