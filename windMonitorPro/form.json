@@ -50,7 +50,7 @@
       "maximum": 1.0
     },
     {
-      "name": "UpdateInterval",
+      "name": "FetchIntervall",
       "type": "NumberSpinner",
       "caption": "FetchIntervall (Minuten)",
       "minimum": 5,
@@ -77,30 +77,39 @@
       "type": "List",
       "name": "Schutzobjekte",
       "caption": "Zu überwachende Schutzobjekte",
-      "add": "Neues Schutzobjekt",
+      "add": {
+        "Label": "Dummy_Schutzobjekt",
+        "MinWind": 10.0,
+        "MinGust": 14.0,
+        "RichtungsKuerzelListe": ["SW", "W", "NW"]
+      },
       "columns": [
         {
           "caption": "Name",
           "name": "Label",
           "width": "150px",
+          "add": "Neues Schutzobjekt",
           "edit": { "type": "ValidationTextBox" }
         },
         {
           "caption": "Windgrenze (m/s)",
           "name": "MinWind",
           "width": "100px",
+          "add": 10.0,
           "edit": { "type": "NumberSpinner", "minimum": 0, "maximum": 50 }
         },
         {
           "caption": "Böengrenze (m/s)",
           "name": "MinGust",
           "width": "100px",
+          "add": 14.0,
           "edit": { "type": "NumberSpinner", "minimum": 0, "maximum": 50 }
         },
         {
           "caption": "Windrichtungen (Mehrfachauswahl)",
           "name": "RichtungsKuerzelListe",
           "width": "200px",
+          "add": ["SW"],
           "edit": {
             "type": "SelectMultiple",
             "options": [
