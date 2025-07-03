@@ -204,30 +204,42 @@ public function ApplyChanges() {
         SetValue($this->GetIDForIdent("UVIndex"), $uv);
 
 
-        $schutzArray = json_decode($this->ReadPropertyString("Schutzobjekte"), true);
-        $richtung = $data["data_xmin"]["winddirection_80m"][0] ?? 0;
-        $wind = $data["data_xmin"]["windspeed_80m"][0] ?? 0;
-        $boe  = $data["data_xmin"]["gust"][0] ?? 0;
+$schutzArray = json_decode($this->ReadPropertyString("Schutzobjekte"), true);
 
-        foreach ($schutzArray as $eintrag) {
-            $name = $eintrag["Label"];
-            $minWind = floatval($eintrag["MinWind"]);
-            $minGust = floatval($eintrag["MinGust"]);
-            $kuerzel = $eintrag["RichtungKuerzel"] ?? "";
-            list($minGrad, $maxGrad) = kuerzelZuWinkelbereich($kuerzel);
+$richtung = $data["data_xmin"]["winddirection_80m"][0] ?? 0;
+$wind     = $data["data_xmin"]["windspeed_80m"][0] ?? 0;
+$boe      = $data["data_xmin"]["gust"][0] ?? 0;
 
-            $inSektor = ($minGrad < $maxGrad)
-                ? ($richtung >= $minGrad && $richtung <= $maxGrad)
-                : ($richtung >= $minGrad || $richtung <= $maxGrad);
+foreach ($schutzArray as $eintrag) {
+    $name     = $eintrag["Label"] ?? "Unbenannt";
+    $minWind  = floatval($eintrag["MinWind"] ?? 0);
+    $minGust  = floatval($eintrag["MinGust"] ?? 0);
 
-            $warnung = $inSektor && ($wind >= $minWind || $boe >= $minGust);
+    // 🔄 CSV-Textfeld interpretieren
+    $kuerzelText  = $eintrag["RichtungsKuerzelListe"] ?? "";
+    $kuerzelArray = array_map("trim", explode(",", $kuerzelText));
 
-            if ($warnung) {
-                IPS_LogMessage("WindWarnung", "⚠️ Schutzobjekt '$name': Richtungsprüfung $richtung°, Wind=$wind m/s, Böe=$boe m/s");
-                // Optional: individuelle Aktion oder Visualisierung pro Objekt
-            }
+    // 🧭 Richtung prüfen
+    $inSektor = false;
+    foreach ($kuerzelArray as $kuerzel) {
+        list($minGrad, $maxGrad) = kuerzelZuWinkelbereich($kuerzel);
+        $treffer = ($minGrad < $maxGrad)
+            ? ($richtung >= $minGrad && $richtung <= $maxGrad)
+            : ($richtung >= $minGrad || $richtung <= $maxGrad); // Überlauf über 360°
+        if ($treffer) {
+            $inSektor = true;
+            break;
         }
+    }
 
+    // 🛡️ Schutzprüfung
+    $warnung = $inSektor && ($wind >= $minWind || $boe >= $minGust);
+
+    if ($warnung) {
+        IPS_LogMessage("WindWarnung", "⚠️ Schutzobjekt '$name': Richtung=$richtung°, Wind=$wind m/s, Böe=$boe m/s");
+        // Optional: Aktion, Push, Variable etc.
+    }
+}
 
 
 

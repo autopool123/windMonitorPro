@@ -106,22 +106,13 @@
           "edit": { "type": "NumberSpinner", "minimum": 0, "maximum": 50 }
         },
         {
-          "caption": "Windrichtungen (Mehrfachauswahl)",
-          "name": "RichtungsKuerzelListe",
-          "width": "200px",
-          "add": ["SW"],
-          "edit": {
-            "type": "SelectMultiple",
-            "options": [
-              { "caption": "N", "value": "N" },
-              { "caption": "NO", "value": "NO" },
-              { "caption": "O", "value": "O" },
-              { "caption": "SO", "value": "SO" },
-              { "caption": "S", "value": "S" },
-              { "caption": "SW", "value": "SW" },
-              { "caption": "W", "value": "W" },
-              { "caption": "NW", "value": "NW" }
-            ]
+            "caption": "Windrichtungen (CSV)",
+            "name": "RichtungsKuerzelListe",
+            "width": "200px",
+            "add": "SW",
+            "edit": {
+            "type": "ValidationTextBox",
+            "hint": "Mehrere Richtungen mit Komma trennen, z. B.: SW,W,NW"
           }
         }
       ]
