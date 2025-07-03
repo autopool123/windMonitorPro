@@ -18,6 +18,8 @@ class windMonitorPro extends IPSModule {
         $this->RegisterPropertyInteger("Referenzhoehe", 80);
         $this->RegisterPropertyFloat("Alpha", 0.22);
         $this->RegisterPropertyBoolean("Aktiv", true);
+        $this->RegisterPropertyString("Schutzobjekte", "[]"); // Leere Liste initial
+
 
         $this->RegisterPropertyInteger("FetchIntervall", 120);  // z. B. alle 2h
         $this->RegisterPropertyInteger("ReadIntervall", 15);    // alle 15min
@@ -97,6 +99,8 @@ public function ApplyChanges() {
     $this->RegisterVariableString("LetzterFetch", "Letzter API-Abruf", "~TextBox");
     $this->RegisterVariableString("LetzteAuswertung", "Letzte Dateiverarbeitung", "~TextBox");
     $this->RegisterVariableString("NachwirkEnde", "Nachwirkzeit endet um", "~TextBox");
+    $this->RegisterVariableBoolean("FetchDatenVeraltet", "Daten zu alt", "~Alert");
+
 
     //Abrufintervalle und Nachwirkzeit
     $this->RegisterVariableString("FetchIntervalInfo", "Abrufintervall (Info)", "~TextBox");
@@ -161,6 +165,33 @@ public function ApplyChanges() {
         $zeit = $data["data_current"]["time"][0] ?? "";
         $uv = $data["data_1h"]["uvindex"][0] ?? 0;
 
+        //Pruefung auf veraltetem Zeitstempel der Daten und setzen Sperrflag
+        $fetchTS = strtotime($zeit);
+        $jetztTS = time();
+        $diffMin = ($jetztTS - $fetchTS) / 60;
+
+        if ($diffMin > 30) {
+            IPS_LogMessage("WindMonitorPro", "🛑 Warnung: Meteoblue-Daten sind älter als 30 Minuten ($diffMin min)");
+            // Optional: Schutz deaktivieren
+            SetValueBoolean($this->GetIDForIdent("WarnungAktiv"), false);
+
+            // Optional: Sperrflag setzen
+            if ($this->GetIDForIdent("FetchDatenVeraltet")) {
+                SetValueBoolean($this->GetIDForIdent("FetchDatenVeraltet"), true);
+            }
+        }
+        else {
+            // Sperrflag zurücksetzen
+            if ($this->GetIDForIdent("FetchDatenVeraltet")) {
+                SetValueBoolean($this->GetIDForIdent("FetchDatenVeraltet"), false);
+            }
+        }
+
+
+
+
+
+
         // 💾 Variablen aktualisieren
         SetValue($this->GetIDForIdent("Wind80m"), round($wind80 * 3.6, 1));
         SetValue($this->GetIDForIdent("Gust80m"), round($gust80 * 3.6, 1));
@@ -171,6 +202,34 @@ public function ApplyChanges() {
         SetValue($this->GetIDForIdent("IsDaylight"), (bool) $isDay);
         SetValue($this->GetIDForIdent("CurrentTime"), $zeit);
         SetValue($this->GetIDForIdent("UVIndex"), $uv);
+
+
+        $schutzArray = json_decode($this->ReadPropertyString("Schutzobjekte"), true);
+        $richtung = $data["data_xmin"]["winddirection_80m"][0] ?? 0;
+        $wind = $data["data_xmin"]["windspeed_80m"][0] ?? 0;
+        $boe  = $data["data_xmin"]["gust"][0] ?? 0;
+
+        foreach ($schutzArray as $eintrag) {
+            $name = $eintrag["Label"];
+            $minWind = floatval($eintrag["MinWind"]);
+            $minGust = floatval($eintrag["MinGust"]);
+            $kuerzel = $eintrag["RichtungKuerzel"] ?? "";
+            list($minGrad, $maxGrad) = kuerzelZuWinkelbereich($kuerzel);
+
+            $inSektor = ($minGrad < $maxGrad)
+                ? ($richtung >= $minGrad && $richtung <= $maxGrad)
+                : ($richtung >= $minGrad || $richtung <= $maxGrad);
+
+            $warnung = $inSektor && ($wind >= $minWind || $boe >= $minGust);
+
+            if ($warnung) {
+                IPS_LogMessage("WindWarnung", "⚠️ Schutzobjekt '$name': Richtungsprüfung $richtung°, Wind=$wind m/s, Böe=$boe m/s");
+                // Optional: individuelle Aktion oder Visualisierung pro Objekt
+            }
+        }
+
+
+
 
         // 🎯 Richtungstext & Pfeil
         if (class_exists("WindToolsHelper")) {

@@ -17,6 +17,8 @@ class WindToolsHelper
         return $vRef * pow($zZiel / $zRef, $alpha);
     }
 
+
+    
     /**
      * Wandelt Grad in Windrichtungstext um (z. B. „NO“)
      */
@@ -35,6 +37,21 @@ class WindToolsHelper
         $index = round(($grad % 360) / 45) % 8;
         return $pfeile[$index];
     }
+
+    function kuerzelZuWinkelbereich(string $kuerzel): array {
+    $map = [
+        "N" => [337.5, 22.5],
+        "NO" => [22.5, 67.5],
+        "O" => [67.5, 112.5],
+        "SO" => [112.5, 157.5],
+        "S" => [157.5, 202.5],
+        "SW" => [202.5, 247.5],
+        "W" => [247.5, 292.5],
+        "NW" => [292.5, 337.5]
+    ];
+    return $map[$kuerzel] ?? [0.0, 360.0];
+    }
+
 
     /**
      * Optional: Umrechnung °C in gefühlte Temperatur o. ä.
