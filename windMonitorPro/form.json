@@ -62,6 +62,12 @@
       "caption": "API-Schlüssel von meteoblue"
     },
     {
+      "type": "ValidationTextBox",
+      "name": "PackageSuffix",
+      "caption": "Meteoblue-Paket (z. B. basic-1h_wind-15min,current)"
+    },
+
+    {
       "name": "Latitude",
       "type": "NumberSpinner",
       "caption": "Breitengrad (lat)",
@@ -106,6 +112,11 @@
       "caption": "FetchIntervall (Minuten)",
       "minimum": 5,
       "maximum": 720
+    },
+    {
+      "type": "ValidationTextBox",
+      "name": "Dateipfad",
+      "caption": "Speicherpfad für JSON-Datei (z. B. /var/lib/symcon/user/winddata_15min.json)"
     },
     {
       "type": "NumberSpinner",

@@ -10,6 +10,7 @@ class windMonitorPro extends IPSModule {
 
        
         // 🧾 Modul-Konfiguration (aus form.json)
+        $this->RegisterPropertyString("PackageSuffix", "basic-1h_wind-15min,current");
         $this->RegisterPropertyString("APIKey", "");
         $this->RegisterPropertyFloat("Latitude", 49.9842);
         $this->RegisterPropertyFloat("Longitude", 8.2791);
@@ -416,9 +417,15 @@ public function RequestAction($Ident, $Value) {
             return;
         }
 
-        // 📡 URL aufbauen
-        $url = "https://my.meteoblue.com/packages/basic-1h_wind-15min,current" .
-            "?lat=$lat&lon=$lon&altitude=$alti&apikey=$apiKey&format=json";
+
+        $prefix = "https://my.meteoblue.com/packages/";
+        $suffix = $this->ReadPropertyString("PackageSuffix");
+        $url = $prefix . $suffix
+            . "?lat=$lat&lon=$lon&altitude=$alti&apikey=$apikey&format=json";
+
+        // 📡 URL fest aufbauen
+        //$url = "https://my.meteoblue.com/packages/basic-1h_wind-15min,current" .
+        //    "?lat=$lat&lon=$lon&altitude=$alti&apikey=$apiKey&format=json";
 
         // 🌐 Daten abrufen
         $json = @file_get_contents($url);
@@ -433,6 +440,9 @@ public function RequestAction($Ident, $Value) {
             IPS_LogMessage($logtag, "❌ Speichern nach $file fehlgeschlagen");
             return;
         }
+        // ✅ Nach dem Speichern direkt Schutzprüfung starten
+        $this->ReadFromFileAndUpdate();
+
 
         // 🗒️ Optional: String-Variable aktualisieren
         if (IPS_VariableExists($stringVar) && $stringVar > 0) {
