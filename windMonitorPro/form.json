@@ -71,8 +71,12 @@
       "validVariableTypes": [3],
       "allowCreation": true
     },
-
-
+    {
+      "type": "Button",
+      "caption": "🛡️ Prüfung jetzt auslösen",
+      "confirmation": "Möchtest du die Schutzprüfung wirklich jetzt starten?",
+      "onClick": "return IPS_RequestAction($id, 'UpdateWind', '');"
+    },
     {
       "type": "List",
       "name": "Schutzobjekte",
@@ -114,7 +118,31 @@
             "type": "ValidationTextBox",
             "hint": "Mehrere Richtungen mit Komma trennen, z. B.: SW,W,NW"
           }
+        },
+
+
+        {
+          "type": "Button",
+          "caption": "🔄 Winddaten auslesen",
+          "onClick": "return IPS_RequestAction($id, 'UpdateWind', '');"
+        },
+        {
+          "type": "Button",
+          "caption": "📁 CSV-Datei neu laden",
+          "onClick": "return IPS_RequestAction($id, 'ReloadCSV', '');"
+        },
+        {
+          "type": "Button",
+          "caption": "🧹 Schutzstatus zurücksetzen",
+          "onClick": "return IPS_RequestAction($id, 'ResetStatus', '');",
+          "confirmation": "Alle Schutzvariablen werden auf 'false' gesetzt. Fortfahren?"
+        },
+        {
+          "type": "Button",
+          "caption": "🧼 Warnanzeige leeren",
+          "onClick": "return IPS_RequestAction($id, 'ClearWarnungen', '');"
         }
+
       ]
       
     }

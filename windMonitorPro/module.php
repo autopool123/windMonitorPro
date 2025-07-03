@@ -24,6 +24,8 @@ class windMonitorPro extends IPSModule {
         $this->RegisterPropertyInteger("FetchIntervall", 120);  // z. B. alle 2h
         $this->RegisterPropertyInteger("ReadIntervall", 15);    // alle 15min
         $this->RegisterPropertyInteger("NachwirkzeitMin", 10);  // Nachwirkzeit in Minuten
+        //$this->RegisterTimer("WindUpdateTimer", 0, 'IPS_RequestAction($_IPS["INSTANCE"], "UpdateWind", "");');
+
 
 
 
@@ -106,6 +108,8 @@ public function ApplyChanges() {
     $this->RegisterVariableString("FetchIntervalInfo", "Abrufintervall (Info)", "~TextBox");
     $this->RegisterVariableString("ReadIntervalInfo", "Dateileseintervall (Info)", "~TextBox");
     $this->RegisterVariableString("NachwirkzeitInfo", "Nachwirkzeit (Info)", "~TextBox");
+    //$this->SetTimerInterval("WindUpdateTimer", 10 * 60 * 1000); // alle 10 Minuten
+
     // Werte aktualisieren
     SetValueString($this->GetIDForIdent("FetchIntervalInfo"), $this->ReadPropertyInteger("FetchIntervall") . " Minuten");
     SetValueString($this->GetIDForIdent("ReadIntervalInfo"), $this->ReadPropertyInteger("ReadIntervall") . " Minuten");
@@ -129,6 +133,30 @@ public function ApplyChanges() {
 
 
 }
+
+public function RequestAction($Ident, $Value) {
+    switch ($Ident) {
+        case "UpdateWind":
+            $this->ReadFromFileAndUpdate();
+            break;
+
+        case "ReloadCSV":
+            $this->ReloadCSVDatei();
+            break;
+
+        case "ResetStatus":
+            $this->ResetSchutzStatus();
+            break;
+
+        case "ClearWarnungen":
+            $this->WarnungsVariablenLeeren();
+            break;
+
+        default:
+            throw new Exception("Invalid Ident: " . $Ident);
+    }
+}
+
 
 
 
@@ -320,8 +348,29 @@ public function ApplyChanges() {
     }
 
 
+    private function ReloadCSVDatei(): void {
+        IPS_LogMessage("WindMonitorPro", "🔄 Datei wird neu geladen …");
+        $this->ReadFromFileAndUpdate(); // oder eigene Einleseroutine
+    }
 
+    private function ResetSchutzStatus(): void {
+        $objekte = IPS_GetChildrenIDs($this->InstanceID);
+        foreach ($objekte as $objID) {
+            $ident = IPS_GetObject($objID)["ObjectIdent"];
+            if (strpos($ident, "Warnung_") === 0) {
+                SetValue($objID, false);
+            }
+        }
+        IPS_LogMessage("WindMonitorPro", "🧹 Schutzstatus zurückgesetzt");
+    }
 
+    private function WarnungsVariablenLeeren(): void {
+        $idHTML = @$this->GetIDForIdent("WindWarnHTML");
+        if ($idHTML) {
+            SetValue($idHTML, "<div style='color:gray'>Keine aktive Warnung</div>");
+        }
+        IPS_LogMessage("WindMonitorPro", "🧼 Warnanzeige geleert");
+    }
 
 
     // Beispielmethode
@@ -431,7 +480,7 @@ public function ApplyChanges() {
 
 
 }
-public function erzeugeSchutzHTML(bool $aktiv, string $zeitstempel, int $nachwirkZeitSek, int $richtung): string {
+    function erzeugeSchutzHTML(bool $aktiv, string $zeitstempel, int $nachwirkZeitSek, int $richtung): string {
         $farbe = $aktiv ? "#FF4444" : "#44AA44";
         $text  = $aktiv ? "⚠️ Windwarnung aktiv" : "✔️ Kein Schutz aktiv";
 
