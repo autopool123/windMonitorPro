@@ -370,7 +370,6 @@ public function RequestAction($Ident, $Value) {
             }
         }
         IPS_LogMessage("WindMonitorPro", "🧹 Schutzstatus zurückgesetzt");
-        return true;
     }
 
     private function WarnungsVariablenLeeren(): void {
@@ -379,8 +378,8 @@ public function RequestAction($Ident, $Value) {
             SetValue($idHTML, "<div style='color:gray'>Keine aktive Warnung</div>");
         }
         IPS_LogMessage("WindMonitorPro", "🧼 Warnanzeige geleert");
-        return true;
     }
+    
     private float $Grenzwert = 12.0; // Standardwert
     private function SetzeGrenzwert(float $wert): bool {
         $this->Grenzwert = $wert;
