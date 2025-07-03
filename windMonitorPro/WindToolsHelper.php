@@ -38,7 +38,7 @@ class WindToolsHelper
         return $pfeile[$index];
     }
 
-    function kuerzelZuWinkelbereich(string $kuerzel): array {
+    public static function kuerzelZuWinkelbereich(string $kuerzel): array {
     $map = [
         "N" => [337.5, 22.5],
         "NO" => [22.5, 67.5],
@@ -52,7 +52,7 @@ class WindToolsHelper
     return $map[$kuerzel] ?? [0.0, 360.0];
     }
 
-    function isValidKuerzel(string $kuerzel): bool {
+    public static function isValidKuerzel(string $kuerzel): bool {
         $valid = ["N", "NO", "O", "SO", "S", "SW", "W", "NW"];
         return in_array($kuerzel, $valid);
     }
@@ -64,8 +64,6 @@ class WindToolsHelper
      */
     // public static function irgendwas(...) { ... }
 }
-
-
 
 
 
