@@ -62,14 +62,7 @@
       "caption": "Datei-Auswertungsintervall (Minuten)",
       "minimum": 1,
       "maximum": 120
-  },
-    {
-      "name": "NachwirkzeitMin",
-      "type": "NumberSpinner",
-      "caption": "Nachwirkzeit (Minuten)",
-      "minimum": 1,
-      "maximum": 180
-    },    
+    }, 
     {
       "type": "SelectVariable",
       "name": "StringVarID",
@@ -77,53 +70,55 @@
       "width": "400px",
       "validVariableTypes": [3],
       "allowCreation": true
+    },
+
+
+    {
+      "type": "List",
+      "name": "Schutzobjekte",
+      "caption": "Zu überwachende Schutzobjekte",
+      "columns": [
+        {
+          "caption": "Name",
+          "name": "Label",
+          "width": "150px",
+          "add": "Neues Schutzobjekt",
+          "edit": { "type": "ValidationTextBox" }
+        },
+        {
+          "caption": "Windgrenze (m/s)",
+          "name": "MinWind",
+          "width": "100px",
+          "edit": { "type": "NumberSpinner", "minimum": 0, "maximum": 50 }
+        },
+        {
+          "caption": "Böengrenze (m/s)",
+          "name": "MinGust",
+          "width": "100px",
+          "edit": { "type": "NumberSpinner", "minimum": 0, "maximum": 50 }
+        },
+        {
+          "caption": "Windrichtungen (Mehrfachauswahl)",
+          "name": "RichtungsKuerzelListe",
+          "width": "200px",
+          "edit": {
+            "type": "SelectMultiple",
+            "options": [
+              { "caption": "N", "value": "N" },
+              { "caption": "NO", "value": "NO" },
+              { "caption": "O", "value": "O" },
+              { "caption": "SO", "value": "SO" },
+              { "caption": "S", "value": "S" },
+              { "caption": "SW", "value": "SW" },
+              { "caption": "W", "value": "W" },
+              { "caption": "NW", "value": "NW" }
+            ]
+          }
+        }
+      ]
+      
     }
   ]
-}
-
-
-{
-  "type": "List",
-  "name": "Schutzobjekte",
-  "caption": "Zu überwachende Schutzobjekte",
-  "columns": [
-    {
-      "caption": "Name",
-      "name": "Label",
-      "width": "150px",
-      "add": "Neues Schutzobjekt",
-      "edit": { "type": "ValidationTextBox" }
-    },
-    {
-      "caption": "Windgrenze (m/s)",
-      "name": "MinWind",
-      "width": "100px",
-      "edit": { "type": "NumberSpinner", "minimum": 0, "maximum": 50 }
-    },
-    {
-      "caption": "Böengrenze (m/s)",
-      "name": "MinGust",
-      "width": "100px",
-      "edit": { "type": "NumberSpinner", "minimum": 0, "maximum": 50 }
-    },
-{
-  "caption": "Windrichtungen (Mehrfachauswahl)",
-  "name": "RichtungsKuerzelListe",
-  "width": "200px",
-  "edit": {
-    "type": "SelectMultiple",
-    "options": [
-      { "caption": "N", "value": "N" },
-      { "caption": "NO", "value": "NO" },
-      { "caption": "O", "value": "O" },
-      { "caption": "SO", "value": "SO" },
-      { "caption": "S", "value": "S" },
-      { "caption": "SW", "value": "SW" },
-      { "caption": "W", "value": "W" },
-      { "caption": "NW", "value": "NW" }
-    ]
-  }
-}
-  ]
+      
 }
 
