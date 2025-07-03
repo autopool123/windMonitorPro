@@ -77,12 +77,12 @@
       "type": "List",
       "name": "Schutzobjekte",
       "caption": "Zu überwachende Schutzobjekte",
+      "add": "Neues Schutzobjekt",
       "columns": [
         {
           "caption": "Name",
           "name": "Label",
           "width": "150px",
-          "add": "Neues Schutzobjekt",
           "edit": { "type": "ValidationTextBox" }
         },
         {
