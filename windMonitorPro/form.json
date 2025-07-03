@@ -11,10 +11,10 @@
       "caption": "🧪 Expertenfunktionen anzeigen"
     },
     {
-      "type": "GroupBox",
+      "type": "ExpansionPanel",
       "caption": "🔧 Expertenfunktionen",
       "visible": "ExpertenModus",
-      "elements": [
+      "items": [
         {
           "type": "Button",
           "caption": "🧹 Schutzstatus zurücksetzen",
