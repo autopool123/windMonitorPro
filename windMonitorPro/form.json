@@ -81,7 +81,7 @@
         "Label": "Dummy_Schutzobjekt",
         "MinWind": 10.0,
         "MinGust": 14.0,
-        "RichtungsKuerzelListe": ["SW", "W", "NW"]
+        "RichtungsKuerzelListe": ["NO","O","S","SW","SO", "W", "NW"]
       },
       "columns": [
         {
@@ -106,7 +106,7 @@
           "edit": { "type": "NumberSpinner", "minimum": 0, "maximum": 50 }
         },
         {
-            "caption": "Windrichtungen (CSV)",
+            "caption": "Windrichtungen (SW,W,NW)",
             "name": "RichtungsKuerzelListe",
             "width": "200px",
             "add": "SW",

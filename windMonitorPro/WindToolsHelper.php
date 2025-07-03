@@ -52,6 +52,12 @@ class WindToolsHelper
     return $map[$kuerzel] ?? [0.0, 360.0];
     }
 
+    function isValidKuerzel(string $kuerzel): bool {
+        $valid = ["N", "NO", "O", "SO", "S", "SW", "W", "NW"];
+        return in_array($kuerzel, $valid);
+    }
+
+
 
     /**
      * Optional: Umrechnung °C in gefühlte Temperatur o. ä.

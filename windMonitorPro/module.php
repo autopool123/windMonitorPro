@@ -214,18 +214,26 @@ foreach ($schutzArray as $eintrag) {
     $name     = $eintrag["Label"] ?? "Unbenannt";
     $minWind  = floatval($eintrag["MinWind"] ?? 0);
     $minGust  = floatval($eintrag["MinGust"] ?? 0);
-
-    // 🔄 CSV-Textfeld interpretieren
     $kuerzelText  = $eintrag["RichtungsKuerzelListe"] ?? "";
     $kuerzelArray = array_map("trim", explode(",", $kuerzelText));
+
+    $richtung = $data["data_xmin"]["winddirection_80m"][0] ?? 0;
+    $wind     = $data["data_xmin"]["windspeed_80m"][0] ?? 0;
+    $boe      = $data["data_xmin"]["gust"][0] ?? 0;    
 
     // 🧭 Richtung prüfen
     $inSektor = false;
     foreach ($kuerzelArray as $kuerzel) {
+        if (!isValidKuerzel($kuerzel)) {
+            IPS_LogMessage("WindMonitorPro", "⚠️ Ungültiges Kürzel '$kuerzel' im Schutzobjekt '$name'");
+            continue;
+        }
+
         list($minGrad, $maxGrad) = kuerzelZuWinkelbereich($kuerzel);
         $treffer = ($minGrad < $maxGrad)
             ? ($richtung >= $minGrad && $richtung <= $maxGrad)
-            : ($richtung >= $minGrad || $richtung <= $maxGrad); // Überlauf über 360°
+            : ($richtung >= $minGrad || $richtung <= $maxGrad);
+
         if ($treffer) {
             $inSektor = true;
             break;
@@ -236,8 +244,7 @@ foreach ($schutzArray as $eintrag) {
     $warnung = $inSektor && ($wind >= $minWind || $boe >= $minGust);
 
     if ($warnung) {
-        IPS_LogMessage("WindWarnung", "⚠️ Schutzobjekt '$name': Richtung=$richtung°, Wind=$wind m/s, Böe=$boe m/s");
-        // Optional: Aktion, Push, Variable etc.
+        IPS_LogMessage("WindWarnung", "⚠️ '$name' meldet Warnung bei Wind=$wind m/s, Böe=$boe m/s Richtung=$richtung°");
     }
 }
 
