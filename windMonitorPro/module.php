@@ -243,7 +243,7 @@ public function ApplyChanges() {
 
             $inSektor = false;
             foreach ($kuerzelArray as $kuerzel) {
-                if (!isValidKuerzel($kuerzel)) {
+                if (!WindToolsHelper::isValidKuerzel($kuerzel)) {
                     IPS_LogMessage("WindMonitorPro", "❌ Ungültiges Kürzel '$kuerzel' bei '$name'");
                     continue;
                 }
