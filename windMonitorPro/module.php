@@ -426,7 +426,7 @@ public function ApplyChanges() {
         SetValueString($this->GetIDForIdent("LetzteAuswertung"), $now);
     }
 
-    function erzeugeSchutzHTML(bool $aktiv, string $zeitstempel, int $nachwirkZeitSek, int $richtung): string {
+    public function erzeugeSchutzHTML(bool $aktiv, string $zeitstempel, int $nachwirkZeitSek, int $richtung): string {
         $farbe = $aktiv ? "#FF4444" : "#44AA44";
         $text  = $aktiv ? "⚠️ Windwarnung aktiv" : "✔️ Kein Schutz aktiv";
 
