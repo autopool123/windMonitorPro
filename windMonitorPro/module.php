@@ -247,7 +247,7 @@ public function ApplyChanges() {
                     IPS_LogMessage("WindMonitorPro", "❌ Ungültiges Kürzel '$kuerzel' bei '$name'");
                     continue;
                 }
-                list($minGrad, $maxGrad) = kuerzelZuWinkelbereich($kuerzel);
+                list($minGrad, $maxGrad) = WindToolsHelper::kuerzelZuWinkelbereich($kuerzel);
                 $treffer = ($minGrad < $maxGrad)
                     ? ($richtung >= $minGrad && $richtung <= $maxGrad)
                     : ($richtung >= $minGrad || $richtung <= $maxGrad);
