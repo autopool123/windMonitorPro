@@ -6,6 +6,57 @@
       "caption": "Modul aktivieren"
     },
     {
+      "name": "ExpertenModus",
+      "type": "CheckBox",
+      "caption": "🧪 Expertenfunktionen anzeigen"
+    },
+    {
+      "type": "GroupBox",
+      "caption": "🔧 Expertenfunktionen",
+      "visible": "ExpertenModus",
+      "elements": [
+        {
+          "type": "Button",
+          "caption": "🧹 Schutzstatus zurücksetzen",
+          "onClick": "return IPS_RequestAction($id, 'ResetStatus', '');",
+          "confirmation": "Alle Schutzvariablen werden auf 'false' gesetzt. Fortfahren?"
+        },
+        {
+          "type": "Button",
+          "caption": "🧼 Warnanzeige leeren",
+          "onClick": "return IPS_RequestAction($id, 'ClearWarnungen', '');"
+        },
+        {
+          "type": "Button",
+          "caption": "📁 CSV-Datei neu laden",
+          "onClick": "return IPS_RequestAction($id, 'ReloadCSV', '');"
+        },
+        {
+          "type": "NumberSpinner",
+          "name": "GrenzwertManuell",
+          "caption": "Manueller Wind-Grenzwert",
+          "minimum": 0,
+          "maximum": 50
+        },
+        {
+          "type": "Button",
+          "caption": "🎚️ Grenzwert setzen",
+          "onClick": "return IPS_RequestAction($id, 'SetGrenze', $GrenzwertManuell);"
+        },
+        {
+        "type": "Button",
+        "caption": "🛡️ Prüfung jetzt auslösen",
+        "confirmation": "Möchtest du die Schutzprüfung wirklich jetzt starten?",
+        "onClick": "return IPS_RequestAction($id, 'UpdateWind', '');"
+        },
+        {
+          "type": "Button",
+          "caption": "🔄 Winddaten auslesen",
+          "onClick": "return IPS_RequestAction($id, 'UpdateWind', '');"
+        }
+        ]
+    },
+    {
       "name": "APIKey",
       "type": "ValidationTextBox",
       "caption": "API-Schlüssel von meteoblue"
@@ -71,33 +122,10 @@
       "validVariableTypes": [3],
       "allowCreation": true
     },
-    {
-      "type": "Button",
-      "caption": "🛡️ Prüfung jetzt auslösen",
-      "confirmation": "Möchtest du die Schutzprüfung wirklich jetzt starten?",
-      "onClick": "return IPS_RequestAction($id, 'UpdateWind', '');"
-    },
-    {
-      "type": "Button",
-      "caption": "🔄 Winddaten auslesen",
-      "onClick": "return IPS_RequestAction($id, 'UpdateWind', '');"
-    },
-    {
-      "type": "Button",
-      "caption": "📁 CSV-Datei neu laden",
-      "onClick": "return IPS_RequestAction($id, 'ReloadCSV', '');"
-    },
-    {
-      "type": "Button",
-      "caption": "🧹 Schutzstatus zurücksetzen",
-      "onClick": "return IPS_RequestAction($id, 'ResetStatus', '');",
-      "confirmation": "Alle Schutzvariablen werden auf 'false' gesetzt. Fortfahren?"
-    },
-    {
-      "type": "Button",
-      "caption": "🧼 Warnanzeige leeren",
-      "onClick": "return IPS_RequestAction($id, 'ClearWarnungen', '');"
-    },    
+    
+
+    
+    
     {
       "type": "List",
       "name": "Schutzobjekte",
@@ -108,7 +136,7 @@
         "MinGust": 14.0,
         "RichtungsKuerzelListe": ["NO","O","S","SW","SO", "W", "NW"]
       },
-      
+        
       "columns": [
         {
           "caption": "Name",
@@ -132,20 +160,19 @@
           "edit": { "type": "NumberSpinner", "minimum": 0, "maximum": 50 }
         },
         {
-            "caption": "Windrichtungen (NO,O,S,SW,SO,W,NW)",
-            "name": "RichtungsKuerzelListe",
-            "width": "200px",
-            "add": "SW",
-            "edit": {
-            "type": "ValidationTextBox",
-            "hint": "Mehrere Richtungen mit Komma trennen, z. B.: SW,W,NW"
+          "caption": "Windrichtungen (NO,O,S,SW,SO,W,NW)",
+          "name": "RichtungsKuerzelListe",
+          "width": "200px",
+          "add": "SW",
+          "edit": {
+          "type": "ValidationTextBox",
+          "hint": "Mehrere Richtungen mit Komma trennen, z. B.: SW,W,NW"
           }
         }
-
       ]
-      
+        
     }
-  ]
+   ]
       
 }
 

@@ -102,6 +102,9 @@ public function ApplyChanges() {
     $this->RegisterVariableString("LetzteAuswertung", "Letzte Dateiverarbeitung", "~TextBox");
     $this->RegisterVariableString("NachwirkEnde", "Nachwirkzeit endet um", "~TextBox");
     $this->RegisterVariableBoolean("FetchDatenVeraltet", "Daten zu alt", "~Alert");
+    $this->RegisterVariableString("LetzteAktion", "Letzte Aktion");
+    
+
 
 
     //Abrufintervalle und Nachwirkzeit
@@ -114,6 +117,7 @@ public function ApplyChanges() {
     SetValueString($this->GetIDForIdent("FetchIntervalInfo"), $this->ReadPropertyInteger("FetchIntervall") . " Minuten");
     SetValueString($this->GetIDForIdent("ReadIntervalInfo"), $this->ReadPropertyInteger("ReadIntervall") . " Minuten");
     SetValueString($this->GetIDForIdent("NachwirkzeitInfo"), $this->ReadPropertyInteger("NachwirkzeitMin") . " Minuten");
+    SetValue($this->GetIDForIdent("LetzteAktion"), "Grenzwert gesetzt auf $wert");
 
 
 
@@ -135,25 +139,28 @@ public function ApplyChanges() {
 }
 
 public function RequestAction($Ident, $Value) {
+    // 🔍 Logging für Analysezwecke
+    IPS_LogMessage("WindMonitorPro", "⏱️ RequestAction erhalten: $Ident mit Wert=" . print_r($Value, true));
+
+    // 🔀 Verteile an Aktion basierend auf Ident
     switch ($Ident) {
         case "UpdateWind":
-            $this->ReadFromFileAndUpdate();
-            break;
+            return $this->ReadFromFileAndUpdate();
 
         case "ReloadCSV":
-            $this->ReloadCSVDatei();
-            break;
+            return $this->ReloadCSVDatei();
 
         case "ResetStatus":
-            $this->ResetSchutzStatus();
-            break;
+            return $this->ResetSchutzStatus();
 
         case "ClearWarnungen":
-            $this->WarnungsVariablenLeeren();
-            break;
+            return $this->WarnungsVariablenLeeren();
+
+        case "SetGrenze":
+            return $this->SetzeGrenzwert(floatval($Value));
 
         default:
-            throw new Exception("Invalid Ident: " . $Ident);
+            throw new Exception("⚠️ Ungültiger Aktion-Identifier: " . $Ident);
     }
 }
 
@@ -348,9 +355,10 @@ public function RequestAction($Ident, $Value) {
     }
 
 
-    private function ReloadCSVDatei(): void {
-        IPS_LogMessage("WindMonitorPro", "🔄 Datei wird neu geladen …");
-        $this->ReadFromFileAndUpdate(); // oder eigene Einleseroutine
+    private function ReloadCSVDatei(): bool {
+        IPS_LogMessage("WindMonitorPro", "📁 CSV-Datei wird neu geladen");
+        $this->ReadFromFileAndUpdate(); // oder andere Dateioperation
+        return true;
     }
 
     private function ResetSchutzStatus(): void {
@@ -362,6 +370,7 @@ public function RequestAction($Ident, $Value) {
             }
         }
         IPS_LogMessage("WindMonitorPro", "🧹 Schutzstatus zurückgesetzt");
+        return true;
     }
 
     private function WarnungsVariablenLeeren(): void {
@@ -370,8 +379,14 @@ public function RequestAction($Ident, $Value) {
             SetValue($idHTML, "<div style='color:gray'>Keine aktive Warnung</div>");
         }
         IPS_LogMessage("WindMonitorPro", "🧼 Warnanzeige geleert");
+        return true;
     }
-
+    private float $Grenzwert = 12.0; // Standardwert
+    private function SetzeGrenzwert(float $wert): bool {
+        $this->Grenzwert = $wert;
+        IPS_LogMessage("WindMonitorPro", "🔧 Grenzwert gesetzt auf $wert");
+        return true;
+    }
 
     // Beispielmethode
     public function UpdateWindSpeed(float $value) {
