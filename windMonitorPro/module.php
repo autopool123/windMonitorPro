@@ -426,6 +426,29 @@ public function ApplyChanges() {
         SetValueString($this->GetIDForIdent("LetzteAuswertung"), $now);
     }
 
+    function erzeugeSchutzHTML(bool $aktiv, string $zeitstempel, int $nachwirkZeitSek, int $richtung): string {
+        $farbe = $aktiv ? "#FF4444" : "#44AA44";
+        $text  = $aktiv ? "⚠️ Windwarnung aktiv" : "✔️ Kein Schutz aktiv";
+
+        $gradText = WindToolsHelper::gradZuRichtung($richtung) . " (" . $richtung . "°)";
+        $restzeitMin = $nachwirkZeitSek > 0 ? round($nachwirkZeitSek / 60) . " min" : "keine";
+
+        return <<<HTML
+        <style>
+        .box { padding:10px; border-radius:6px; background-color:$farbe; color:#fff; font-family:Arial; }
+        .small { font-size:0.9em; color:#eee; margin-top:6px; }
+        </style>
+        <div class="box">
+        <b>$text</b><br>
+        Richtung: $gradText<br>
+        Zeitpunkt: $zeitstempel<br>
+        Nachwirkzeit: $restzeitMin
+        <div class="small">WindMonitorPro</div>
+        </div>
+        HTML;
+    }
+
+
 
 }
 ?>
