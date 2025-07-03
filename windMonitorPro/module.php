@@ -204,49 +204,77 @@ public function ApplyChanges() {
         SetValue($this->GetIDForIdent("UVIndex"), $uv);
 
 
-$schutzArray = json_decode($this->ReadPropertyString("Schutzobjekte"), true);
+        $schutzArray = json_decode($this->ReadPropertyString("Schutzobjekte"), true);
 
-$richtung = $data["data_xmin"]["winddirection_80m"][0] ?? 0;
-$wind     = $data["data_xmin"]["windspeed_80m"][0] ?? 0;
-$boe      = $data["data_xmin"]["gust"][0] ?? 0;
-
-foreach ($schutzArray as $eintrag) {
-    $name     = $eintrag["Label"] ?? "Unbenannt";
-    $minWind  = floatval($eintrag["MinWind"] ?? 0);
-    $minGust  = floatval($eintrag["MinGust"] ?? 0);
-    $kuerzelText  = $eintrag["RichtungsKuerzelListe"] ?? "";
-    $kuerzelArray = array_map("trim", explode(",", $kuerzelText));
-
-    $richtung = $data["data_xmin"]["winddirection_80m"][0] ?? 0;
-    $wind     = $data["data_xmin"]["windspeed_80m"][0] ?? 0;
-    $boe      = $data["data_xmin"]["gust"][0] ?? 0;    
-
-    // 🧭 Richtung prüfen
-    $inSektor = false;
-    foreach ($kuerzelArray as $kuerzel) {
-        if (!isValidKuerzel($kuerzel)) {
-            IPS_LogMessage("WindMonitorPro", "⚠️ Ungültiges Kürzel '$kuerzel' im Schutzobjekt '$name'");
-            continue;
+        // Schritt 1: Alle vorhandenen Schutz-Variablen in Instanz merken
+        $alleVariablen = [];
+        $instanzObjekte = IPS_GetChildrenIDs($this->InstanceID);
+        foreach ($instanzObjekte as $objID) {
+            $ident = IPS_GetObject($objID)["ObjectIdent"];
+            if (strpos($ident, "Warnung_") === 0) {
+                $alleVariablen[$ident] = $objID;
+            }
         }
 
-        list($minGrad, $maxGrad) = kuerzelZuWinkelbereich($kuerzel);
-        $treffer = ($minGrad < $maxGrad)
-            ? ($richtung >= $minGrad && $richtung <= $maxGrad)
-            : ($richtung >= $minGrad || $richtung <= $maxGrad);
+        // Schritt 2: Schutzprüfung pro Objekt
+        $genutzteIdents = [];
 
-        if ($treffer) {
-            $inSektor = true;
-            break;
+        foreach ($schutzArray as $eintrag) {
+            $name = $eintrag["Label"] ?? "Unbenannt";
+            $ident = "Warnung_" . preg_replace('/\W+/', '_', $name);
+            $genutzteIdents[] = $ident;
+
+            // ✅ Variable erstellen (wenn nicht vorhanden)
+            if (!array_key_exists($ident, $alleVariablen)) {
+                $vid = $this->RegisterVariableBoolean($ident, "Warnung: " . $name);
+                IPS_SetHidden($vid, false); // oder true, je nach Wunsch
+                $alleVariablen[$ident] = $vid;
+            }
+
+            // 🧮 Prüfung wie gewohnt
+            $minWind = floatval($eintrag["MinWind"] ?? 0);
+            $minGust = floatval($eintrag["MinGust"] ?? 0);
+            $kuerzelText = $eintrag["RichtungsKuerzelListe"] ?? "";
+            $kuerzelArray = array_map("trim", explode(",", $kuerzelText));
+
+            $richtung = $data["data_xmin"]["winddirection_80m"][0] ?? 0;
+            $wind     = $data["data_xmin"]["windspeed_80m"][0] ?? 0;
+            $boe      = $data["data_xmin"]["gust"][0] ?? 0;
+
+            $inSektor = false;
+            foreach ($kuerzelArray as $kuerzel) {
+                if (!isValidKuerzel($kuerzel)) {
+                    IPS_LogMessage("WindMonitorPro", "❌ Ungültiges Kürzel '$kuerzel' bei '$name'");
+                    continue;
+                }
+                list($minGrad, $maxGrad) = kuerzelZuWinkelbereich($kuerzel);
+                $treffer = ($minGrad < $maxGrad)
+                    ? ($richtung >= $minGrad && $richtung <= $maxGrad)
+                    : ($richtung >= $minGrad || $richtung <= $maxGrad);
+                if ($treffer) {
+                    $inSektor = true;
+                    break;
+                }
+            }
+
+            $warnung = $inSektor && ($wind >= $minWind || $boe >= $minGust);
+            SetValue($alleVariablen[$ident], $warnung);
+
+            if ($warnung) {
+                IPS_LogMessage("WindWarnung", "⚠️ '$name' meldet Warnung bei Wind=$wind m/s, Böe=$boe m/s Richtung=$richtung°");
+            }
+
         }
-    }
+        // Schritt 3: Variablen löschen, die zu entfernten Objekten gehören
+        foreach ($alleVariablen as $ident => $objID) {
+            if (!in_array($ident, $genutzteIdents)) {
+                IPS_LogMessage("WindMonitorPro", "ℹ️ Entferne überflüssige Statusvariable '$ident'");
+                IPS_DeleteVariable($objID);
+            }
+        }
 
-    // 🛡️ Schutzprüfung
-    $warnung = $inSektor && ($wind >= $minWind || $boe >= $minGust);
 
-    if ($warnung) {
-        IPS_LogMessage("WindWarnung", "⚠️ '$name' meldet Warnung bei Wind=$wind m/s, Böe=$boe m/s Richtung=$richtung°");
-    }
-}
+
 
 
 
@@ -267,7 +295,7 @@ foreach ($schutzArray as $eintrag) {
 
 
 
-        IPS_LogMessage($logtag, "✅ Datei erfolgreich verarbeitet – Zeitstempel: $zeit");
+            IPS_LogMessage($logtag, "✅ Datei erfolgreich verarbeitet – Zeitstempel: $zeit");
     }
 
 
