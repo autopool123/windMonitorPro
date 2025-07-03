@@ -426,7 +426,12 @@ public function ApplyChanges() {
         SetValueString($this->GetIDForIdent("LetzteAuswertung"), $now);
     }
 
-    public function erzeugeSchutzHTML(bool $aktiv, string $zeitstempel, int $nachwirkZeitSek, int $richtung): string {
+    
+
+
+
+}
+public function erzeugeSchutzHTML(bool $aktiv, string $zeitstempel, int $nachwirkZeitSek, int $richtung): string {
         $farbe = $aktiv ? "#FF4444" : "#44AA44";
         $text  = $aktiv ? "⚠️ Windwarnung aktiv" : "✔️ Kein Schutz aktiv";
 
@@ -446,9 +451,5 @@ public function ApplyChanges() {
         <div class="small">WindMonitorPro</div>
         </div>
         HTML;
-    }
-
-
-
 }
 ?>
