@@ -62,11 +62,13 @@
       "caption": "API-Schlüssel von meteoblue"
     },
     {
-      "type": "ValidationTextBox",
+      "type": "Select",
       "name": "PackageSuffix",
-      "caption": "Meteoblue-Paket (z. B. basic-1h_wind-15min,current)"
+      "caption": "Meteoblue-Paket auswählen",
+      "options": [
+        { "caption": "Winddaten", "value": "basic-1h_wind-15min,current" }
+      ]
     },
-
     {
       "name": "Latitude",
       "type": "NumberSpinner",

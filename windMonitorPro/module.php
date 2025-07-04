@@ -419,7 +419,13 @@ public function RequestAction($Ident, $Value) {
 
 
         $prefix = "https://my.meteoblue.com/packages/";
+        
         $suffix = $this->ReadPropertyString("PackageSuffix");
+        // Prüfung: nur erlaubte Zeichen → Buchstaben, Zahlen, Bindestrich, Unterstrich, Komma
+        if (!preg_match('/^[a-z0-9\-_,]+$/i', $suffix)) {
+            throw new Exception("❌ Ungültiger Paketname: $suffix");
+        }
+
         $url = $prefix . $suffix
             . "?lat=$lat&lon=$lon&altitude=$alti&apikey=$apikey&format=json";
 
