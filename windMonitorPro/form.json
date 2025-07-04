@@ -52,7 +52,7 @@
         {
           "type": "Button",
           "caption": "🔄 Winddaten auslesen",
-          "onClick": "return IPS_RequestAction($id, 'UpdateWind', '');"
+          "onClick": "return IPS_RequestAction($id, 'UpdateMeteoBlue', '');"
         }
         ]
     },

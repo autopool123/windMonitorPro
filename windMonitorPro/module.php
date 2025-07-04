@@ -153,7 +153,7 @@ public function RequestAction($Ident, $Value) {
 
     // 🔀 Verteile an Aktion basierend auf Ident
     switch ($Ident) {
-        case "UpdateMeteoBlued":
+        case "UpdateMeteoBlue":
             return $this->UpdateFromMeteoblue();
 
         case "UpdateWind":
