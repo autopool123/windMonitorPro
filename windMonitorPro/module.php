@@ -438,7 +438,7 @@ public function RequestAction($Ident, $Value) {
         }
 
         $url = $prefix . $suffix
-            . "?lat=$lat&lon=$lon&altitude=$alti&apikey=$apikey&format=json";
+            . "?lat=$lat&lon=$lon&altitude=$alti&apikey=$apiKey&format=json";
 
         // 📡 URL fest aufbauen
         //$url = "https://my.meteoblue.com/packages/basic-1h_wind-15min,current" .
