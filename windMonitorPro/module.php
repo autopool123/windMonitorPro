@@ -213,31 +213,20 @@ public function RequestAction($Ident, $Value) {
         $uv = $data["data_1h"]["uvindex"][0] ?? 0;
 
         //Pruefung auf veraltetem Zeitstempel der Daten und setzen Sperrflag
-        $fetchTS = strtotime($zeit);
-        $jetztTS = time();
-        $diffMin = ($jetztTS - $fetchTS) / 60;
+        $utcDatum = substr($updateText, 0, 10); // z. B. "2025-07-04"
+        $heuteUTC = gmdate("Y-m-d"); // aktuelles UTC-Datum
 
-        if ($diffMin > 30) {
-            IPS_LogMessage("WindMonitorPro", "🛑 Warnung: Meteoblue-Daten sind älter als 30 Minuten ($diffMin min)");
-            // Optional: Schutz deaktivieren
+        if ($utcDatum !== $heuteUTC) {
+            IPS_LogMessage("WindMonitorPro", "🛑 Meteoblue-Daten stammen nicht vom heutigen UTC-Tag ($utcDatum)");
             SetValueBoolean($this->GetIDForIdent("WarnungAktiv"), false);
+            SetValueBoolean($this->GetIDForIdent("FetchDatenVeraltet"), true);
+            $this->SetValue("LetzteAktion", "⏱️ ReadFromFile übersprungen: Daten vom $utcDatum");
 
-            // Optional: Sperrflag setzen
-            if ($this->GetIDForIdent("FetchDatenVeraltet")) {
-                SetValueBoolean($this->GetIDForIdent("FetchDatenVeraltet"), true);
-            }
+            return; // ⛔ Verarbeitung sofort stoppen!
+        } else {
+            SetValueBoolean($this->GetIDForIdent("FetchDatenVeraltet"), false);
         }
-        else {
-            // Sperrflag zurücksetzen
-            if ($this->GetIDForIdent("FetchDatenVeraltet")) {
-                SetValueBoolean($this->GetIDForIdent("FetchDatenVeraltet"), false);
-            }
-        }
-
-
-
-
-
+        
 
         // 💾 Variablen aktualisieren
         SetValue($this->GetIDForIdent("Wind80m"), round($wind80 * 3.6, 1));
