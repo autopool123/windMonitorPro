@@ -31,7 +31,7 @@ class windMonitorPro extends IPSModule {
 
 
         // 📦 Einstellungen für das Abruf-/Auswerteverhalten
-        $this->RegisterPropertyString("Modus", "fetch"); // "fetch" oder "readfile"
+        //$this->RegisterPropertyString("Modus", "fetch"); // "fetch" oder "readfile" Relikt aus der ersten Version
         $this->RegisterPropertyString("Dateipfad", "/var/lib/symcon/user/winddata_15min.json");
         $this->RegisterPropertyInteger("StringVarID", 0); // Optional: ~TextBox-ID
 
@@ -348,19 +348,19 @@ public function RequestAction($Ident, $Value) {
 
     
     public function UpdateFromMeteoblue() {
-        $modus = $this->ReadPropertyString("Modus");
+        //$modus = $this->ReadPropertyString("Modus");Relikt aus erster Version
         $logtag = "WindMonitorPro";
 
-        if ($modus == "fetch") {
+        //if ($modus == "fetch") {
             IPS_LogMessage($logtag, "🔁 Modus: Daten von meteoblue abrufen & verarbeiten");
             $this->FetchAndStoreMeteoblueData();         // Holt Daten von meteoblue und speichert sie
             $this->ReadFromFileAndUpdate();              // Liest gespeicherte Datei und aktualisiert Variablen
-        } elseif ($modus == "readfile") {
-            IPS_LogMessage($logtag, "📂 Modus: Nur lokale Datei verarbeiten");
-            $this->ReadFromFileAndUpdate();              // Nur aus Datei lesen (keine API!)
-        } else {
-            IPS_LogMessage($logtag, "❌ Unbekannter Modus: '$modus'");
-        }
+        //} elseif ($modus == "readfile") {
+            //IPS_LogMessage($logtag, "📂 Modus: Nur lokale Datei verarbeiten");
+            //$this->ReadFromFileAndUpdate();              // Nur aus Datei lesen (keine API!)
+        //} else {
+            //IPS_LogMessage($logtag, "❌ Unbekannter Modus: '$modus'");
+        //}
     }
 
 
