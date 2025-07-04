@@ -211,6 +211,7 @@ public function RequestAction($Ident, $Value) {
         $isDay = $data["data_current"]["isdaylight"][0] ?? false;
         $zeit = $data["data_current"]["time"][0] ?? "";
         $uv = $data["data_1h"]["uvindex"][0] ?? 0;
+        $updateText = $data["metadata"]["modelrun_updatetime_utc"] ?? "";
 
         //Pruefung auf veraltetem Zeitstempel der Daten und setzen Sperrflag
         $utcDatum = substr($updateText, 0, 10); // z. B. "2025-07-04"
