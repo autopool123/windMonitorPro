@@ -449,6 +449,13 @@ public function RequestAction($Ident, $Value) {
         }
 
         // 💾 Speichern
+
+        $verzeichnis = dirname($file);
+        if (!is_dir($verzeichnis)) {
+            IPS_LogMessage($logtag, "🌐 Verzeichnis wird angelegt $verzeichnis");
+            mkdir($verzeichnis, 0777, true); // Ordner rekursiv erstellen
+        }
+
         $ok = @file_put_contents($file, $json);
         if (!$ok) {
             IPS_LogMessage($logtag, "❌ Speichern nach $file fehlgeschlagen");
