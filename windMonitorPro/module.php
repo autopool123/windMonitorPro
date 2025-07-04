@@ -40,6 +40,8 @@ class windMonitorPro extends IPSModule {
         // Timer für Datei-Auswertung
         $this->RegisterTimer("ReadTimer", 0, 'WMP_ReadFromFile($_IPS[\'TARGET\']);');
 
+        $this->RegisterVariableString("FetchJSON", "Letzter JSON-Download");
+
         
 
     }
@@ -83,6 +85,12 @@ public function ApplyChanges() {
         IPS_SetVariableProfileDigits("WMP.Temperature", 1);
         IPS_SetVariableProfileIcon("WMP.Temperature", "Temperature");
     }
+
+    $vid = $this->GetIDForIdent("FetchJSON");
+    IPS_SetIcon($vid, "Database");
+    IPS_SetVariableCustomProfile($vid, "");
+    IPS_SetHidden($vid, false); // oder true, wenn du sie intern hältst
+
 
     // 🧾 Variablen registrieren
     $this->RegisterVariableFloat("Wind80m", "Windgeschwindigkeit (80 m)", "WindPro.Speed.1");
@@ -419,7 +427,7 @@ public function RequestAction($Ident, $Value) {
 
 
         $prefix = "https://my.meteoblue.com/packages/";
-        
+
         $suffix = $this->ReadPropertyString("PackageSuffix");
         // Prüfung: nur erlaubte Zeichen → Buchstaben, Zahlen, Bindestrich, Unterstrich, Komma
         if (!preg_match('/^[a-z0-9\-_,]+$/i', $suffix)) {
@@ -450,10 +458,9 @@ public function RequestAction($Ident, $Value) {
         $this->ReadFromFileAndUpdate();
 
 
-        // 🗒️ Optional: String-Variable aktualisieren
-        if (IPS_VariableExists($stringVar) && $stringVar > 0) {
-            SetValueString($stringVar, $json);
-        }
+        // String-Variable aktualisieren
+        $this->SetValue("FetchJSON", $json);
+
 
         IPS_LogMessage($logtag, "✅ Daten von meteoblue gespeichert unter: $file");
     }

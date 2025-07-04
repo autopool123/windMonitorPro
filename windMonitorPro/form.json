@@ -116,9 +116,13 @@
       "maximum": 720
     },
     {
-      "type": "ValidationTextBox",
+      "type": "Select",
       "name": "Dateipfad",
-      "caption": "Speicherpfad für JSON-Datei (z. B. /var/lib/symcon/user/winddata_15min.json)"
+      "caption": "Speicherpfad für JSON-Datei auswählen",
+      "options": [
+        { "caption": "Symbox-Userdaten", "value": "/var/lib/symcon/user/winddata_15min.json" },
+        { "caption": "Symbox-Testfeld", "value": "/var/lib/symcon/user/test/windTestdaten.json" }
+      ]
     },
     {
       "type": "NumberSpinner",
@@ -130,15 +134,11 @@
     {
       "type": "SelectVariable",
       "name": "StringVarID",
-      "caption": "Ziel-String-Variable",
+      "caption": "MeteoData(JSON)-Stringvariable",
       "width": "400px",
       "validVariableTypes": [3],
       "allowCreation": true
     },
-    
-
-    
-    
     {
       "type": "List",
       "name": "Schutzobjekte",
