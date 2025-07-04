@@ -42,9 +42,8 @@ class windMonitorPro extends IPSModule {
 
         $this->RegisterVariableString("FetchJSON", "Letzter JSON-Download");
         $this->RegisterVariableString("SchutzStatusText", "🔍 Schutzstatus");
+        $this->RegisterVariableString("CurrentTime", "Zeitstempel der Daten");
 
-
-        
 
     }
 
@@ -95,6 +94,8 @@ public function ApplyChanges() {
 
     $vid = $this->GetIDForIdent("SchutzStatusText");
     IPS_SetIcon($vid, "Shield");
+    $vid = $this->GetIDForIdent("CurrentTime");
+    IPS_SetIcon($vid, "Clock"); 
 
 
 
@@ -106,7 +107,7 @@ public function ApplyChanges() {
     $this->RegisterVariableFloat("AirDensity", "Luftdichte", "WMP.Density");
     $this->RegisterVariableFloat("CurrentTemperature", "Temperatur", "WMP.Temperature");
     $this->RegisterVariableBoolean("IsDaylight", "Tageslicht", "");
-    $this->RegisterVariableString("CurrentTime", "Zeitstempel", "");
+    //$this->RegisterVariableString("CurrentTime", "Zeitstempel", "");
     $this->RegisterVariableInteger("UVIndex", "UV-Index", "");
     $this->RegisterVariableString("WindDirText", "Windrichtung (Text)", "");
     $this->RegisterVariableString("WindDirArrow", "Windrichtung (Symbol)", "");
@@ -215,9 +216,13 @@ public function RequestAction($Ident, $Value) {
 
         $temp = $data["data_current"]["temperature"][0] ?? 0;
         $isDay = $data["data_current"]["isdaylight"][0] ?? false;
-        $zeit = $data["data_current"]["time"][0] ?? "";
-        $uv = $data["data_1h"]["uvindex"][0] ?? 0;
         $updateText = $data["metadata"]["modelrun_updatetime_utc"] ?? "";
+        //$zeit = $data["data_current"]["time"][0] ?? "";
+        if ($updateText === "" || strlen($updateText) < 10) {
+            IPS_LogMessage("WindMonitorPro", "⚠️ Kein gültiger Zeitstempel im metadata gefunden");
+            $updateText = gmdate("Y-m-d H:i"); // Fallback in UTC
+        }
+        $uv = $data["data_1h"]["uvindex"][0] ?? 0;
 
         //Pruefung auf veraltetem Zeitstempel der Daten und setzen Sperrflag
         $utcDatum = substr($updateText, 0, 10); // z. B. "2025-07-04"
@@ -245,7 +250,7 @@ public function RequestAction($Ident, $Value) {
         SetValue($this->GetIDForIdent("AirDensity"), round($airdensity, 3));
         SetValue($this->GetIDForIdent("CurrentTemperature"), $temp);
         SetValue($this->GetIDForIdent("IsDaylight"), (bool) $isDay);
-        SetValue($this->GetIDForIdent("CurrentTime"), $zeit);
+        SetValueString($this->GetIDForIdent("CurrentTime"), $updateText);
         SetValue($this->GetIDForIdent("UVIndex"), $uv);
 
 
@@ -337,10 +342,7 @@ public function RequestAction($Ident, $Value) {
             $warnungAktiv = ($wind80 >= $windGrenze || $gust80 >= $boeGrenze);
             $this->AktualisiereSchutzstatus($warnungAktiv, $winddir);
         }
-
-
-
-            IPS_LogMessage($logtag, "✅ Datei erfolgreich verarbeitet – Zeitstempel: $zeit");
+        IPS_LogMessage($logtag, "✅ Datei erfolgreich verarbeitet – Zeitstempel: $updateText");
     }
 
 
@@ -355,7 +357,7 @@ public function RequestAction($Ident, $Value) {
         //if ($modus == "fetch") {
             IPS_LogMessage($logtag, "🔁 Modus: Daten von meteoblue abrufen & verarbeiten");
             $this->FetchAndStoreMeteoblueData();         // Holt Daten von meteoblue und speichert sie
-            $this->ReadFromFileAndUpdate();              // Liest gespeicherte Datei und aktualisiert Variablen
+            //$this->ReadFromFileAndUpdate();              // Liest gespeicherte Datei und aktualisiert Variablen wird in vorheriger Funktion bereits aufgerufen
         //} elseif ($modus == "readfile") {
             //IPS_LogMessage($logtag, "📂 Modus: Nur lokale Datei verarbeiten");
             //$this->ReadFromFileAndUpdate();              // Nur aus Datei lesen (keine API!)
