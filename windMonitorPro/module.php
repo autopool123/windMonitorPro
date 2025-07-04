@@ -41,6 +41,8 @@ class windMonitorPro extends IPSModule {
         $this->RegisterTimer("ReadTimer", 0, 'WMP_ReadFromFile($_IPS[\'TARGET\']);');
 
         $this->RegisterVariableString("FetchJSON", "Letzter JSON-Download");
+        $this->RegisterVariableString("SchutzStatusText", "🔍 Schutzstatus");
+
 
         
 
@@ -90,6 +92,10 @@ public function ApplyChanges() {
     IPS_SetIcon($vid, "Database");
     IPS_SetVariableCustomProfile($vid, "");
     IPS_SetHidden($vid, false); // oder true, wenn du sie intern hältst
+
+    $vid = $this->GetIDForIdent("SchutzStatusText");
+    IPS_SetIcon($vid, "Shield");
+
 
 
     // 🧾 Variablen registrieren
@@ -218,6 +224,7 @@ public function RequestAction($Ident, $Value) {
         $heuteUTC = gmdate("Y-m-d"); // aktuelles UTC-Datum
 
         if ($utcDatum !== $heuteUTC) {
+            $this->SetValue("SchutzStatusText", "🛑 Meteoblue-Daten stammen nicht vom heutigen UTC-Tag ($utcDatum)");
             IPS_LogMessage("WindMonitorPro", "🛑 Meteoblue-Daten stammen nicht vom heutigen UTC-Tag ($utcDatum)");
             SetValueBoolean($this->GetIDForIdent("WarnungAktiv"), false);
             SetValueBoolean($this->GetIDForIdent("FetchDatenVeraltet"), true);
@@ -225,6 +232,7 @@ public function RequestAction($Ident, $Value) {
 
             return; // ⛔ Verarbeitung sofort stoppen!
         } else {
+            $this->SetValue("SchutzStatusText", "✅ Schutzprüfung erfolgreich durchgeführt mit Daten vom $utcDatum");
             SetValueBoolean($this->GetIDForIdent("FetchDatenVeraltet"), false);
         }
         
@@ -465,38 +473,44 @@ public function RequestAction($Ident, $Value) {
         IPS_LogMessage($logtag, "✅ Daten von meteoblue gespeichert unter: $file");
     }
 
-    public function AktualisiereSchutzstatus(bool $warnungGeradeAktiv, int $grad) {
-        $nachwirkZeitSek = $this->ReadPropertyInteger("NachwirkzeitMin") * 60;
-        $now = time();
+public function AktualisiereSchutzstatus(bool $warnungGeradeAktiv, int $grad) {
+    $nachwirkZeitSek = $this->ReadPropertyInteger("NachwirkzeitMin") * 60;
+    $now = time();
 
-        $lastTS = GetValueInteger($this->GetIDForIdent("LetzteWarnungTS"));
-        $warAktiv = GetValueBoolean($this->GetIDForIdent("WarnungAktiv"));
+    $lastTS = GetValueInteger($this->GetIDForIdent("LetzteWarnungTS"));
+    $warAktiv = GetValueBoolean($this->GetIDForIdent("WarnungAktiv"));
 
+    // ⏱️ Wenn neue Warnung → Zeitstempel setzen
+    if ($warnungGeradeAktiv) {
+        $lastTS = $now;
+        SetValueInteger($this->GetIDForIdent("LetzteWarnungTS"), $lastTS);
+    }
 
-        // ⏱️ Wenn neue Warnung → Zeitstempel setzen
-        if ($warnungGeradeAktiv) {
-            $lastTS = $now;
-            SetValueInteger($this->GetIDForIdent("LetzteWarnungTS"), $lastTS);
-        }
+    // 🧠 Nachwirkzeit berücksichtigen
+    $schutzAktiv = ($now - $lastTS) < $nachwirkZeitSek;
 
+    // 🛡️ Schutzstatus setzen
+    SetValueBoolean($this->GetIDForIdent("WarnungAktiv"), $schutzAktiv);
 
+    $ablaufTS = $lastTS + $nachwirkZeitSek;
+    $ablaufDT = (new DateTime("@$ablaufTS"))->setTimezone(new DateTimeZone('Europe/Berlin'))->format("d.m.Y H:i:s");
+    SetValueString($this->GetIDForIdent("NachwirkEnde"), $ablaufDT);        
 
-        // 🧠 Nachwirkzeit berücksichtigen
-        $schutzAktiv = ($now - $lastTS) < $nachwirkZeitSek;
+    // 🖼️ HTML-Ausgabe aktualisieren
+    require_once(__DIR__ . "/WindToolsHelper.php"); // damit erzeugeSchutzHTML verfügbar ist
 
-        // 🛡️ Schutzstatus setzen
-        SetValueBoolean($this->GetIDForIdent("WarnungAktiv"), $schutzAktiv);
+    $html = erzeugeSchutzHTML($schutzAktiv, $lastTS, $nachwirkZeitSek, $grad);
+    SetValueString($this->GetIDForIdent("SchutzHTML"), $html);
 
-        $ablaufTS = $lastTS + $nachwirkZeitSek;
-        $ablaufDT = (new DateTime("@$ablaufTS"))->setTimezone(new DateTimeZone('Europe/Berlin'))->format("d.m.Y H:i:s");
-        SetValueString($this->GetIDForIdent("NachwirkEnde"), $ablaufDT);        
+    // 🧾 Schutzstatus-Text setzen
+    $richtungText = class_exists("WindToolsHelper") ? WindToolsHelper::gradZuRichtung($grad) : "$grad°";
+    $statusText = $schutzAktiv
+        ? "⚠️ Schutz aktiv – Windrichtung: $richtungText"
+        : "✅ Kein Schutz nötig – Windrichtung: $richtungText";
 
-        // 🖼️ HTML-Ausgabe aktualisieren
-        require_once(__DIR__ . "/WindToolsHelper.php"); // damit erzeugeSchutzHTML verfügbar ist
-
-        $html = erzeugeSchutzHTML($schutzAktiv, $lastTS, $nachwirkZeitSek, $grad);
-        SetValueString($this->GetIDForIdent("SchutzHTML"), $html);
+    SetValueString($this->GetIDForIdent("SchutzStatusText"), $statusText);
 }
+
 
     public function WMP_FetchMeteoblue() {
         $this->FetchAndStoreMeteoblueData(); // holt Daten & speichert JSON
