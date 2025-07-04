@@ -132,14 +132,6 @@
       "maximum": 120
     }, 
     {
-      "type": "SelectVariable",
-      "name": "StringVarID",
-      "caption": "MeteoData(JSON)-Stringvariable",
-      "width": "400px",
-      "validVariableTypes": [3],
-      "allowCreation": true
-    },
-    {
       "type": "List",
       "name": "Schutzobjekte",
       "caption": "Zu überwachende Schutzobjekte",
