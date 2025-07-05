@@ -315,8 +315,9 @@ public function RequestAction($Ident, $Value) {
             $kuerzelArray = array_map("trim", explode(",", $kuerzelText));
 
             $richtung = $data["data_xmin"]["winddirection_80m"][0] ?? 0;
-            $wind     = $data["data_xmin"]["windspeed_80m"][0] ?? 0;
-            $boe      = $data["data_xmin"]["gust"][0] ?? 0;
+            $hoehe = floatval($eintrag["Hoehe"] ?? $this->ReadPropertyFloat("StandardHoehe"));
+            $wind = WindToolsHelper::berechneWindObjekt($data["data_xmin"]["windspeed_80m"][0] ?? 0, $hoehe, 80.0, $this->ReadPropertyFloat("GelaendeAlpha"));
+            $boe  = WindToolsHelper::berechneWindObjekt($data["data_xmin"]["gust"][0] ?? 0, $hoehe, 80.0, $this->ReadPropertyFloat("GelaendeAlpha"));
 
             $inSektor = false;
             foreach ($kuerzelArray as $kuerzel) {
@@ -336,6 +337,16 @@ public function RequestAction($Ident, $Value) {
 
             $warnung = $inSektor && ($wind >= $minWind || $boe >= $minGust);
             SetValue($alleVariablen[$ident], $warnung);
+
+            $statusText = $warnung
+                ? "⚠️ Schutz aktiv für $name – Wind: $wind km/h, Böe: $boe km/h"
+                : "✅ Kein Schutz nötig für $name – Wind: $wind km/h";
+
+            $txtIdent = "Status_" . preg_replace('/\W+/', '_', $name);
+            if (!@IPS_VariableExists($this->GetIDForIdent($txtIdent))) {
+                $this->RegisterVariableString($txtIdent, "🛡️ Status: $name");
+            }
+            SetValueString($this->GetIDForIdent($txtIdent), $statusText);
 
             if ($warnung) {
                 IPS_LogMessage("WindWarnung", "⚠️ '$name' meldet Warnung bei Wind=$wind m/s, Böe=$boe m/s Richtung=$richtung°");

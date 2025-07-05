@@ -57,6 +57,31 @@ class WindToolsHelper
         return in_array($kuerzel, $valid);
     }
 
+    public static function getSmartCurrent(array $data, float $zielHoehe = 8.0, float $alpha = 0.14): ?array {
+        $refHoehe = $data['metadata']['height'] ?? 80.0;
+        $cur = $data['data_current'] ?? null;
+        if (!$cur || !isset($cur['windspeed'])) return null;
+
+        return [
+            'zeit'     => $cur['time'] ?? '',
+            'istTag'   => ($cur['isdaylight'] ?? 0) == 1,
+            'tempC'    => $cur['temperature'] ?? null,
+            'wind_raw' => $cur['windspeed'] ?? null,
+            'wind_korrigiert' => is_numeric($cur['windspeed'])
+                ? self::windXmToYm($cur['windspeed'], $zielHoehe, $refHoehe, $alpha)
+                : null,
+            'icon'     => $cur['pictocode'] ?? null,
+            'iconDetail' => $cur['pictocode_detailed'] ?? null,
+            'quelle_m' => $refHoehe
+        ];
+    }
+
+    public static function berechneWindObjekt(float $windReferenz, float $hoeheObjekt, float $hoeheReferenz = 80.0, float $alpha = 0.22): float {
+        if ($hoeheObjekt <= 0.5) {
+            $hoeheObjekt = 1.0;
+        }
+        return round($windReferenz * pow($hoeheObjekt / $hoeheReferenz, $alpha), 2);
+    }
 
 
     /**
