@@ -43,6 +43,8 @@ class windMonitorPro extends IPSModule {
         $this->RegisterVariableString("FetchJSON", "Letzter JSON-Download");
         $this->RegisterVariableString("SchutzStatusText", "🔍 Schutzstatus");
         $this->RegisterVariableString("CurrentTime", "Zeitstempel der Daten");
+        $this->RegisterVariableString("UTC_ModelRun", "📦 UTC-Zeit der Modellgenerierung");
+
 
 
     }
@@ -96,6 +98,9 @@ public function ApplyChanges() {
     IPS_SetIcon($vid, "Shield");
     $vid = $this->GetIDForIdent("CurrentTime");
     IPS_SetIcon($vid, "Clock"); 
+    $vid = $this->GetIDForIdent("UTC_ModelRun");
+    IPS_SetIcon($vid, "Database");
+
 
 
 
@@ -107,7 +112,6 @@ public function ApplyChanges() {
     $this->RegisterVariableFloat("AirDensity", "Luftdichte", "WMP.Density");
     $this->RegisterVariableFloat("CurrentTemperature", "Temperatur", "WMP.Temperature");
     $this->RegisterVariableBoolean("IsDaylight", "Tageslicht", "");
-    //$this->RegisterVariableString("CurrentTime", "Zeitstempel", "");
     $this->RegisterVariableInteger("UVIndex", "UV-Index", "");
     $this->RegisterVariableString("WindDirText", "Windrichtung (Text)", "");
     $this->RegisterVariableString("WindDirArrow", "Windrichtung (Symbol)", "");
@@ -184,6 +188,25 @@ public function RequestAction($Ident, $Value) {
 }
 
 
+    private function getLokaleModelzeit(array $data): string {
+        $rawUTC = $data["metadata"]["modelrun_updatetime_utc"] ?? "";
+        if ($rawUTC === "" || strlen($rawUTC) < 10) {
+            IPS_LogMessage("WindMonitorPro", "⚠️ Kein gültiger UTC-Zeitstempel im metadata gefunden");
+            return gmdate("Y-m-d H:i") . " (Fallback UTC)";
+        }
+
+        try {
+            $utc = new DateTime($rawUTC, new DateTimeZone('UTC'));
+            $lokal = clone $utc;
+            $lokal->setTimezone(new DateTimeZone('Europe/Berlin'));
+            return $lokal->format("Y-m-d H:i");
+        } catch (Exception $e) {
+            IPS_LogMessage("WindMonitorPro", "❌ Fehler bei Zeitwandlung: " . $e->getMessage());
+            return gmdate("Y-m-d H:i") . " (Fehler)";
+        }
+}
+
+
 
 
     public function ReadFromFileAndUpdate(): void {
@@ -250,7 +273,11 @@ public function RequestAction($Ident, $Value) {
         SetValue($this->GetIDForIdent("AirDensity"), round($airdensity, 3));
         SetValue($this->GetIDForIdent("CurrentTemperature"), $temp);
         SetValue($this->GetIDForIdent("IsDaylight"), (bool) $isDay);
-        SetValueString($this->GetIDForIdent("CurrentTime"), $updateText);
+        $lokaleZeit = $this->getLokaleModelzeit($data);
+        SetValueString($this->GetIDForIdent("CurrentTime"), $lokaleZeit);
+        $utcText = $data["metadata"]["modelrun_updatetime_utc"] ?? "";
+        SetValueString($this->GetIDForIdent("UTC_ModelRun"), $utcText);
+
         SetValue($this->GetIDForIdent("UVIndex"), $uv);
 
 
