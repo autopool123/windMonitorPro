@@ -46,7 +46,7 @@ class windMonitorPro extends IPSModule {
         $this->RegisterVariableString("UTC_ModelRun", "📦 UTC-Zeit der Modellgenerierung");
         $this->RegisterVariableString("SchutzDashboardHTML", "🧯 Schutzobjekt-Dashboard");
         $this->RegisterVariableInteger("WarnCount_" . preg_replace('/\W+/', '_', $name), "⚠️ Warnzähler: $name");
-        $this->RegisterVariableInteger($countIdent, "⚠️ Warnzähler: $name");
+        //$this->RegisterVariableInteger($countIdent, "⚠️ Warnzähler: $name");
 
 
 
@@ -321,6 +321,10 @@ public function RequestAction($Ident, $Value) {
             $ident = "Warnung_" . preg_replace('/\W+/', '_', $name);
             $genutzteIdents[] = $ident;
 
+            $countIdent = "WarnCount_" . preg_replace('/\W+/', '_', $name);
+            $vid = $this->GetIDForIdent($countIdent);
+            SetValueInteger($vid, GetValueInteger($vid) + 1);
+
             // ✅ Variable erstellen (wenn nicht vorhanden)
             if (!array_key_exists($ident, $alleVariablen)) {
                 $vid = $this->RegisterVariableBoolean($ident, "Warnung: " . $name);
@@ -383,10 +387,6 @@ public function RequestAction($Ident, $Value) {
                 if (!@IPS_VariableExists($this->GetIDForIdent($countIdent))) {
                     $this->RegisterVariableInteger($countIdent, "⚠️ Warnzähler: $name");
                 }
-
-                $countIdent = "WarnCount_" . preg_replace('/\W+/', '_', $name);
-                $vid = $this->GetIDForIdent($countIdent);
-                SetValueInteger($vid, GetValueInteger($vid) + 1);
 
             }
 
