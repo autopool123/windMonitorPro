@@ -64,6 +64,8 @@ class windMonitorPro extends IPSModule {
 
 
         $this->RegisterVariableString("SchutzDashboardHTML", "🧯 Schutzobjekt-Dashboard");
+        IPS_SetVariableCustomProfile($this->GetIDForIdent("SchutzDashboardHTML"), "~HTMLBox");
+
         //$this->RegisterVariableInteger("WarnCount_" . preg_replace('/\W+/', '_', $name), "⚠️ Warnzähler: $name");
         //$this->RegisterVariableInteger($countIdent, "⚠️ Warnzähler: $name");
 
