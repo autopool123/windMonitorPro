@@ -380,6 +380,10 @@ public function RequestAction($Ident, $Value) {
             if ($warnung) {
                 IPS_LogMessage("WindWarnung", "⚠️ '$name' meldet Warnung bei Wind=$wind m/s, Böe=$boe m/s Richtung=$richtung°");
                 //Counter für Anzahl Warnungen
+                if (!@IPS_VariableExists($this->GetIDForIdent($countIdent))) {
+                    $this->RegisterVariableInteger($countIdent, "⚠️ Warnzähler: $name");
+                }
+
                 $countIdent = "WarnCount_" . preg_replace('/\W+/', '_', $name);
                 $vid = $this->GetIDForIdent($countIdent);
                 SetValueInteger($vid, GetValueInteger($vid) + 1);
