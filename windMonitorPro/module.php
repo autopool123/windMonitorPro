@@ -44,6 +44,11 @@ class windMonitorPro extends IPSModule {
         $this->RegisterVariableString("SchutzStatusText", "🔍 Schutzstatus");
         $this->RegisterVariableString("CurrentTime", "Zeitstempel der Daten");
         $this->RegisterVariableString("UTC_ModelRun", "📦 UTC-Zeit der Modellgenerierung");
+        $this->RegisterVariableString("SchutzDashboardHTML", "🧯 Schutzobjekt-Dashboard");
+        $this->RegisterVariableInteger("WarnCount_" . preg_replace('/\W+/', '_', $label), "⚠️ Warnzähler: $label");
+        $this->RegisterVariableInteger($countIdent, "⚠️ Warnzähler: $name");
+
+
 
 
 
@@ -100,6 +105,11 @@ public function ApplyChanges() {
     IPS_SetIcon($vid, "Clock"); 
     $vid = $this->GetIDForIdent("UTC_ModelRun");
     IPS_SetIcon($vid, "Database");
+    $vid = $this->GetIDForIdent($ident);
+    IPS_SetIcon($vid, "Shield");
+    $txtVid = $this->GetIDForIdent($txtIdent);
+    IPS_SetIcon($txtVid, "Alert"); // oder "Information"
+
 
 
 
@@ -154,6 +164,16 @@ public function ApplyChanges() {
         $this->SetTimerInterval("FetchTimer", 0); // deaktivieren
         $this->SetTimerInterval("ReadTimer",  0);
     }
+
+    foreach (json_decode($this->ReadPropertyString("Schutzobjekte"), true) as $objekt) {
+    $ident = "Warnung_" . preg_replace('/\W+/', '_', $objekt["Label"]);
+    $vid = @IPS_GetObjectIDByIdent($ident, $this->InstanceID);
+    if ($vid !== false) {
+        IPS_SetIcon($vid, "Shield");
+        IPS_SetVariableCustomProfile($vid, "~Alert"); // optionales Profil
+    }
+}
+
 
 
 }
@@ -347,9 +367,23 @@ public function RequestAction($Ident, $Value) {
                 $this->RegisterVariableString($txtIdent, "🛡️ Status: $name");
             }
             SetValueString($this->GetIDForIdent($txtIdent), $statusText);
+            $schutzStatus[] = [
+                'Label'     => $name,
+                'Warnung'   => $warnung,
+                'Wind'      => round($wind, 2),
+                'Boe'       => round($boe, 2),
+                'Richtung'  => $richtung,
+                'Hoehe'     => $hoehe
+            ];
+
 
             if ($warnung) {
                 IPS_LogMessage("WindWarnung", "⚠️ '$name' meldet Warnung bei Wind=$wind m/s, Böe=$boe m/s Richtung=$richtung°");
+                //Counter für Anzahl Warnungen
+                $countIdent = "WarnCount_" . preg_replace('/\W+/', '_', $name);
+                $vid = $this->GetIDForIdent($countIdent);
+                SetValueInteger($vid, GetValueInteger($vid) + 1);
+
             }
 
         }
@@ -381,7 +415,11 @@ public function RequestAction($Ident, $Value) {
             $this->AktualisiereSchutzstatus($warnungAktiv, $winddir);
         }
         IPS_LogMessage($logtag, "✅ Datei erfolgreich verarbeitet – Zeitstempel: $updateText");
+
+        $html = WindToolsHelper::erzeugeSchutzDashboard($schutzArray);
+        SetValueString($this->GetIDForIdent("SchutzDashboardHTML"), $html);        
     }
+
 
 
 

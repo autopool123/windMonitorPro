@@ -83,6 +83,39 @@ class WindToolsHelper
         return round($windReferenz * pow($hoeheObjekt / $hoeheReferenz, $alpha), 2);
     }
 
+    public static function erzeugeSchutzDashboard(array $schutzArray): string {
+        $html = "<div style='font-family:sans-serif; padding:10px;'><h3>🧯 Schutzobjekt-Übersicht</h3><table style='font-size:14px; border-collapse:collapse;'>";
+
+        $html .= "<tr style='font-weight:bold; background:#f0f0f0;'>
+            <td style='padding:4px;'>📛 Name</td>
+            <td style='padding:4px;'>📏 Höhe</td>
+            <td style='padding:4px;'>🌬️ Wind</td>
+            <td style='padding:4px;'>💥 Böe</td>
+            <td style='padding:4px;'>🧭 Richtung</td>
+            <td style='padding:4px;'>⚠️ Status</td>
+        </tr>";
+
+        foreach ($schutzArray as $objekt) {
+            $label = $objekt["Label"] ?? "–";
+            $hoehe = $objekt["Hoehe"] ?? "–";
+            $wind = GetValueFormatted(@IPS_GetObjectIDByIdent("Warnung_" . preg_replace('/\W+/', '_', $label)));
+            $status = $wind === "true" ? "<span style='color:#e74c3c;'>⚠️ Aktiv</span>" : "<span style='color:#2ecc71;'>✅ Inaktiv</span>";
+            $richtung = $objekt["RichtungsKuerzelListe"] ?? "–";
+
+            $html .= "<tr>
+                <td style='padding:4px;'>$label</td>
+                <td style='padding:4px;'>$hoehe m</td>
+                <td style='padding:4px;'>{$objekt["MinWind"]} m/s</td>
+                <td style='padding:4px;'>{$objekt["MinGust"]} m/s</td>
+                <td style='padding:4px;'>$richtung</td>
+                <td style='padding:4px;'>$status</td>
+            </tr>";
+        }
+
+        $html .= "</table></div>";
+        return $html;
+    }
+
 
     /**
      * Optional: Umrechnung °C in gefühlte Temperatur o. ä.
