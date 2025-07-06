@@ -122,10 +122,10 @@ public function ApplyChanges() {
     IPS_SetIcon($vid, "Clock"); 
     $vid = $this->GetIDForIdent("UTC_ModelRun");
     IPS_SetIcon($vid, "Database");
-    $vid = $this->GetIDForIdent($ident);
-    IPS_SetIcon($vid, "Shield");
-    $txtVid = $this->GetIDForIdent($txtIdent);
-    IPS_SetIcon($txtVid, "Alert"); // oder "Information"
+    //$vid = $this->GetIDForIdent($ident);
+    //IPS_SetIcon($vid, "Shield");
+    //$txtVid = $this->GetIDForIdent($txtIdent);
+    //IPS_SetIcon($txtVid, "Alert"); // oder "Information"
 
 
 
