@@ -44,6 +44,23 @@ class windMonitorPro extends IPSModule {
         $this->RegisterVariableString("SchutzStatusText", "🔍 Schutzstatus");
         $this->RegisterVariableString("CurrentTime", "Zeitstempel der Daten");
         $this->RegisterVariableString("UTC_ModelRun", "📦 UTC-Zeit der Modellgenerierung");
+
+        $schutzArray = json_decode($this->ReadPropertyString("Schutzobjekte"), true);
+
+        foreach ($schutzArray as $eintrag) {
+            $name = $eintrag["Label"] ?? "Unbenannt";
+            $ident = "Warnung_" . preg_replace('/\W+/', '_', $name);
+            $txtIdent = "Status_" . preg_replace('/\W+/', '_', $name);
+
+            if (@IPS_VariableExists($this->GetIDForIdent($ident))) {
+                IPS_SetIcon($this->GetIDForIdent($ident), "Shield");
+            }
+            if (@IPS_VariableExists($this->GetIDForIdent($txtIdent))) {
+                IPS_SetIcon($this->GetIDForIdent($txtIdent), "Alert");
+            }
+        }
+
+
         $this->RegisterVariableString("SchutzDashboardHTML", "🧯 Schutzobjekt-Dashboard");
         //$this->RegisterVariableInteger("WarnCount_" . preg_replace('/\W+/', '_', $name), "⚠️ Warnzähler: $name");
         //$this->RegisterVariableInteger($countIdent, "⚠️ Warnzähler: $name");
