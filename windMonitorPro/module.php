@@ -45,7 +45,7 @@ class windMonitorPro extends IPSModule {
         $this->RegisterVariableString("CurrentTime", "Zeitstempel der Daten");
         $this->RegisterVariableString("UTC_ModelRun", "📦 UTC-Zeit der Modellgenerierung");
         $this->RegisterVariableString("SchutzDashboardHTML", "🧯 Schutzobjekt-Dashboard");
-        $this->RegisterVariableInteger("WarnCount_" . preg_replace('/\W+/', '_', $label), "⚠️ Warnzähler: $label");
+        $this->RegisterVariableInteger("WarnCount_" . preg_replace('/\W+/', '_', $name), "⚠️ Warnzähler: $name");
         $this->RegisterVariableInteger($countIdent, "⚠️ Warnzähler: $name");
 
 
