@@ -350,11 +350,12 @@ public function RequestAction($Ident, $Value) {
                 $alleVariablen[$ident] = $vid;
             }
 
+            //Existiert die WarnCount-Variable?
             $countIdent = "WarnCount_" . preg_replace('/\W+/', '_', $name);
             if (!@IPS_VariableExists($this->GetIDForIdent($countIdent))) {
                 $this->RegisterVariableInteger($countIdent, "⚠️ Warnzähler: $name");
             }
-            SetValueInteger($this->GetIDForIdent($countIdent), GetValueInteger($this->GetIDForIdent($countIdent)) + 1);
+            //SetValueInteger($this->GetIDForIdent($countIdent), GetValueInteger($this->GetIDForIdent($countIdent)) + 1);
            
 
             
@@ -412,9 +413,12 @@ public function RequestAction($Ident, $Value) {
                 //IPS_LogMessage("WindWarnung", "⚠️ '$name' meldet Warnung bei Wind=$wind m/s, Boe=$boe m/s Richtung=$richtung ");
                 IPS_LogMessage("WindWarnung", "⚠️ '$name' meldet Warnung bei Wind={$wind} m/s, Boe={$boe} m/s Richtung={$richtung} ");
 
+                
+
                 //Counter für Anzahl Warnungen
-                if (!@IPS_VariableExists($this->GetIDForIdent($countIdent))) {
-                    $this->RegisterVariableInteger($countIdent, "⚠️ Warnzähler: $name");
+                if (@IPS_VariableExists($this->GetIDForIdent($countIdent))) {
+                    //$this->RegisterVariableInteger($countIdent, "⚠️ Warnzähler: $name");
+                    SetValueInteger($this->GetIDForIdent($countIdent), GetValueInteger($this->GetIDForIdent($countIdent)) + 1);
                 }
 
             }
