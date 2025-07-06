@@ -349,8 +349,11 @@ public function RequestAction($Ident, $Value) {
             }
 
             $countIdent = "WarnCount_" . preg_replace('/\W+/', '_', $name);
-            $vid = $this->GetIDForIdent($countIdent);
-            SetValueInteger($vid, GetValueInteger($vid) + 1);            
+            if (!@IPS_VariableExists($this->GetIDForIdent($countIdent))) {
+                $this->RegisterVariableInteger($countIdent, "⚠️ Warnzähler: $name");
+            }
+            SetValueInteger($this->GetIDForIdent($countIdent), GetValueInteger($this->GetIDForIdent($countIdent)) + 1);
+           
 
             
 
