@@ -447,7 +447,9 @@ public function RequestAction($Ident, $Value) {
         }
         IPS_LogMessage($logtag, "✅ Datei erfolgreich verarbeitet – Zeitstempel: $updateText");
 
-        $html = WindToolsHelper::erzeugeSchutzDashboard($schutzArray);
+        //$html = WindToolsHelper::erzeugeSchutzDashboard($schutzArray);
+        $html = WindToolsHelper::erzeugeSchutzDashboard($schutzArray, $this->InstanceID);
+
         SetValueString($this->GetIDForIdent("SchutzDashboardHTML"), $html);        
     }
 

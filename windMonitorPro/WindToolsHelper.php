@@ -83,7 +83,9 @@ class WindToolsHelper
         return round($windReferenz * pow($hoeheObjekt / $hoeheReferenz, $GelaendeAlpha), 2);
     }
 
-    public static function erzeugeSchutzDashboard(array $schutzArray): string {
+    //public static function erzeugeSchutzDashboard(array $schutzArray): string {
+    public static function erzeugeSchutzDashboard(array $schutzArray, int $instanceID): string {
+
         $html = "<div style='font-family:sans-serif; padding:10px;'><h3>🧯 Schutzobjekt-Übersicht</h3><table style='font-size:14px; border-collapse:collapse;'>";
 
         $html .= "<tr style='font-weight:bold; background:#f0f0f0;'>
@@ -98,7 +100,15 @@ class WindToolsHelper
         foreach ($schutzArray as $objekt) {
             $label = $objekt["Label"] ?? "–";
             $hoehe = $objekt["Hoehe"] ?? "–";
-            $wind = GetValueFormatted(@IPS_GetObjectIDByIdent("Warnung_" . preg_replace('/\W+/', '_', $label)));
+
+            $vid = @IPS_GetObjectIDByIdent("Warnung_" . preg_replace('/\W+/', '_', $label), $instanceID);
+            //$wind = $vid !== false ? GetValueFormatted($vid) : "–";
+            $wind = ($vid !== false && IPS_VariableExists($vid)) ? GetValueFormatted($vid) : "–";
+
+
+
+            //$wind = GetValueFormatted(@IPS_GetObjectIDByIdent("Warnung_" . preg_replace('/\W+/', '_', $label)));
+            
             $status = $wind === "true" ? "<span style='color:#e74c3c;'>⚠️ Aktiv</span>" : "<span style='color:#2ecc71;'>✅ Inaktiv</span>";
             $richtung = $objekt["RichtungsKuerzelListe"] ?? "–";
 
