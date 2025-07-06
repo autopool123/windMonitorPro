@@ -17,7 +17,9 @@ class windMonitorPro extends IPSModule {
         $this->RegisterPropertyInteger("Altitude", 223);
         $this->RegisterPropertyFloat("Zielhoehe", 8.0);
         $this->RegisterPropertyInteger("Referenzhoehe", 80);
-        $this->RegisterPropertyFloat("Alpha", 0.22);
+        //$this->RegisterPropertyFloat("Alpha", 0.22);
+        $this->RegisterPropertyFloat("GelaendeAlpha", 0.22);
+
         $this->RegisterPropertyBoolean("Aktiv", true);
         $this->RegisterPropertyString("Schutzobjekte", "[]"); // Leere Liste initial
 
@@ -337,10 +339,7 @@ public function RequestAction($Ident, $Value) {
             $name = $eintrag["Label"] ?? "Unbenannt";
             $ident = "Warnung_" . preg_replace('/\W+/', '_', $name);
             $genutzteIdents[] = $ident;
-
-            $countIdent = "WarnCount_" . preg_replace('/\W+/', '_', $name);
-            $vid = $this->GetIDForIdent($countIdent);
-            SetValueInteger($vid, GetValueInteger($vid) + 1);
+            
 
             // ✅ Variable erstellen (wenn nicht vorhanden)
             if (!array_key_exists($ident, $alleVariablen)) {
@@ -348,6 +347,12 @@ public function RequestAction($Ident, $Value) {
                 IPS_SetHidden($vid, false); // oder true, je nach Wunsch
                 $alleVariablen[$ident] = $vid;
             }
+
+            $countIdent = "WarnCount_" . preg_replace('/\W+/', '_', $name);
+            $vid = $this->GetIDForIdent($countIdent);
+            SetValueInteger($vid, GetValueInteger($vid) + 1);            
+
+            
 
             // 🧮 Prüfung wie gewohnt
             $minWind = floatval($eintrag["MinWind"] ?? 0);

@@ -7,14 +7,14 @@ class WindToolsHelper
      * @param float $vRef Geschwindigkeit in Referenzhöhe (m/s)
      * @param float $zRef Referenzhöhe (z. B. 80)
      * @param float $zZiel Zielhöhe (z. B. 8)
-     * @param float $alpha Rauigkeit (z. B. 0.22)
+     * @param float $GelaendeAlpha Rauigkeit (z. B. 0.22)
      * @return float umgerechnete Geschwindigkeit (m/s)
      */
-    public static function windUmrechnungSmart(float $vRef, float $zRef, float $zZiel, float $alpha): float {
+    public static function windUmrechnungSmart(float $vRef, float $zRef, float $zZiel, float $GelaendeAlpha): float {
         if ($zZiel <= 0 || $zRef <= 0 || $zZiel > $zRef) {
             return $vRef; // keine Umrechnung nötig
         }
-        return $vRef * pow($zZiel / $zRef, $alpha);
+        return $vRef * pow($zZiel / $zRef, $GelaendeAlpha);
     }
 
 
@@ -57,7 +57,7 @@ class WindToolsHelper
         return in_array($kuerzel, $valid);
     }
 
-    public static function getSmartCurrent(array $data, float $zielHoehe = 8.0, float $alpha = 0.14): ?array {
+    public static function getSmartCurrent(array $data, float $zielHoehe = 8.0, float $GelaendeAlpha = 0.14): ?array {
         $refHoehe = $data['metadata']['height'] ?? 80.0;
         $cur = $data['data_current'] ?? null;
         if (!$cur || !isset($cur['windspeed'])) return null;
@@ -68,7 +68,7 @@ class WindToolsHelper
             'tempC'    => $cur['temperature'] ?? null,
             'wind_raw' => $cur['windspeed'] ?? null,
             'wind_korrigiert' => is_numeric($cur['windspeed'])
-                ? self::windXmToYm($cur['windspeed'], $zielHoehe, $refHoehe, $alpha)
+                ? self::windXmToYm($cur['windspeed'], $zielHoehe, $refHoehe, $GelaendeAlpha)
                 : null,
             'icon'     => $cur['pictocode'] ?? null,
             'iconDetail' => $cur['pictocode_detailed'] ?? null,
@@ -76,11 +76,11 @@ class WindToolsHelper
         ];
     }
 
-    public static function berechneWindObjekt(float $windReferenz, float $hoeheObjekt, float $hoeheReferenz = 80.0, float $alpha = 0.22): float {
+    public static function berechneWindObjekt(float $windReferenz, float $hoeheObjekt, float $hoeheReferenz = 80.0, float $GelaendeAlpha = 0.22): float {
         if ($hoeheObjekt <= 0.5) {
             $hoeheObjekt = 1.0;
         }
-        return round($windReferenz * pow($hoeheObjekt / $hoeheReferenz, $alpha), 2);
+        return round($windReferenz * pow($hoeheObjekt / $hoeheReferenz, $GelaendeAlpha), 2);
     }
 
     public static function erzeugeSchutzDashboard(array $schutzArray): string {
