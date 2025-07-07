@@ -90,6 +90,7 @@
       "name": "Zielhoehe",
       "type": "NumberSpinner",
       "caption": "Zielhöhe für Umrechnung (m)",
+      "digits": 1,
       "minimum": 1,
       "maximum": 100
     },
@@ -98,7 +99,8 @@
       "type": "NumberSpinner",
       "caption": "Sensorhöhe (Referenz, m)",
       "minimum": 1,
-      "maximum": 200
+      "maximum": 200,
+      "digits": 1 
     },
     {
       "name": "GelaendeAlpha",
@@ -155,14 +157,14 @@
           "name": "MinWind",
           "width": "100px",
           "add": 10.0,
-          "edit": { "type": "NumberSpinner", "minimum": 0, "maximum": 50 }
+          "edit": { "type": "NumberSpinner", "minimum": 0, "maximum": 50, "digits": 1 }
         },
         {
           "caption": "Böengrenze (m/s)",
           "name": "MinGust",
           "width": "100px",
           "add": 14.0,
-          "edit": { "type": "NumberSpinner", "minimum": 0, "maximum": 50 }
+          "edit": { "type": "NumberSpinner", "minimum": 0, "maximum": 50, "digits": 1 }
         },
         {
           "caption": "Windrichtungen (NO,O,S,SW,SO,W,NW)",
@@ -183,6 +185,7 @@
             "type": "NumberSpinner",
             "minimum": 1,
             "maximum": 50,
+            "digits": 1, 
             "step": 0.5
           }
         }
