@@ -189,15 +189,14 @@ public function ApplyChanges() {
     }
 
     foreach (json_decode($this->ReadPropertyString("Schutzobjekte"), true) as $objekt) {
-    $ident = "Warnung_" . preg_replace('/\W+/', '_', $objekt["Label"]);
-    $vid = @IPS_GetObjectIDByIdent($ident, $this->InstanceID);
-    if ($vid !== false) {
-        IPS_SetIcon($vid, "Shield");
-        IPS_SetVariableCustomProfile($vid, "~Alert"); // optionales Profil
+        $ident = "Warnung_" . preg_replace('/\W+/', '_', $objekt["Label"]);//generiere aus json Textobjekt den zugehörigen ident
+        $vid = @IPS_GetObjectIDByIdent($ident, $this->InstanceID);
+        if ($vid !== false) {
+            IPS_SetIcon($vid, "Shield");
+            IPS_SetVariableCustomProfile($vid, "~Alert"); // optionales Profil
+            IPS_LogMessage("WindMonitorPro", "erzeugter: $ident zu ID: $vid");
+        }
     }
-}
-
-
 
 }
 
