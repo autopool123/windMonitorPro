@@ -7,7 +7,7 @@ class WindToolsHelper
      * @param float $vRef Geschwindigkeit in Referenzhöhe (m/s)
      * @param float $zRef Referenzhöhe (z. B. 80)
      * @param float $zZiel Zielhöhe (z. B. 8)
-     * @param float $GelaendeAlpha Rauigkeit (z. B. 0.22)
+     * @param float $GelaendeAlpha Rauigkeit (z. B. 0.14)
      * @return float umgerechnete Geschwindigkeit (m/s)
      */
     public static function windUmrechnungSmart(float $vRef, float $zRef, float $zZiel, float $GelaendeAlpha): float {
@@ -76,7 +76,7 @@ class WindToolsHelper
         ];
     }
 
-    public static function berechneWindObjekt(float $windReferenz, float $hoeheObjekt, float $hoeheReferenz = 80.0, float $GelaendeAlpha = 0.22): float {
+    public static function berechneWindObjekt(float $windReferenz, float $hoeheObjekt, float $hoeheReferenz = 80.0, float $GelaendeAlpha = 0.14): float {
         if ($hoeheObjekt <= 0.5) {
             $hoeheObjekt = 1.0;
         }
@@ -104,13 +104,18 @@ class WindToolsHelper
             $vid = @IPS_GetObjectIDByIdent("Warnung_" . preg_replace('/\W+/', '_', $label), $instanceID);
             //$wind = $vid !== false ? GetValueFormatted($vid) : "–";
             $wind = ($vid !== false && IPS_VariableExists($vid)) ? GetValueFormatted($vid) : "–";
+            $warnung = ($vid !== false && GetValueBoolean($vid));
+            $status = $warnung
+                ? "<span style='color:#e74c3c;'>⚠️ Aktiv</span>"
+                : "<span style='color:#2ecc71;'>✅ Inaktiv</span>";
+            $richtung = $objekt["RichtungsKuerzelListe"] ?? "–";            
 
 
 
             //$wind = GetValueFormatted(@IPS_GetObjectIDByIdent("Warnung_" . preg_replace('/\W+/', '_', $label)));
             
-            $status = $wind === "true" ? "<span style='color:#e74c3c;'>⚠️ Aktiv</span>" : "<span style='color:#2ecc71;'>✅ Inaktiv</span>";
-            $richtung = $objekt["RichtungsKuerzelListe"] ?? "–";
+            //$status = $wind === "true" ? "<span style='color:#e74c3c;'>⚠️ Aktiv</span>" : "<span style='color:#2ecc71;'>✅ Inaktiv</span>";
+
 
             $html .= "<tr>
                 <td style='padding:4px;'>$label</td>
