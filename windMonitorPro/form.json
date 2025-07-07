@@ -101,7 +101,7 @@
       "maximum": 200
     },
     {
-      "name": "Alpha",
+      "name": "GelaendeAlpha",
       "type": "NumberSpinner",
       "caption": "Rauigkeitsparameter (α)",
       "digits": 3,
@@ -190,5 +190,4 @@
     } 
  ]    
 }
-
 

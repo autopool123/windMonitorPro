@@ -17,7 +17,6 @@ class windMonitorPro extends IPSModule {
         $this->RegisterPropertyInteger("Altitude", 223);
         $this->RegisterPropertyFloat("Zielhoehe", 8.0);
         $this->RegisterPropertyInteger("Referenzhoehe", 80);
-        //$this->RegisterPropertyFloat("Alpha", 0.22);
         $this->RegisterPropertyFloat("GelaendeAlpha", 0.14);
 
         $this->RegisterPropertyBoolean("Aktiv", true);
@@ -275,6 +274,7 @@ public function RequestAction($Ident, $Value) {
         }
 
         // 🔍 Aktuelle Werte extrahieren
+        $alpha = $this->ReadPropertyString("GelaendeAlpha");
         $wind80 = $data["data_xmin"]["windspeed_80m"][0] ?? 0;
         $gust80 = $data["data_xmin"]["gust"][0] ?? 0;
         $winddir = $data["data_xmin"]["winddirection_80m"][0] ?? 0;
@@ -374,9 +374,7 @@ public function RequestAction($Ident, $Value) {
             //$wind = WindToolsHelper::berechneWindObjekt($data["data_xmin"]["windspeed_80m"][0] ?? 0, $hoehe, 80.0, $this->ReadPropertyFloat("GelaendeAlpha"));
             //$boe  = WindToolsHelper::berechneWindObjekt($data["data_xmin"]["gust"][0] ?? 0, $hoehe, 80.0, $this->ReadPropertyFloat("GelaendeAlpha"));
             
-            //testweise
-            $alpha = 0.14;
-            //
+            
 
             $wind = WindToolsHelper::berechneWindObjekt($data["data_xmin"]["windspeed_80m"][0] ?? 0,$hoehe,80.0,$alpha);
             $boe  = WindToolsHelper::berechneWindObjekt($data["data_xmin"]["gust"][0] ?? 0, $hoehe, 80.0, $alpha);
