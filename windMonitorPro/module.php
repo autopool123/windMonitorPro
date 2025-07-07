@@ -18,7 +18,7 @@ class windMonitorPro extends IPSModule {
         $this->RegisterPropertyFloat("Zielhoehe", 8.0);
         $this->RegisterPropertyInteger("Referenzhoehe", 80);
         //$this->RegisterPropertyFloat("Alpha", 0.22);
-        $this->RegisterPropertyFloat("GelaendeAlpha", 0.22);
+        $this->RegisterPropertyFloat("GelaendeAlpha", 0.14);
 
         $this->RegisterPropertyBoolean("Aktiv", true);
         $this->RegisterPropertyString("Schutzobjekte", "[]"); // Leere Liste initial
@@ -154,6 +154,8 @@ public function ApplyChanges() {
     $this->RegisterVariableString("NachwirkEnde", "Nachwirkzeit endet um", "~TextBox");
     $this->RegisterVariableBoolean("FetchDatenVeraltet", "Daten zu alt", "~Alert");
     $this->RegisterVariableString("LetzteAktion", "Letzte Aktion");
+
+    
     
 
 
@@ -170,6 +172,7 @@ public function ApplyChanges() {
     SetValueString($this->GetIDForIdent("NachwirkzeitInfo"), $this->ReadPropertyInteger("NachwirkzeitMin") . " Minuten");
   
 
+    WindToolsHelper::$GelaendeAlpha = $this->ReadPropertyFloat("GelaendeAlpha");
 
 
 
@@ -368,8 +371,15 @@ public function RequestAction($Ident, $Value) {
 
             $richtung = $data["data_xmin"]["winddirection_80m"][0] ?? 0;
             $hoehe = floatval($eintrag["Hoehe"] ?? $this->ReadPropertyFloat("StandardHoehe"));
-            $wind = WindToolsHelper::berechneWindObjekt($data["data_xmin"]["windspeed_80m"][0] ?? 0, $hoehe, 80.0, $this->ReadPropertyFloat("GelaendeAlpha"));
-            $boe  = WindToolsHelper::berechneWindObjekt($data["data_xmin"]["gust"][0] ?? 0, $hoehe, 80.0, $this->ReadPropertyFloat("GelaendeAlpha"));
+            //$wind = WindToolsHelper::berechneWindObjekt($data["data_xmin"]["windspeed_80m"][0] ?? 0, $hoehe, 80.0, $this->ReadPropertyFloat("GelaendeAlpha"));
+            //$boe  = WindToolsHelper::berechneWindObjekt($data["data_xmin"]["gust"][0] ?? 0, $hoehe, 80.0, $this->ReadPropertyFloat("GelaendeAlpha"));
+            
+            //testweise
+            $alpha = 0.14;
+            //
+
+            $wind = WindToolsHelper::berechneWindObjekt($data["data_xmin"]["windspeed_80m"][0] ?? 0,$hoehe,80.0,$alpha);
+            $boe  = WindToolsHelper::berechneWindObjekt($data["data_xmin"]["gust"][0] ?? 0, $hoehe, 80.0, $alpha);
 
             $inSektor = false;
             foreach ($kuerzelArray as $kuerzel) {
