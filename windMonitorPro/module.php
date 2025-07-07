@@ -274,7 +274,7 @@ public function RequestAction($Ident, $Value) {
         }
 
         // 🔍 Aktuelle Werte extrahieren
-        $alpha = $this->ReadPropertyString("GelaendeAlpha");
+        $alpha = $this->ReadPropertyFloat("GelaendeAlpha");
         $wind80 = $data["data_xmin"]["windspeed_80m"][0] ?? 0;
         $gust80 = $data["data_xmin"]["gust"][0] ?? 0;
         $winddir = $data["data_xmin"]["winddirection_80m"][0] ?? 0;
@@ -399,8 +399,8 @@ public function RequestAction($Ident, $Value) {
             SetValue($alleVariablen[$ident], $warnung);
 
             $statusText = $warnung
-                ? "⚠️ Schutz aktiv für $name – Wind: $wind km/h, Böe: $boe km/h"
-                : "✅ Kein Schutz nötig für $name – Wind: $wind km/h";
+                ? "⚠️ Schutz aktiv für $name – Wind: $wind m/s, Böe: $boe m/s"
+                : "✅ Kein Schutz nötig für $name – Wind: $wind m/s";
 
             $txtIdent = "Status_" . preg_replace('/\W+/', '_', $name);
             if (!@IPS_VariableExists($this->GetIDForIdent($txtIdent))) {
