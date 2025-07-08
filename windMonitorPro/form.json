@@ -134,6 +134,13 @@
       "maximum": 120
     }, 
     {
+      "name": "NachwirkzeitMin",
+      "type": "NumberSpinner",
+      "caption": "Nachwirkzeit (Minuten)",
+      "minimum": 1,
+      "maximum": 120
+    },
+    {
       "type": "List",
       "name": "Schutzobjekte",
       "caption": "Zu überwachende Schutzobjekte",
@@ -193,4 +200,5 @@
     } 
  ]    
 }
+
 
