@@ -61,8 +61,9 @@ class windMonitorPro extends IPSModule {
             }
         }
 
-        //$this->RegisterVariableString("SchutzDashboardHTML", "🧯 Schutzobjekt-Dashboard");
-        //IPS_SetVariableCustomProfile($this->GetIDForIdent("SchutzDashboardHTML"), "~HTMLBox");
+
+        $this->RegisterVariableString("SchutzDashboardHTML", "🧯 Schutzobjekt-Dashboard");
+        IPS_SetVariableCustomProfile($this->GetIDForIdent("SchutzDashboardHTML"), "~HTMLBox");
 
         //$this->RegisterVariableInteger("WarnCount_" . preg_replace('/\W+/', '_', $name), "⚠️ Warnzähler: $name");
         //$this->RegisterVariableInteger($countIdent, "⚠️ Warnzähler: $name");
@@ -129,12 +130,6 @@ public function ApplyChanges() {
     //$txtVid = $this->GetIDForIdent($txtIdent);
     //IPS_SetIcon($txtVid, "Alert"); // oder "Information"
 
-    WindToolsHelper::setKonfiguration(
-        $this->ReadPropertyFloat("GelaendeAlpha"),
-        $this->ReadPropertyFloat("Referenzhoehe"),
-        $this->ReadPropertyFloat("Zielhoehe"),
-        "logarithmisch"
-    );
 
 
 
@@ -158,13 +153,6 @@ public function ApplyChanges() {
     $this->RegisterVariableString("NachwirkEnde", "Nachwirkzeit endet um", "~TextBox");
     $this->RegisterVariableBoolean("FetchDatenVeraltet", "Daten zu alt", "~Alert");
     $this->RegisterVariableString("LetzteAktion", "Letzte Aktion");
-
-    $this->RegisterVariableFloat("WindMS", "🌬️ Wind (m/s)");
-    $this->RegisterVariableFloat("GustMS", "💥 Böe (m/s)");
-    $this->RegisterVariableInteger("DirNow", "🧭 Richtung");
-    $this->RegisterVariableString("SchutzDashboardHTML", "🧯 Schutz-Dashboard");
-    IPS_SetVariableCustomProfile($this->GetIDForIdent("SchutzDashboardHTML"), "~HTMLBox");
-
 
     
     
@@ -209,10 +197,6 @@ public function ApplyChanges() {
             IPS_LogMessage("WindMonitorPro", "erzeugter Ident: $ident zu Var-ID: $vid");
         }
     }
-    if ($this->ReadPropertyBoolean("MeteoAktiv")) {
-    WMP_FetchMeteoblue($this->InstanceID);
-}
-
 
 }
 
@@ -267,74 +251,227 @@ public function RequestAction($Ident, $Value) {
 
 
 
-//Funktion zum Auslesen der Speicherdatei imn welcher die zuletzt gefetchten MeteoBlue-Daten gespeichert wurden
-public function ReadFromFileAndUpdate(): void {
-    $json = $this->ReadMeteoJson(); // eigene Methode zum Laden
-    if (!$json) {
-        IPS_LogMessage("WindMonitorPro", "❌ Kein JSON verfügbar.");
-        return;
+    public function ReadFromFileAndUpdate(): void {
+        $pfad = $this->ReadPropertyString("Dateipfad");
+        $logtag = "WindReader";
+
+        if (!file_exists($pfad)) {
+            IPS_LogMessage($logtag, "❌ Datei nicht gefunden: $pfad");
+            return;
+        }
+
+        $json = @file_get_contents($pfad);
+        if (!$json) {
+            IPS_LogMessage($logtag, "❌ Datei konnte nicht gelesen werden: $pfad");
+            return;
+        }
+
+        $data = json_decode($json, true);
+        if (!$data || !isset($data['data_current']['time'][0])) {
+            IPS_LogMessage($logtag, "❌ Ungültige oder unvollständige JSON-Struktur");
+            return;
+        }
+
+        // 🔍 Aktuelle Werte extrahieren
+        $alpha = $this->ReadPropertyFloat("GelaendeAlpha");
+        $wind80 = $data["data_xmin"]["windspeed_80m"][0] ?? 0;
+        $gust80 = $data["data_xmin"]["gust"][0] ?? 0;
+        $winddir = $data["data_xmin"]["winddirection_80m"][0] ?? 0;
+        $airpressure = $data["data_xmin"]["surfaceairpressure"][0] ?? 0;
+        $airdensity = $data["data_xmin"]["airdensity"][0] ?? 0;
+
+        $temp = $data["data_current"]["temperature"][0] ?? 0;
+        $isDay = $data["data_current"]["isdaylight"][0] ?? false;
+        $updateText = $data["metadata"]["modelrun_updatetime_utc"] ?? "";
+        //$zeit = $data["data_current"]["time"][0] ?? "";
+        if ($updateText === "" || strlen($updateText) < 10) {
+            IPS_LogMessage("WindMonitorPro", "⚠️ Kein gültiger Zeitstempel im metadata gefunden");
+            $updateText = gmdate("Y-m-d H:i"); // Fallback in UTC
+        }
+        $uv = $data["data_1h"]["uvindex"][0] ?? 0;
+
+        //Pruefung auf veraltetem Zeitstempel der Daten und setzen Sperrflag
+        $utcDatum = substr($updateText, 0, 10); // z. B. "2025-07-04"
+        $heuteUTC = gmdate("Y-m-d"); // aktuelles UTC-Datum
+
+        if ($utcDatum !== $heuteUTC) {
+            $this->SetValue("SchutzStatusText", "🛑 Meteoblue-Daten stammen nicht vom heutigen UTC-Tag ($utcDatum)");
+            IPS_LogMessage("WindMonitorPro", "🛑 Meteoblue-Daten stammen nicht vom heutigen UTC-Tag ($utcDatum)");
+            SetValueBoolean($this->GetIDForIdent("WarnungAktiv"), false);
+            SetValueBoolean($this->GetIDForIdent("FetchDatenVeraltet"), true);
+            $this->SetValue("LetzteAktion", "⏱️ ReadFromFile übersprungen: Daten vom $utcDatum");
+
+            return; // ⛔ Verarbeitung sofort stoppen!
+        } else {
+            $this->SetValue("SchutzStatusText", "✅ Schutzprüfung erfolgreich durchgeführt mit Daten vom $utcDatum");
+            SetValueBoolean($this->GetIDForIdent("FetchDatenVeraltet"), false);
+        }
+        
+
+        // 💾 Variablen aktualisieren
+        SetValue($this->GetIDForIdent("Wind80m"), round($wind80 * 3.6, 1));
+        SetValue($this->GetIDForIdent("Gust80m"), round($gust80 * 3.6, 1));
+        SetValue($this->GetIDForIdent("WindDirection80m"), (int) $winddir);
+        SetValue($this->GetIDForIdent("AirPressure"), $airpressure);
+        SetValue($this->GetIDForIdent("AirDensity"), round($airdensity, 3));
+        SetValue($this->GetIDForIdent("CurrentTemperature"), $temp);
+        SetValue($this->GetIDForIdent("IsDaylight"), (bool) $isDay);
+        $lokaleZeit = $this->getLokaleModelzeit($data);
+        SetValueString($this->GetIDForIdent("CurrentTime"), $lokaleZeit);
+        $utcText = $data["metadata"]["modelrun_updatetime_utc"] ?? "";
+        SetValueString($this->GetIDForIdent("UTC_ModelRun"), $utcText);
+
+        SetValue($this->GetIDForIdent("UVIndex"), $uv);
+
+
+        $schutzArray = json_decode($this->ReadPropertyString("Schutzobjekte"), true);
+
+        // Schritt 1: Alle vorhandenen Schutz-Variablen in Instanz merken
+        $alleVariablen = [];
+        $instanzObjekte = IPS_GetChildrenIDs($this->InstanceID);
+        foreach ($instanzObjekte as $objID) {
+            $ident = IPS_GetObject($objID)["ObjectIdent"];
+            if (strpos($ident, "Warnung_") === 0) {
+                $alleVariablen[$ident] = $objID;
+            }
+        }
+
+        // Schritt 2: Schutzprüfung pro Objekt
+        $genutzteIdents = [];
+
+        foreach ($schutzArray as $eintrag) {
+            $name = $eintrag["Label"] ?? "Unbenannt";
+            $ident = "Warnung_" . preg_replace('/\W+/', '_', $name);
+            $genutzteIdents[] = $ident;
+            
+
+            // ✅ Variable erstellen (wenn nicht vorhanden)
+            if (!array_key_exists($ident, $alleVariablen)) {
+                $vid = $this->RegisterVariableBoolean($ident, "Warnung: " . $name);
+                IPS_SetHidden($vid, false); // oder true, je nach Wunsch
+                $alleVariablen[$ident] = $vid;
+            }
+
+            //Existiert die WarnCount-Variable?
+            $countIdent = "WarnCount_" . preg_replace('/\W+/', '_', $name);
+            if (!@IPS_VariableExists($this->GetIDForIdent($countIdent))) {
+                $this->RegisterVariableInteger($countIdent, "⚠️ Warnzähler: $name");
+            }
+            //SetValueInteger($this->GetIDForIdent($countIdent), GetValueInteger($this->GetIDForIdent($countIdent)) + 1);
+           
+
+            
+
+            // 🧮 Prüfung wie gewohnt
+            $minWind = floatval($eintrag["MinWind"] ?? 0);
+            $minGust = floatval($eintrag["MinGust"] ?? 0);
+            $kuerzelText = $eintrag["RichtungsKuerzelListe"] ?? "";
+            $kuerzelArray = array_map("trim", explode(",", $kuerzelText));
+
+            $richtung = $data["data_xmin"]["winddirection_80m"][0] ?? 0;
+            $hoehe = floatval($eintrag["Hoehe"] ?? $this->ReadPropertyFloat("StandardHoehe"));
+            //$wind = WindToolsHelper::berechneWindObjekt($data["data_xmin"]["windspeed_80m"][0] ?? 0, $hoehe, 80.0, $this->ReadPropertyFloat("GelaendeAlpha"));
+            //$boe  = WindToolsHelper::berechneWindObjekt($data["data_xmin"]["gust"][0] ?? 0, $hoehe, 80.0, $this->ReadPropertyFloat("GelaendeAlpha"));
+            
+            
+
+            $wind = WindToolsHelper::berechneWindObjekt($data["data_xmin"]["windspeed_80m"][0] ?? 0,$hoehe,80.0,$alpha);
+            $boe  = WindToolsHelper::berechneWindObjekt($data["data_xmin"]["gust"][0] ?? 0, $hoehe, 80.0, $alpha);
+
+            $inSektor = false;
+            foreach ($kuerzelArray as $kuerzel) {
+                if (!WindToolsHelper::isValidKuerzel($kuerzel)) {
+                    IPS_LogMessage("WindMonitorPro", "❌ Ungültiges Kürzel '$kuerzel' bei '$name'");
+                    continue;
+                }
+                list($minGrad, $maxGrad) = WindToolsHelper::kuerzelZuWinkelbereich($kuerzel);
+                $treffer = ($minGrad < $maxGrad)
+                    ? ($richtung >= $minGrad && $richtung <= $maxGrad)
+                    : ($richtung >= $minGrad || $richtung <= $maxGrad);
+                if ($treffer) {
+                    $inSektor = true;
+                    break;
+                }
+            }
+
+            $warnung = $inSektor && ($wind >= $minWind || $boe >= $minGust);
+            SetValue($alleVariablen[$ident], $warnung);
+
+            $statusText = $warnung
+                ? "⚠️ Schutz aktiv für $name – Wind: $wind m/s, Böe: $boe m/s"
+                : "✅ Kein Schutz nötig für $name – Wind: $wind m/s";
+
+            $txtIdent = "Status_" . preg_replace('/\W+/', '_', $name);
+            if (!@IPS_VariableExists($this->GetIDForIdent($txtIdent))) {
+                $this->RegisterVariableString($txtIdent, "🛡️ Status: $name");
+            }
+            SetValueString($this->GetIDForIdent($txtIdent), $statusText);
+            $schutzStatus[] = [
+                'Label'     => $name,
+                'Warnung'   => $warnung,
+                'Wind'      => round($wind, 2),
+                'Boe'       => round($boe, 2),
+                'Richtung'  => $richtung,
+                'Hoehe'     => $hoehe
+            ];
+
+
+            if ($warnung) {
+                //IPS_LogMessage("WindWarnung", "⚠️ '$name' meldet Warnung bei Wind=$wind m/s, Boe=$boe m/s Richtung=$richtung ");
+                IPS_LogMessage("WindWarnung", "⚠️ '$name' meldet Warnung bei Wind={$wind} m/s, Boe={$boe} m/s Richtung={$richtung} ");
+
+                
+
+                //Counter für Anzahl Warnungen
+                if (@IPS_VariableExists($this->GetIDForIdent($countIdent))) {
+                    //$this->RegisterVariableInteger($countIdent, "⚠️ Warnzähler: $name");
+                    SetValueInteger($this->GetIDForIdent($countIdent), GetValueInteger($this->GetIDForIdent($countIdent)) + 1);
+                }
+
+            }
+
+        }
+        // Schritt 3: Variablen löschen, die zu entfernten Objekten gehören
+        foreach ($alleVariablen as $ident => $objID) {
+            if (!in_array($ident, $genutzteIdents)) {
+                IPS_LogMessage("WindMonitorPro", "ℹ️ Entferne überflüssige Statusvariable '$ident'");
+                IPS_DeleteVariable($objID);
+            }
+        }
+
+
+
+
+
+
+        // 🎯 Richtungstext & Pfeil
+        if (class_exists("WindToolsHelper")) {
+            $txt = WindToolsHelper::gradZuRichtung($winddir);
+            $arrow = WindToolsHelper::gradZuPfeil($winddir);
+            SetValue($this->GetIDForIdent("WindDirText"), $txt);
+            SetValue($this->GetIDForIdent("WindDirArrow"), $arrow);
+
+            // 🔐 Schutzlogik
+            $windGrenze = 10.0; // Schwelle in m/s, individuell anpassbar
+            $boeGrenze = 14.0;
+
+            $warnungAktiv = ($wind80 >= $windGrenze || $gust80 >= $boeGrenze);
+            $this->AktualisiereSchutzstatus($warnungAktiv, $winddir);
+        }
+        IPS_LogMessage($logtag, "✅ Datei erfolgreich verarbeitet – Zeitstempel: $updateText");
+
+        //$html = WindToolsHelper::erzeugeSchutzDashboard($schutzArray);
+        $html = WindToolsHelper::erzeugeSchutzDashboard($schutzArray, $this->InstanceID);
+
+        SetValueString($this->GetIDForIdent("SchutzDashboardHTML"), $html);        
     }
 
-    $data = json_decode($json, true);
-    $block = $data['data_xmin'] ?? null;
-    if (!$block || !isset($block['time'])) return;
 
-    $times = $block['time'];
-    $zone = new DateTimeZone($data['metadata']['timezone_abbrevation'] ?? 'UTC');
-    $index = WindToolsHelper::getAktuellenZeitIndex($times, $zone);
-    if ($index === null) return;
 
-    $timeText = $times[$index];
-    SetValueString($this->GetIDForIdent("ZeitNow"), $timeText);
-    SetValueString($this->GetIDForIdent("Zeitstempel"), $data['metadata']['modelrun_updatetime_utc'] ?? 'unbekannt');
 
-    // Einzelwerte extrahieren
-    $werte = WindToolsHelper::extrahiereWetterdaten($block, $index);
-    $wind = WindToolsHelper::berechneWindObjekt($werte['wind'], WindToolsHelper::$zielHoeheStandard);
-    $boe  = WindToolsHelper::berechneWindObjekt($werte['gust'], WindToolsHelper::$zielHoeheStandard);
-    $richtung = $werte['dir'];
 
-    SetValueFloat($this->GetIDForIdent("WindMS"), $wind);
-    SetValueFloat($this->GetIDForIdent("GustMS"), $boe);
-    SetValueInteger($this->GetIDForIdent("DirNow"), $richtung);
 
-    // Durchschnittswerte berechnen
-    $durchschnitt = WindToolsHelper::berechneDurchschnittswerte($block, $index, 4);
-    SetValueFloat($this->GetIDForIdent("SpeedMS"), $durchschnitt['avgWind']);
-    SetValueFloat($this->GetIDForIdent("SpeedMaxMS"), $durchschnitt['maxWind']);
-    SetValueFloat($this->GetIDForIdent("GustMaxMS"), $durchschnitt['maxGust']);
-    SetValueInteger($this->GetIDForIdent("DirGrad"), $durchschnitt['avgDir']);
-
-    // Schutzobjekte prüfen
-    $schutzArray = json_decode($this->ReadPropertyString("Schutzobjekte"), true);
-    foreach ($schutzArray as $objekt) {
-        $name = $objekt["Label"] ?? "Unbenannt";
-        $ident = preg_replace('/\W+/', '_', $name);
-        $minWind = $objekt["MinWind"] ?? 10.0;
-        $minGust = $objekt["MinGust"] ?? 14.0;
-        $richtungsliste = $objekt["RichtungsKuerzelListe"] ?? "";
-
-        $inSektor = WindToolsHelper::richtungPasst($richtung, $richtungsliste);
-        $warnung = $inSektor && ($wind >= $minWind || $boe >= $minGust);
-
-        WindToolsHelper::berechneSchutzstatusMitNachwirkung(
-            $wind,
-            $boe,
-            $minWind,
-            $minGust,
-            600,
-            $this->GetIDForIdent("Warnung_" . $ident),
-            $this->GetIDForIdent("WarnungBoe_" . $ident),
-            $this->GetIDForIdent("LetzteWarnungTS_" . $ident),
-            $this->GetIDForIdent("SchutzAktiv_" . $ident)
-        );
-    }
-
-    // Dashboard aktualisieren
-    $html = WindToolsHelper::erzeugeSchutzDashboard($schutzArray, $this->InstanceID);
-    SetValueString($this->GetIDForIdent("SchutzDashboardHTML"), $html);
-}
-
+    
     public function UpdateFromMeteoblue() {
         //$modus = $this->ReadPropertyString("Modus");Relikt aus erster Version
         $logtag = "WindMonitorPro";
