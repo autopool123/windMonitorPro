@@ -41,7 +41,7 @@
         {
           "type": "Button",
           "caption": "🎚️ Grenzwert setzen",
-          "onClick": "return IPS_RequestAction($id, 'SetGrenze', $GrenzwertManuell);"
+          "onClick": "return IPS_RequestAction($id, 'SetGrenze', '');"
         },
         {
         "type": "Button",
