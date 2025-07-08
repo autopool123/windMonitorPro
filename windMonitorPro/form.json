@@ -41,7 +41,7 @@
         {
           "type": "Button",
           "caption": "🎚️ Grenzwert setzen",
-          "onClick": "return IPS_RequestAction($id, 'SetGrenze', '');"
+          "onClick": "return IPS_RequestAction($id, 'SetGrenze', $GrenzwertManuell);"
         },
         {
         "type": "Button",
@@ -133,13 +133,6 @@
       "minimum": 1,
       "maximum": 120
     }, 
-    {
-      "name": "NachwirkzeitMin",
-      "type": "NumberSpinner",
-      "caption": "Nachwirkzeit (Minuten)",
-      "minimum": 1,
-      "maximum": 120
-    },
     {
       "type": "List",
       "name": "Schutzobjekte",
