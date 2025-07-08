@@ -2,6 +2,66 @@
 
 class WindToolsHelper
 {
+
+    // 🔧 Konfigurationseinstellungen
+    public static float $gelaendeAlpha = 0.14;
+    public static float $referenzHoehe = 80.0;
+    public static float $zielHoeheStandard = 10.0;
+
+    public static function setKonfiguration(float $alpha, float $ref, float $ziel, string $typ = "logarithmisch"): void {
+        self::$gelaendeAlpha     = $alpha;
+        self::$referenzHoehe     = $ref;
+        self::$zielHoeheStandard = $ziel;
+    }
+
+    public static function windXmToYm(float $vRef, float $zZiel, float $zRef = 80.0, float $GelaendeAlpha = 0.14): float {
+        return $vRef * pow($zZiel / $zRef, $GelaendeAlpha);
+    }
+
+    public static function getAktuellenZeitIndex(array $times, DateTimeZone $zone): ?int {
+        $now = new DateTime("now", $zone);
+        foreach ($times as $i => $t) {
+            $dt = DateTime::createFromFormat('Y-m-d H:i', $t);
+            if ($dt && $dt >= $now) {
+                return $i;
+            }
+        }
+        return null;
+    }
+
+    public static function extrahiereWetterdaten(array $block, int $index): array {
+        return [
+            'wind'     => $block['windspeed_80m'][$index] ?? 0,
+            'gust'     => $block['gust'][$index] ?? 0,
+            'dir'      => $block['winddirection_80m'][$index] ?? 0,
+            'pressure' => $block['surfaceairpressure'][$index] ?? 0,
+            'density'  => $block['airdensity'][$index] ?? 0
+        ];
+    }
+
+    public static function berechneDurchschnittswerte(array $block, int $index, int $steps): array {
+        $speeds = array_map(
+            fn($v) => self::berechneWindObjekt($v, self::$zielHoeheStandard, self::$referenzHoehe, self::$gelaendeAlpha),
+            array_filter(array_slice($block['windspeed_80m'] ?? [], $index, $steps), 'is_numeric')
+        );
+
+        $gusts = array_map(
+            fn($v) => self::berechneWindObjekt($v, self::$zielHoeheStandard, self::$referenzHoehe, self::$gelaendeAlpha),
+            array_filter(array_slice($block['gust'] ?? [], $index, $steps), 'is_numeric')
+        );
+
+        $dirs = array_filter(array_slice($block['winddirection_80m'] ?? [], $index, $steps), 'is_numeric');
+
+        return [
+            'avgWind' => round(array_sum($speeds) / max(count($speeds), 1), 2),
+            'maxWind' => round(max($speeds), 2),
+            'maxGust' => round(max($gusts), 2),
+            'avgDir'  => round(array_sum($dirs) / max(count($dirs), 1))
+        ];
+    }
+
+
+
     /**
      * Wandelt Windgeschwindigkeit von Referenzhöhe auf Zielhöhe um
      * @param float $vRef Geschwindigkeit in Referenzhöhe (m/s)
@@ -83,8 +143,43 @@ class WindToolsHelper
         return round($windReferenz * pow($hoeheObjekt / $hoeheReferenz, $GelaendeAlpha), 2);
     }
 
+    public static function berechneSchutzstatusMitNachwirkung(
+        float $windMS,
+        float $gustMS,
+        float $thresholdWind,
+        float $thresholdGust,
+        int $nachwirkSekunden,
+        int $idWarnWind,
+        int $idWarnGust,
+        int $idLetzteWarnungTS,
+        int $idSchutzAktiv
+    ): void {
+        $jetzt = time();
+        $warnWind = $windMS >= $thresholdWind;
+        $warnGust = $gustMS >= $thresholdGust;
+
+        SetValueBoolean($idWarnWind, $warnWind);
+        SetValueBoolean($idWarnGust, $warnGust);
+
+        if ($warnWind || $warnGust) {
+            SetValueInteger($idLetzteWarnungTS, $jetzt);
+        }
+
+        $letzteWarnung = GetValueInteger($idLetzteWarnungTS);
+        $schutzAktiv = ($jetzt - $letzteWarnung) <= $nachwirkSekunden;
+
+        SetValueBoolean($idSchutzAktiv, $schutzAktiv);
+        // Optionales Logging zur Diagnose
+        IPS_LogMessage(
+            "WindMonitorPro",
+            "Nachwirkprüfung → Wind=$windMS Böe=$gustMS Schwellen=$thresholdWind/$thresholdGust SchutzAktiv=" . ($schutzAktiv ? "JA" : "NEIN")
+        );
+    }
+
+
     //public static function erzeugeSchutzDashboard(array $schutzArray): string {
     public static function erzeugeSchutzDashboard(array $schutzArray, int $instanceID): string {
+        
 
         $html = "<div style='font-family:sans-serif; padding:10px;'><h3>🧯 Schutzobjekt-Übersicht</h3><table style='font-size:14px; border-collapse:collapse;'>";
 
@@ -95,6 +190,9 @@ class WindToolsHelper
             <td style='padding:4px;'>💥 Böe</td>
             <td style='padding:4px;'>🧭 Richtung</td>
             <td style='padding:4px;'>⚠️ Status</td>
+            <td style='padding:4px;'>⏱️ Letzte Warnung</td>
+            <td style='padding:4px;'>📊 Zähler</td>
+
         </tr>";
 
         foreach ($schutzArray as $objekt) {
@@ -110,11 +208,16 @@ class WindToolsHelper
                 : "<span style='color:#2ecc71;'>✅ Inaktiv</span>";
             $richtung = $objekt["RichtungsKuerzelListe"] ?? "–";            
 
+            $countID = @IPS_GetObjectIDByIdent("WarnCount_" . preg_replace('/\W+/', '_', $label), $instanceID);
+                $zaehler = ($countID !== false && IPS_VariableExists($countID)) ? GetValueInteger($countID) : "–";
 
+            $tsID = @IPS_GetObjectIDByIdent("LetzteWarnungTS_" . preg_replace('/\W+/', '_', $label), $instanceID);
+                $tsText = ($tsID !== false && IPS_VariableExists($tsID)) ? date("H:i", GetValueInteger($tsID)) . " Uhr" : "–";
 
             //$wind = GetValueFormatted(@IPS_GetObjectIDByIdent("Warnung_" . preg_replace('/\W+/', '_', $label)));
             
             //$status = $wind === "true" ? "<span style='color:#e74c3c;'>⚠️ Aktiv</span>" : "<span style='color:#2ecc71;'>✅ Inaktiv</span>";
+
 
 
             $html .= "<tr>
@@ -124,6 +227,9 @@ class WindToolsHelper
                 <td style='padding:4px;'>{$objekt["MinGust"]} m/s</td>
                 <td style='padding:4px;'>$richtung</td>
                 <td style='padding:4px;'>$status</td>
+                <td style='padding:4px;'>$tsText</td>
+                <td style='padding:4px;'>$zaehler</td>
+
             </tr>";
         }
 
@@ -137,6 +243,3 @@ class WindToolsHelper
      */
     // public static function irgendwas(...) { ... }
 }
-
-
-
