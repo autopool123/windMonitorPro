@@ -238,7 +238,12 @@ public function RequestAction($Ident, $Value) {
             return $this->WarnungsVariablenLeeren();
 
         case "SetGrenze":
-            return $this->SetzeGrenzwert(floatval($Value));
+            $wert = $this->ReadPropertyFloat("GrenzwertManuell");
+            return $this->SetzeGrenzwert($wert);
+
+        
+            //case "SetGrenze":
+            //return $this->SetzeGrenzwert(floatval($Value));
 
         default:
             throw new Exception("⚠️ Ungültiger Aktion-Identifier: " . $Ident);
