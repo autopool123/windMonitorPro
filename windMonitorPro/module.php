@@ -291,7 +291,7 @@ public function RequestAction($Ident, $Value) {
         $times = $block['time'];
         //Zeitzone der Daten ermitteln
         $zone = new DateTimeZone($data['metadata']['timezone_abbrevation'] ?? 'UTC');
-        $now = (new DateTime("now", new DateTimeZone($zone)))->format("d.m.Y H:i:s");
+        //$now = (new DateTime("now", new DateTimeZone($zone)))->format("d.m.Y H:i:s");
         //naechstliegenden 15 Minuten Zeitzyklus (Index) ermitteln... zum auslesen der Arrays 
         $index = WindToolsHelper::getAktuellenZeitIndex($times, $zone);
         if ($index === null) return;
@@ -302,7 +302,7 @@ public function RequestAction($Ident, $Value) {
         //TS für die Aktualitaet der MeteoBluedaten 
         SetValueString($this->GetIDForIdent("UTC_ModelRun"), $lokaleZeit);
         //Auslesdatum der Datei speichern, entspricht nicht dem TS: $lokaleZeit der die Zeit der Meteodaten angibt 
-        SetValueString($this->GetIDForIdent("LetzteAuswertungDaten"), $now);
+        //SetValueString($this->GetIDForIdent("LetzteAuswertungDaten"), $now);
 
         // Einzelwerte extrahieren Lade 1:1 aus Datei entsprechend Index
         $werte = WindToolsHelper::extrahiereWetterdaten($block, $index);
