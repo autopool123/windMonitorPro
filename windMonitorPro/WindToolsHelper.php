@@ -14,8 +14,54 @@ class WindToolsHelper
         self::$zielHoeheStandard = $ziel;
     }
 
+    //Zuweisung der Zeitzone anhand ueblicherweise verwendeten Kuerzeln wie auch MeteoBlue diese verwendet
+    public static function getTimezoneMap(): array {
+        return [
+            "UTC"  => "UTC",
+            "CET"  => "Europe/Berlin",
+            "CEST" => "Europe/Berlin",
+            "EST"  => "America/New_York",
+            "EDT"  => "America/New_York",
+            "PST"  => "America/Los_Angeles",
+            "PDT"  => "America/Los_Angeles",
+            "MST"  => "America/Denver",
+            "MDT"  => "America/Denver",
+            "GMT"  => "Europe/London",
+            "BST"  => "Europe/London",
+            "EET"  => "Europe/Helsinki",
+            "EEST" => "Europe/Helsinki",
+            "IST"  => "Asia/Kolkata",
+            "JST"  => "Asia/Tokyo",
+            "KST"  => "Asia/Seoul",
+            "CST"  => "Asia/Shanghai",
+            "AEST" => "Australia/Sydney",
+            "AEDT" => "Australia/Sydney",
+            "NZST" => "Pacific/Auckland",
+            "NZDT" => "Pacific/Auckland"
+        ];
+    }
+
+
     public static function windXmToYm(float $vRef, float $zZiel, float $zRef = 80.0, float $GelaendeAlpha = 0.14): float {
         return $vRef * pow($zZiel / $zRef, $GelaendeAlpha);
+    }
+
+    public static function getLokaleModelzeit(array $data): string {
+        $rawUTC = $data["metadata"]["modelrun_updatetime_utc"] ?? "";
+        if ($rawUTC === "" || strlen($rawUTC) < 10) {
+            IPS_LogMessage("WindMonitorPro", "⚠️ Kein gültiger UTC-Zeitstempel im metadata gefunden");
+            return gmdate("Y-m-d H:i") . " (Fallback UTC)";
+        }
+
+        try {
+            $utc = new DateTime($rawUTC, new DateTimeZone('UTC'));
+            $lokal = clone $utc;
+            $lokal->setTimezone(new DateTimeZone('Europe/Berlin'));
+            return $lokal->format("Y-m-d H:i");
+        } catch (Exception $e) {
+            IPS_LogMessage("WindMonitorPro", "❌ Fehler bei Zeitwandlung: " . $e->getMessage());
+            return gmdate("Y-m-d H:i") . " (Fehler)";
+        }
     }
 
     public static function getAktuellenZeitIndex(array $times, DateTimeZone $zone): ?int {
@@ -116,6 +162,25 @@ class WindToolsHelper
         $valid = ["N", "NO", "O", "SO", "S", "SW", "W", "NW"];
         return in_array($kuerzel, $valid);
     }
+
+    public static function richtungPasst(float $grad, array $kuerzelListe): bool {
+    foreach ($kuerzelListe as $kuerzel) {
+        if (!self::isValidKuerzel($kuerzel)) {
+            continue;
+        }
+
+        list($minGrad, $maxGrad) = self::kuerzelZuWinkelbereich($kuerzel);
+
+        $passt = ($minGrad < $maxGrad)
+            ? ($grad >= $minGrad && $grad <= $maxGrad)
+            : ($grad >= $minGrad || $grad <= $maxGrad);
+
+        if ($passt) {
+            return true;
+        }
+    }
+    return false;
+}
 
     public static function getSmartCurrent(array $data, float $zielHoehe = 8.0, float $GelaendeAlpha = 0.14): ?array {
         $refHoehe = $data['metadata']['height'] ?? 80.0;
