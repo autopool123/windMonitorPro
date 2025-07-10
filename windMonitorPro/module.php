@@ -243,7 +243,7 @@ public function RequestAction($Ident, $Value) {
             IPS_LogMessage("WindMonitorPro", "❌ Fehler bei Zeitwandlung: " . $e->getMessage());
             return gmdate("Y-m-d H:i") . " (Fehler)";
         }
-}
+    }
 
 
 
@@ -269,50 +269,89 @@ public function RequestAction($Ident, $Value) {
         $block = $data['data_xmin'] ?? null;
         //Pruefen ob Time-Block existiert
         if (!$block || !isset($block['time'])) {
-            IPS_LogMessage($logtag, "❌ Ungültige oder unvollständige JSON-Struktur");
+            IPS_LogMessage($logtag, "❌ 15 Minutes: Ungültige oder unvollständige JSON-Struktur");
             return;
         }
 
-        //Lade das Time-Segment aus den Daten 
+        $currentData = $data['data_current'] ?? null;
+        //Pruefen ob current-data existiert
+        if (!$currentData || !isset($currentData['time'])) {
+            IPS_LogMessage($logtag, "❌ Current Data: Ungültige oder unvollständige JSON-Struktur");
+            return;
+        }
+        //Timestamp des Meteo-Blue Datensatzes laden, von welcher Uhrzeit stammen die Daten?
+        $lokaleZeit = WindToolsHelper::getLokaleModelzeit($data);
+
+        //Lade die von MeteoBlue verwendete Zeitzone aus dem Datenstring 
+        $tzAbk = $data["metadata"]["timezone_abbreviation"] ?? 'UTC';//Zeitzone (Kuerzel aus Daten laden)
+        $map = WindToolsHelper::getTimezoneMap();//Mapping-Tabelle laden, Kürzel wie "CEST" auf PHP-Zeitzonen wie "Europe/Berlin" abbilden
+        $zone = $map[$tzAbk] ?? 'UTC';//Es wird geprueft, ob im Mapping-Array $map ein Eintrag für das ermittelte Kürzel $tzAbk existiert wenn nicht 'UTC'  
+        $now = (new DateTime("now", new DateTimeZone($zone)))->format("d.m.Y H:i:s");
+
         $times = $block['time'];
         //Zeitzone der Daten ermitteln
-        $zone = new DateTimeZone($data['metadata']['timezone_abbrevation'] ?? 'UTC');
+        //$zone = new DateTimeZone($data['metadata']['timezone_abbrevation'] ?? 'UTC');
         //naechstliegenden 15 Minuten Zeitzyklus (Index) ermitteln... zum auslesen der Arrays 
         $index = WindToolsHelper::getAktuellenZeitIndex($times, $zone);
         if ($index === null) return;
 
-        //Hole den, dem Index entsprechenden Zeiteintrag
+        //TS für das nächste 15 Minuten Intervall
         $timeText = $times[$index];
         SetValueString($this->GetIDForIdent("CurrentTime"), $timeText);
-        SetValueString($this->GetIDForIdent("UTC_ModelRun"), $data['metadata']['modelrun_updatetime_utc'] ?? 'unbekannt');
-        $now = (new DateTime("now", new DateTimeZone("Europe/Berlin")))->format("d.m.Y H:i:s");
+        //TS für die Aktualitaet der MeteoBluedaten 
+        SetValueString($this->GetIDForIdent("UTC_ModelRun"), $lokaleZeit);
+        //Auslesdatum der Datei speichern, entspricht nicht dem TS: $lokaleZeit der die Zeit der Meteodaten angibt 
         SetValueString($this->GetIDForIdent("LetzteAuswertungDaten"), $now);
 
-//Bis hierher bin ich mit der Übernahme der neuen Anregungen aus Ideas gekommen
-//Naechste Aenderung waere der Aufruf der Funktion: extrahiereWetterdaten und die Daten-Uebernahme
+        // Einzelwerte extrahieren Lade 1:1 aus Datei entsprechend Index
+        $werte = WindToolsHelper::extrahiereWetterdaten($block, $index);
+        $wind = WindToolsHelper::berechneWindObjekt($werte['wind'], WindToolsHelper::$zielHoeheStandard);
+        $boe  = WindToolsHelper::berechneWindObjekt($werte['gust'], WindToolsHelper::$zielHoeheStandard);
+        $richtung = $werte['dir'];
+        $LuftDruck = $werte['pressure'];
+        $LuftDichte = $werte['density'];
+        $temp = $currentData["temperature"][0] ?? 0;
+        $isDay = $currentData["isdaylight"][0] ?? false;
+        $uv = $data["data_1h"]["uvindex"][0] ?? 0;
 
-        // 🔍 Aktuelle Werte extrahieren
-        $alpha = $this->ReadPropertyFloat("GelaendeAlpha");
-        $wind80 = $data["data_xmin"]["windspeed_80m"][0] ?? 0;
-        $gust80 = $data["data_xmin"]["gust"][0] ?? 0;
-        $winddir = $data["data_xmin"]["winddirection_80m"][0] ?? 0;
-        $airpressure = $data["data_xmin"]["surfaceairpressure"][0] ?? 0;
-        $airdensity = $data["data_xmin"]["airdensity"][0] ?? 0;
-
-        $temp = $data["data_current"]["temperature"][0] ?? 0;
-        $isDay = $data["data_current"]["isdaylight"][0] ?? false;
         $updateText = $data["metadata"]["modelrun_updatetime_utc"] ?? "";
-        //$zeit = $data["data_current"]["time"][0] ?? "";
         if ($updateText === "" || strlen($updateText) < 10) {
             IPS_LogMessage("WindMonitorPro", "⚠️ Kein gültiger Zeitstempel im metadata gefunden");
             $updateText = gmdate("Y-m-d H:i"); // Fallback in UTC
         }
-        $uv = $data["data_1h"]["uvindex"][0] ?? 0;
+
+        // Durchschnittswerte berechnen
+        $durchschnitt = WindToolsHelper::berechneDurchschnittswerte($block, $index, 4);
+        $SpeedMS = $durchschnitt['avgWind'] ?? 0;
+        $SpeedMaxMS = $durchschnitt['maxWind'] ?? 0;
+        $GustMaxM = $durchschnitt['maxGust'] ?? 0;
+        $DirGrad = $durchschnitt['avgDir'] ?? 0;
+        
+        //💾 Beschreiben der Status-Variablen 
+        SetValueFloat($this->GetIDForIdent("Wind80m"), round($wind * 3.6, 1));
+        SetValueFloat($this->GetIDForIdent("Gust80m"), round($boe * 3.6, 1));
+        SetValueInteger($this->GetIDForIdent("WindDirection80m"), (int)$richtung);
+        SetValueFloat($this->GetIDForIdent("AirPressure"),  round($LuftDruck, 3));
+        SetValueFloat($this->GetIDForIdent("AirDensity"), round($LuftDichte, 3));
+        SetValue($this->GetIDForIdent("CurrentTemperature"), $temp);
+        SetValue($this->GetIDForIdent("IsDaylight"), (bool) $isDay);
+        SetValue($this->GetIDForIdent("UVIndex"), $uv);
+        //Falls Durchschnittwerte in Statusvariablen gespeichert werden sollen:
+        /*
+        SetValueFloat($this->GetIDForIdent("SpeedMS"), $SpeedMS);
+        SetValueFloat($this->GetIDForIdent("SpeedMaxMS"), $SpeedMaxMS);
+        SetValueFloat($this->GetIDForIdent("GustMaxMS"), $GustMaxM);
+        SetValueInteger($this->GetIDForIdent("DirGrad"), $DirGrad);
+        */
+
+        /*
+        //Aus alt uebernommen falls noch gebraucht werden sollte:
+        $alpha = $this->ReadPropertyFloat("GelaendeAlpha");
+        */
 
         //Pruefung auf veraltetem Zeitstempel der Daten und setzen Sperrflag
         $utcDatum = substr($updateText, 0, 10); // z. B. "2025-07-04"
         $heuteUTC = gmdate("Y-m-d"); // aktuelles UTC-Datum
-
         if ($utcDatum !== $heuteUTC) {
             $this->SetValue("SchutzStatusText", "🛑 Meteoblue-Daten stammen nicht vom heutigen UTC-Tag ($utcDatum)");
             IPS_LogMessage("WindMonitorPro", "🛑 Meteoblue-Daten stammen nicht vom heutigen UTC-Tag ($utcDatum)");
@@ -325,25 +364,53 @@ public function RequestAction($Ident, $Value) {
             $this->SetValue("SchutzStatusText", "✅ Schutzprüfung erfolgreich durchgeführt mit Daten vom $utcDatum");
             SetValueBoolean($this->GetIDForIdent("FetchDatenVeraltet"), false);
         }
-        
 
-        // 💾 Variablen aktualisieren
-        SetValue($this->GetIDForIdent("Wind80m"), round($wind80 * 3.6, 1));
-        SetValue($this->GetIDForIdent("Gust80m"), round($gust80 * 3.6, 1));
-        SetValue($this->GetIDForIdent("WindDirection80m"), (int) $winddir);
-        SetValue($this->GetIDForIdent("AirPressure"), $airpressure);
-        SetValue($this->GetIDForIdent("AirDensity"), round($airdensity, 3));
-        SetValue($this->GetIDForIdent("CurrentTemperature"), $temp);
-        SetValue($this->GetIDForIdent("IsDaylight"), (bool) $isDay);
-        $lokaleZeit = $this->getLokaleModelzeit($data);
-        SetValueString($this->GetIDForIdent("CurrentTime"), $lokaleZeit);
-        $utcText = $data["metadata"]["modelrun_updatetime_utc"] ?? "";
-        SetValueString($this->GetIDForIdent("UTC_ModelRun"), $utcText);
 
-        SetValue($this->GetIDForIdent("UVIndex"), $uv);
+
+        //Bis hierher bin ich mit der Übernahme der neuen Anregungen aus Ideas gekommen
+//Naechste Aenderung waere der Aufruf der Funktion: extrahiereWetterdaten und die Daten-Uebernahme
+//Pruefen ob Variablen fuer Durchschnittswerte schon existieren ansonsten anlegen
+
+        //$zeit = $data["data_current"]["time"][0] ?? "";
+
+
 
 
         $schutzArray = json_decode($this->ReadPropertyString("Schutzobjekte"), true);
+
+        foreach ($schutzArray as $objekt) {
+            $name = $objekt["Label"] ?? "Unbenannt";
+            $ident = preg_replace('/\W+/', '_', $name);
+            $minWind = $objekt["MinWind"] ?? 10.0;
+            $minGust = $objekt["MinGust"] ?? 14.0;
+            $richtungsliste = $objekt["RichtungsKuerzelListe"] ?? "";
+
+            //Check ob Windrichtung die Warnung fuer Schutzobjekt betrifft
+            $inSektor = WindToolsHelper::richtungPasst($richtung, $richtungsliste);
+            //Auf Warnstatus checken 
+            $warnung = $inSektor && ($wind >= $minWind || $boe >= $minGust);
+
+            WindToolsHelper::berechneSchutzstatusMitNachwirkung(
+                $wind,
+                $boe,
+                $minWind,
+                $minGust,
+                600,
+                $this->GetIDForIdent("Warnung_" . $ident),
+                $this->GetIDForIdent("WarnungBoe_" . $ident),
+                $this->GetIDForIdent("LetzteWarnungTS_" . $ident),
+                $this->GetIDForIdent("SchutzAktiv_" . $ident)
+            );
+        }        
+
+        // Dashboard aktualisieren
+        $html = WindToolsHelper::erzeugeSchutzDashboard($schutzArray, $this->InstanceID);
+        SetValueString($this->GetIDForIdent("SchutzDashboardHTML"), $html);
+
+
+           /* 
+
+
 
         // Schritt 1: Alle vorhandenen Schutz-Variablen in Instanz merken
         $alleVariablen = [];
@@ -482,7 +549,10 @@ public function RequestAction($Ident, $Value) {
         //$html = WindToolsHelper::erzeugeSchutzDashboard($schutzArray);
         $html = WindToolsHelper::erzeugeSchutzDashboard($schutzArray, $this->InstanceID);
 
-        SetValueString($this->GetIDForIdent("SchutzDashboardHTML"), $html);        
+        SetValueString($this->GetIDForIdent("SchutzDashboardHTML"), $html);     
+        
+        
+        */
     }
 
 
