@@ -285,12 +285,12 @@ public function RequestAction($Ident, $Value) {
         //Lade die von MeteoBlue verwendete Zeitzone aus dem Datenstring 
         $tzAbk = $data["metadata"]["timezone_abbreviation"] ?? 'UTC';//Zeitzone (Kuerzel aus Daten laden)
         $map = WindToolsHelper::getTimezoneMap();//Mapping-Tabelle laden, Kürzel wie "CEST" auf PHP-Zeitzonen wie "Europe/Berlin" abbilden
-        $zone = $map[$tzAbk] ?? 'UTC';//Es wird geprueft, ob im Mapping-Array $map ein Eintrag für das ermittelte Kürzel $tzAbk existiert wenn nicht 'UTC'  
+        //$zone = $map[$tzAbk] ?? 'UTC';//Es wird geprueft, ob im Mapping-Array $map ein Eintrag für das ermittelte Kürzel $tzAbk existiert wenn nicht 'UTC'  
         $now = (new DateTime("now", new DateTimeZone($zone)))->format("d.m.Y H:i:s");
 
         $times = $block['time'];
         //Zeitzone der Daten ermitteln
-        //$zone = new DateTimeZone($data['metadata']['timezone_abbrevation'] ?? 'UTC');
+        $zone = new DateTimeZone($data['metadata']['timezone_abbrevation'] ?? 'UTC');
         //naechstliegenden 15 Minuten Zeitzyklus (Index) ermitteln... zum auslesen der Arrays 
         $index = WindToolsHelper::getAktuellenZeitIndex($times, $zone);
         if ($index === null) return;
