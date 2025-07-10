@@ -402,8 +402,8 @@ public function RequestAction($Ident, $Value) {
                 600,
                 $this->GetIDForIdent("Warnung_" . $ident),
                 $this->GetIDForIdent("Warnung_" . $ident),
-                $this->GetIDForIdent("LetzteWarnungTS_" . $ident),
-                $this->GetIDForIdent("SchutzAktiv_" . $ident)
+                $this->GetIDForIdent("LetzteWarnungTS"),
+                $this->GetIDForIdent("SchutzAktiv")
             );
         }        
 
