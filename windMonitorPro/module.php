@@ -403,7 +403,7 @@ public function RequestAction($Ident, $Value) {
                 $this->GetIDForIdent("Warnung_" . $ident),
                 $this->GetIDForIdent("Warnung_" . $ident),
                 $this->GetIDForIdent("LetzteWarnungTS"),
-                $this->GetIDForIdent("SchutzAktiv")
+                $this->GetIDForIdent("WarnungAktiv")
             );
         }        
 

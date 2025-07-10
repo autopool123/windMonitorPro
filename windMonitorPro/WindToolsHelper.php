@@ -220,8 +220,8 @@ class WindToolsHelper
         int $idSchutzAktiv
     ): void {
         $jetzt = time();
-        $warnWind = ($wind >= $minWind || $boe >= $minGust);
-        $warnGust = ($wind >= $minWind || $boe >= $minGust);
+        $warnWind = ($windMS >= $thresholdWind || $gustMS >= $thresholdGust);
+        $warnGust = ($windMS >= $thresholdWind || $gustMS >= $thresholdGust);
         //$warnWind = $windMS >= $thresholdWind;
         //$warnGust = $gustMS >= $thresholdGust;
 
