@@ -36,7 +36,7 @@ class windMonitorPro extends IPSModule {
         $this->RegisterPropertyString("Dateipfad", "/var/lib/symcon/user/winddata_15min.json");
         $this->RegisterPropertyInteger("StringVarID", 0); // Optional: ~TextBox-ID
 
-        // Timer für API-Abruf (meteoblue)
+        // Timer für API-Abruf (meteoblue) -- FetchTimer
         $this->RegisterTimer("FetchTimer", 0, 'WMP_FetchMeteoblue($_IPS[\'TARGET\']);');
         // Timer für Datei-Auswertung
         $this->RegisterTimer("ReadTimer", 0, 'WMP_ReadFromFile($_IPS[\'TARGET\']);');
@@ -149,13 +149,10 @@ public function ApplyChanges() {
     $this->RegisterVariableBoolean("WarnungAktiv", "Schutz aktiv", "~Alert");
     $this->RegisterVariableString("SchutzHTML", "Schutzstatus (HTML)", "~HTMLBox");
     $this->RegisterVariableString("LetzterFetch", "Letzter API-Abruf", "~TextBox");
-    $this->RegisterVariableString("LetzteAuswertung", "Letzte Dateiverarbeitung", "~TextBox");
+    $this->RegisterVariableString("LetzteAuswertungDaten", "Letzte Dateiverarbeitung", "~TextBox");
     $this->RegisterVariableString("NachwirkEnde", "Nachwirkzeit endet um", "~TextBox");
     $this->RegisterVariableBoolean("FetchDatenVeraltet", "Daten zu alt", "~Alert");
     $this->RegisterVariableString("LetzteAktion", "Letzte Aktion");
-
-    
-    
 
 
 
@@ -266,11 +263,33 @@ public function RequestAction($Ident, $Value) {
             return;
         }
 
+
         $data = json_decode($json, true);
-        if (!$data || !isset($data['data_current']['time'][0])) {
+        //data_xmin Segment zuweisen wenn existiert und nicht NULL, sonst $block au NULL
+        $block = $data['data_xmin'] ?? null;
+        //Pruefen ob Time-Block existiert
+        if (!$block || !isset($block['time'])) {
             IPS_LogMessage($logtag, "❌ Ungültige oder unvollständige JSON-Struktur");
             return;
         }
+
+        //Lade das Time-Segment aus den Daten 
+        $times = $block['time'];
+        //Zeitzone der Daten ermitteln
+        $zone = new DateTimeZone($data['metadata']['timezone_abbrevation'] ?? 'UTC');
+        //naechstliegenden 15 Minuten Zeitzyklus (Index) ermitteln... zum auslesen der Arrays 
+        $index = WindToolsHelper::getAktuellenZeitIndex($times, $zone);
+        if ($index === null) return;
+
+        //Hole den, dem Index entsprechenden Zeiteintrag
+        $timeText = $times[$index];
+        SetValueString($this->GetIDForIdent("CurrentTime"), $timeText);
+        SetValueString($this->GetIDForIdent("UTC_ModelRun"), $data['metadata']['modelrun_updatetime_utc'] ?? 'unbekannt');
+        $now = (new DateTime("now", new DateTimeZone("Europe/Berlin")))->format("d.m.Y H:i:s");
+        SetValueString($this->GetIDForIdent("LetzteAuswertungDaten"), $now);
+
+//Bis hierher bin ich mit der Übernahme der neuen Anregungen aus Ideas gekommen
+//Naechste Aenderung waere der Aufruf der Funktion: extrahiereWetterdaten und die Daten-Uebernahme
 
         // 🔍 Aktuelle Werte extrahieren
         $alpha = $this->ReadPropertyFloat("GelaendeAlpha");
@@ -595,48 +614,51 @@ public function RequestAction($Ident, $Value) {
 
 
         IPS_LogMessage($logtag, "✅ Daten von meteoblue gespeichert unter: $file");
+        $now = (new DateTime("now", new DateTimeZone("Europe/Berlin")))->format("d.m.Y H:i:s");
+        SetValueString($this->GetIDForIdent("LetzterFetch"), $now);
+
     }
 
-public function AktualisiereSchutzstatus(bool $warnungGeradeAktiv, int $grad) {
-    $nachwirkZeitSek = $this->ReadPropertyInteger("NachwirkzeitMin") * 60;
-    $now = time();
+    public function AktualisiereSchutzstatus(bool $warnungGeradeAktiv, int $grad) {
+        $nachwirkZeitSek = $this->ReadPropertyInteger("NachwirkzeitMin") * 60;
+        $now = time();
 
-    $lastTS = GetValueInteger($this->GetIDForIdent("LetzteWarnungTS"));
-    $warAktiv = GetValueBoolean($this->GetIDForIdent("WarnungAktiv"));
+        $lastTS = GetValueInteger($this->GetIDForIdent("LetzteWarnungTS"));
+        $warAktiv = GetValueBoolean($this->GetIDForIdent("WarnungAktiv"));
 
-    // ⏱️ Wenn neue Warnung → Zeitstempel setzen
-    if ($warnungGeradeAktiv) {
-        $lastTS = $now;
-        SetValueInteger($this->GetIDForIdent("LetzteWarnungTS"), $lastTS);
+        // ⏱️ Wenn neue Warnung → Zeitstempel setzen
+        if ($warnungGeradeAktiv) {
+            $lastTS = $now;
+            SetValueInteger($this->GetIDForIdent("LetzteWarnungTS"), $lastTS);
+        }
+
+        // 🧠 Nachwirkzeit berücksichtigen
+        $schutzAktiv = ($now - $lastTS) < $nachwirkZeitSek;
+
+        // 🛡️ Schutzstatus setzen
+        SetValueBoolean($this->GetIDForIdent("WarnungAktiv"), $schutzAktiv);
+
+        $ablaufTS = $lastTS + $nachwirkZeitSek;
+        $ablaufDT = (new DateTime("@$ablaufTS"))->setTimezone(new DateTimeZone('Europe/Berlin'))->format("d.m.Y H:i:s");
+        SetValueString($this->GetIDForIdent("NachwirkEnde"), $ablaufDT);        
+
+        // 🖼️ HTML-Ausgabe aktualisieren
+        require_once(__DIR__ . "/WindToolsHelper.php"); // damit erzeugeSchutzHTML verfügbar ist
+
+        $html = erzeugeSchutzHTML($schutzAktiv, $lastTS, $nachwirkZeitSek, $grad);
+        SetValueString($this->GetIDForIdent("SchutzHTML"), $html);
+
+        // 🧾 Schutzstatus-Text setzen
+        $richtungText = class_exists("WindToolsHelper") ? WindToolsHelper::gradZuRichtung($grad) : "$grad°";
+        $statusText = $schutzAktiv
+            ? "⚠️ Schutz aktiv – Windrichtung: $richtungText"
+            : "✅ Kein Schutz nötig – Windrichtung: $richtungText";
+
+        SetValueString($this->GetIDForIdent("SchutzStatusText"), $statusText);
     }
 
-    // 🧠 Nachwirkzeit berücksichtigen
-    $schutzAktiv = ($now - $lastTS) < $nachwirkZeitSek;
-
-    // 🛡️ Schutzstatus setzen
-    SetValueBoolean($this->GetIDForIdent("WarnungAktiv"), $schutzAktiv);
-
-    $ablaufTS = $lastTS + $nachwirkZeitSek;
-    $ablaufDT = (new DateTime("@$ablaufTS"))->setTimezone(new DateTimeZone('Europe/Berlin'))->format("d.m.Y H:i:s");
-    SetValueString($this->GetIDForIdent("NachwirkEnde"), $ablaufDT);        
-
-    // 🖼️ HTML-Ausgabe aktualisieren
-    require_once(__DIR__ . "/WindToolsHelper.php"); // damit erzeugeSchutzHTML verfügbar ist
-
-    $html = erzeugeSchutzHTML($schutzAktiv, $lastTS, $nachwirkZeitSek, $grad);
-    SetValueString($this->GetIDForIdent("SchutzHTML"), $html);
-
-    // 🧾 Schutzstatus-Text setzen
-    $richtungText = class_exists("WindToolsHelper") ? WindToolsHelper::gradZuRichtung($grad) : "$grad°";
-    $statusText = $schutzAktiv
-        ? "⚠️ Schutz aktiv – Windrichtung: $richtungText"
-        : "✅ Kein Schutz nötig – Windrichtung: $richtungText";
-
-    SetValueString($this->GetIDForIdent("SchutzStatusText"), $statusText);
-}
-
-
-    public function WMP_FetchMeteoblue() {
+/*
+    public function WMP_FetchMeteoblueOld() {
         $this->FetchAndStoreMeteoblueData(); // holt Daten & speichert JSON
 
         // Zeitpunkt setzen
@@ -644,41 +666,64 @@ public function AktualisiereSchutzstatus(bool $warnungGeradeAktiv, int $grad) {
         SetValueString($this->GetIDForIdent("LetzterFetch"), $now);
         }
 
-
-
-
-    public function WMP_ReadFromFile() {
+    public function WMP_ReadFromFileOld() {
         $this->ReadFromFileAndUpdate(); // liest JSON & aktualisiert Variablen
 
         // Zeitpunkt setzen
         $now = (new DateTime("now", new DateTimeZone("Europe/Berlin")))->format("d.m.Y H:i:s");
-        SetValueString($this->GetIDForIdent("LetzteAuswertung"), $now);
+        SetValueString($this->GetIDForIdent("LetzteAuswertungDaten"), $now);
+    }  
+*/          
+
+}
+function erzeugeSchutzHTML(bool $aktiv, string $zeitstempel, int $nachwirkZeitSek, int $richtung): string {
+    $farbe = $aktiv ? "#FF4444" : "#44AA44";
+    $text  = $aktiv ? "⚠️ Windwarnung aktiv" : "✔️ Kein Schutz aktiv";
+
+    $gradText = WindToolsHelper::gradZuRichtung($richtung) . " (" . $richtung . "°)";
+    $restzeitMin = $nachwirkZeitSek > 0 ? round($nachwirkZeitSek / 60) . " min" : "keine";
+
+    return <<<HTML
+    <style>
+    .box { padding:10px; border-radius:6px; background-color:$farbe; color:#fff; font-family:Arial; }
+    .small { font-size:0.9em; color:#eee; margin-top:6px; }
+    </style>
+    <div class="box">
+    <b>$text</b><br>
+    Richtung: $gradText<br>
+    Zeitpunkt: $zeitstempel<br>
+    Nachwirkzeit: $restzeitMin
+    <div class="small">WindMonitorPro</div>
+    </div>
+    HTML;
+}
+
+
+//Pruefen und ggf in Klasse aendern ob es erforderlich ist die beiden in der Klasse integrierten Funktionen ausserhalb der Klasse aufzurufen Wurden momentan mit dem Zusatz Wrapper hier eigebaut
+//Weil IP-Symcon bei Timer- und Event-Ausführungen nur global sichtbare Funktionen aufrufen kann also ausserhalb der Klasse. Daher ist this->FetchAndStoreMeteoblueData() bei Timern nicht moeglich
+//Wrapper Funktion fuer Timer zu FetchAndStoreMeteoblueData
+function WMP_FetchMeteoblue($instanceID) {
+    $info = IPS_GetInstance($instanceID);
+    if ($info['ModuleInfo']['ModuleName'] === "WindMonitorPro") {
+        IPS_RunScriptTextEx($instanceID, 'FetchAndStoreMeteoblueData();');
+    }
+}
+
+
+
+
+//Wrapper Funktion fuer Timer zu ReadFromFileAndUpdate    
+//Problematik wie oben beschrieben beachten...
+function WMP_ReadFromFile($instanceID) {
+    $info = IPS_GetInstance($instanceID);
+    if ($info['ModuleInfo']['ModuleName'] === "WindMonitorPro") {
+        IPS_RunScriptTextEx($instanceID, 'ReadFromFileAndUpdate();');
     }
 
-    
-
-
-
 }
-    function erzeugeSchutzHTML(bool $aktiv, string $zeitstempel, int $nachwirkZeitSek, int $richtung): string {
-        $farbe = $aktiv ? "#FF4444" : "#44AA44";
-        $text  = $aktiv ? "⚠️ Windwarnung aktiv" : "✔️ Kein Schutz aktiv";
 
-        $gradText = WindToolsHelper::gradZuRichtung($richtung) . " (" . $richtung . "°)";
-        $restzeitMin = $nachwirkZeitSek > 0 ? round($nachwirkZeitSek / 60) . " min" : "keine";
 
-        return <<<HTML
-        <style>
-        .box { padding:10px; border-radius:6px; background-color:$farbe; color:#fff; font-family:Arial; }
-        .small { font-size:0.9em; color:#eee; margin-top:6px; }
-        </style>
-        <div class="box">
-        <b>$text</b><br>
-        Richtung: $gradText<br>
-        Zeitpunkt: $zeitstempel<br>
-        Nachwirkzeit: $restzeitMin
-        <div class="small">WindMonitorPro</div>
-        </div>
-        HTML;
-}
+
+
+
 ?>
