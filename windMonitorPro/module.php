@@ -386,8 +386,11 @@ public function RequestAction($Ident, $Value) {
             $minGust = $objekt["MinGust"] ?? 14.0;
             $richtungsliste = $objekt["RichtungsKuerzelListe"] ?? "";
 
+
             //Check ob Windrichtung die Warnung fuer Schutzobjekt betrifft
-            $inSektor = WindToolsHelper::richtungPasst($richtung, $richtungsliste);
+            $kuerzelArray = array_filter(array_map('trim', explode(',', $richtungsliste)));
+            $inSektor = WindToolsHelper::richtungPasst($richtung, $kuerzelArray);
+            //$inSektor = WindToolsHelper::richtungPasst($richtung, $richtungsliste);
             //Auf Warnstatus checken 
             $warnung = $inSektor && ($wind >= $minWind || $boe >= $minGust);
 
