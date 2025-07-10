@@ -401,7 +401,7 @@ public function RequestAction($Ident, $Value) {
                 $minGust,
                 600,
                 $this->GetIDForIdent("Warnung_" . $ident),
-                $this->GetIDForIdent("WarnungBoe_" . $ident),
+                $this->GetIDForIdent("Warnung_" . $ident),
                 $this->GetIDForIdent("LetzteWarnungTS_" . $ident),
                 $this->GetIDForIdent("SchutzAktiv_" . $ident)
             );
