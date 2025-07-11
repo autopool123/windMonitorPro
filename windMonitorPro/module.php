@@ -430,18 +430,19 @@ public function RequestAction($Ident, $Value) {
         // Schritt 3: Variablen löschen, die zu entfernten Objekten gehören
         //also Objekt die nicht mehr im Array $genutzteIdents zu finden sind
         foreach ($alleVariablen as $ident => $objID) {
-            if (!in_array($ident, $genutzteIdents)) {
+            if (!in_array($ident, $genutzteIdents)&& !in_array($ident, $genutzteBoeIdents)) {
                 IPS_LogMessage("WindMonitorPro", "ℹ️ Entferne überflüssige Statusvariable '$ident'");
                 IPS_DeleteVariable($objID);
             }
         }
+        /*
         foreach ($alleVariablen as $identBoe => $objID) {
             if (!in_array($identBoe, $genutzteBoeIdents)) {
                 IPS_LogMessage("WindMonitorPro", "ℹ️ Entferne überflüssige Statusvariable '$identBoe'");
                 IPS_DeleteVariable($objID);
             }
         }        
-        
+        */
         
         
         foreach ($schutzArray as $objekt) {
