@@ -389,6 +389,12 @@ public function RequestAction($Ident, $Value) {
             if (strpos($ident, "WarnungBoe_") === 0) {
                 $alleVariablen[$ident] = $objID;
             }
+            if (strpos($ident, "WarnCount_") === 0) {
+                $alleVariablen[$ident] = $objID;
+            }
+            if (strpos($ident, "WarnCountBoe_") === 0) {
+                $alleVariablen[$ident] = $objID;
+            }
         }
 
         // Schritt 2: Mittels Eintraegen im Schutzobjekt prüfen ob alle Variable vorhanden
@@ -399,9 +405,12 @@ public function RequestAction($Ident, $Value) {
             $name = $eintrag["Label"] ?? "Unbenannt";
             $ident = "Warnung_" . preg_replace('/\W+/', '_', $name);
             $identBoe = "WarnungBoe_" . preg_replace('/\W+/', '_', $name);
+            $identWC = "WarnCount_" . preg_replace('/\W+/', '_', $name);
+            $identWCBoe = "WarnCountBoe_" . preg_replace('/\W+/', '_', $name);
             $genutzteIdents[] = $ident;
             $genutzteIdents[] = $identBoe;
-            //$genutzteBoeIdents[] = $identBoe;
+            $genutzteIdents[] = $identWC;
+            $genutzteIdents[] = $identWCBoe;
 
             //Pruefen ob Warnung_Name(Warnobjekt-Name) Variable existiert sonst erstellen
             if (!array_key_exists($ident, $alleVariablen)) {
@@ -417,6 +426,20 @@ public function RequestAction($Ident, $Value) {
                 $alleVariablen[$identBoe] = $vid;
             }
 
+            //Pruefen ob WarnungCount_Name(Warnobjekt-Name) Variable existiert sonst erstellen
+            if (!array_key_exists($identWC, $alleVariablen)) {
+                $vid = $this->RegisterVariableInteger($identWC, "WarnCount: " . $name);
+                IPS_SetHidden($vid, false); // oder true, je nach Wunsch
+                $alleVariablen[$identWC] = $vid;
+            }
+
+            //Pruefen ob WarnungCountBoe_Name(Warnobjekt-Name) Variable existiert sonst erstellen
+            if (!array_key_exists($identWCBoe, $alleVariablen)) {
+                $vid = $this->RegisterVariableInteger($identWCBoe, "WarnCountBoe: " . $name);
+                IPS_SetHidden($vid, false); // oder true, je nach Wunsch
+                $alleVariablen[$identWCBoe] = $vid;
+            }
+/*
             //Pruefen ob WarnCount_Name(Warnobjekt-Name) Variable existiert sonst erstellen
             $countIdent = "WarnCount_" . preg_replace('/\W+/', '_', $name);
             if (!@IPS_VariableExists($this->GetIDForIdent($countIdent))) {
@@ -428,7 +451,7 @@ public function RequestAction($Ident, $Value) {
             if (!@IPS_VariableExists($this->GetIDForIdent($countIdentBoe))) {
                 $this->RegisterVariableInteger($countIdentBoe, "⚠️ WarnBoezähler: $name");
             }            
-            
+*/            
         }   
 
         // Schritt 3: Variablen löschen, die zu entfernten Objekten gehören
