@@ -395,7 +395,9 @@ public function RequestAction($Ident, $Value) {
         foreach ($schutzArray as $eintrag) {
             $name = $eintrag["Label"] ?? "Unbenannt";
             $ident = "Warnung_" . preg_replace('/\W+/', '_', $name);
+            $identBoe = "WarnungBoe_" . preg_replace('/\W+/', '_', $name);
             $genutzteIdents[] = $ident;
+            $genutzteBoeIdents[] = $identBoe;
 
             //Pruefen ob Warnung_Name(Warnobjekt-Name) Variable existiert sonst erstellen
             if (!array_key_exists($ident, $alleVariablen)) {
@@ -404,11 +406,24 @@ public function RequestAction($Ident, $Value) {
                 $alleVariablen[$ident] = $vid;
             }
 
+            //Pruefen ob WarnungBoe_Name(Warnobjekt-Name) Variable existiert sonst erstellen
+            if (!array_key_exists($identBoe, $alleVariablen)) {
+                $vid = $this->RegisterVariableBoolean($identBoe, "WarnungBoe: " . $name);
+                IPS_SetHidden($vid, false); // oder true, je nach Wunsch
+                $alleVariablen[$identBoe] = $vid;
+            }
+
             //Pruefen ob WarnCount_Name(Warnobjekt-Name) Variable existiert sonst erstellen
             $countIdent = "WarnCount_" . preg_replace('/\W+/', '_', $name);
             if (!@IPS_VariableExists($this->GetIDForIdent($countIdent))) {
                 $this->RegisterVariableInteger($countIdent, "⚠️ Warnzähler: $name");
             }
+
+            //Pruefen ob WarnCountBoe_Name(Warnobjekt-Name) Variable existiert sonst erstellen
+            $countIdentBoe = "WarnCountBoe_" . preg_replace('/\W+/', '_', $name);
+            if (!@IPS_VariableExists($this->GetIDForIdent($countIdentBoe))) {
+                $this->RegisterVariableInteger($countIdentBoe, "⚠️ WarnBoezähler: $name");
+            }            
             
         }   
 
@@ -420,6 +435,12 @@ public function RequestAction($Ident, $Value) {
                 IPS_DeleteVariable($objID);
             }
         }
+        foreach ($alleVariablen as $identBoe => $objID) {
+            if (!in_array($identBoe, $genutzteBoeIdents)) {
+                IPS_LogMessage("WindMonitorPro", "ℹ️ Entferne überflüssige Statusvariable '$identBoe'");
+                IPS_DeleteVariable($objID);
+            }
+        }        
         
         
         
@@ -445,9 +466,10 @@ public function RequestAction($Ident, $Value) {
                 $minGust,
                 600,
                 $this->GetIDForIdent("Warnung_" . $ident),
-                $this->GetIDForIdent("Warnung_" . $ident),
+                $this->GetIDForIdent("WarnungBoe_" . $ident),
                 $this->GetIDForIdent("LetzteWarnungTS"),
-                $this->GetIDForIdent("WarnungAktiv")
+                $this->GetIDForIdent("WarnungAktiv"),
+                $objekt["Label"] ?? "Unbenannt"
             );
         }        
 
