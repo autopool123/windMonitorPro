@@ -311,8 +311,8 @@ public function RequestAction($Ident, $Value) {
         $richtung = $werte['dir'];
         $LuftDruck = $werte['pressure'];
         $LuftDichte = $werte['density'];
-        $temp = $currentData["temperature"][0] ?? 0;
-        $isDay = $currentData["isdaylight"][0] ?? false;
+        $temp = $currentData["temperature"] ?? 0;
+        $isDay = $currentData["isdaylight"] ?? false;
         $uv = $data["data_1h"]["uvindex"][0] ?? 0;
 
         $updateText = $data["metadata"]["modelrun_updatetime_utc"] ?? "";
