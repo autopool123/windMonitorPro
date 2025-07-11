@@ -428,14 +428,14 @@ public function RequestAction($Ident, $Value) {
 
             //Pruefen ob WarnungCount_Name(Warnobjekt-Name) Variable existiert sonst erstellen
             if (!array_key_exists($identWC, $alleVariablen)) {
-                $vid = $this->RegisterVariableInteger($identWC, "⚠️ WarnCount: " . $name);
+                $vid = $this->RegisterVariableInteger($identWC, "WarnCount: " . $name);
                 IPS_SetHidden($vid, false); // oder true, je nach Wunsch
                 $alleVariablen[$identWC] = $vid;
             }
 
             //Pruefen ob WarnungCountBoe_Name(Warnobjekt-Name) Variable existiert sonst erstellen
             if (!array_key_exists($identWCBoe, $alleVariablen)) {
-                $vid = $this->RegisterVariableInteger($identWCBoe, "⚠️ WarnCountBoe: " . $name);
+                $vid = $this->RegisterVariableInteger($identWCBoe, "WarnCountBoe: " . $name);
                 IPS_SetHidden($vid, false); // oder true, je nach Wunsch
                 $alleVariablen[$identWCBoe] = $vid;
             }           
@@ -465,13 +465,15 @@ public function RequestAction($Ident, $Value) {
             //$inSektor = WindToolsHelper::richtungPasst($richtung, $richtungsliste);
             //Auf Warnstatus checken 
             $warnung = $inSektor && ($wind >= $minWind || $boe >= $minGust);
+            $NachwirkZeit = GetValueString($this->GetIDForIdent("NachwirkzeitInfo"));
+            $NachwirkZeit = intval($NachwirkZeit);
 
             WindToolsHelper::berechneSchutzstatusMitNachwirkung(
                 $wind,
                 $boe,
                 $minWind,
                 $minGust,
-                600,
+                $NachwirkZeit,
                 $this->GetIDForIdent("Warnung_" . $ident),
                 $this->GetIDForIdent("WarnungBoe_" . $ident),
                 $this->GetIDForIdent("LetzteWarnungTS"),

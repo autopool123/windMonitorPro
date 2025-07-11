@@ -213,7 +213,7 @@ class WindToolsHelper
         float $gustMS,
         float $thresholdWind,
         float $thresholdGust,
-        int $nachwirkSekunden,
+        int $nachwirkMinuten,
         int $idWarnWind,
         int $idWarnGust,
         int $idLetzteWarnungTS,
@@ -221,11 +221,12 @@ class WindToolsHelper
         string $objektName = ""
     ): void {
         $jetzt = time();
-        //$warnWind = ($windMS >= $thresholdWind || $gustMS >= $thresholdGust);
-        //$warnGust = ($windMS >= $thresholdWind || $gustMS >= $thresholdGust);
+
+        //Check ob Warngrenzen erreicht
         $warnWind = $windMS >= $thresholdWind;
         $warnGust = $gustMS >= $thresholdGust;
 
+        //Setze Warn-Variablen entsprechend Check
         SetValueBoolean($idWarnWind, $warnWind);
         SetValueBoolean($idWarnGust, $warnGust);
 
@@ -234,13 +235,13 @@ class WindToolsHelper
         }
 
         $letzteWarnung = GetValueInteger($idLetzteWarnungTS);
-        $schutzAktiv = ($jetzt - $letzteWarnung) <= $nachwirkSekunden;
+        $schutzAktiv = ($jetzt - $letzteWarnung) <= $nachwirkMinuten*60;
 
         SetValueBoolean($idSchutzAktiv, $schutzAktiv);
         // Optionales Logging zur Diagnose
         IPS_LogMessage(
             "WindMonitorPro",
-            "📡 Nachwirkprüfung für '$objektName' → Wind=$windMS Böe=$gustMS Schwellen=$thresholdWind/$thresholdGust SchutzAktiv=" . ($schutzAktiv ? "JA" : "NEIN")
+            "📡 Nachwirkcheck($nachwirkMinuten min) '$objektName' Wind=$windMS Boe=$gustMS Schwellen=$thresholdWind/$thresholdGust SchutzAktiv=" . ($schutzAktiv ? "JA" : "NEIN")
         );
     }
 
