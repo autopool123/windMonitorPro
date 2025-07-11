@@ -386,9 +386,12 @@ public function RequestAction($Ident, $Value) {
             if (strpos($ident, "Warnung_") === 0) {
                 $alleVariablen[$ident] = $objID;
             }
+            if (strpos($ident, "WarnungBoe_") === 0) {
+                $alleVariablen[$ident] = $objID;
+            }
         }
 
-        // Schritt 2: Mittels Eintaegen im Schutzobjekt prüfen ob alle Variable vorhanden
+        // Schritt 2: Mittels Eintraegen im Schutzobjekt prüfen ob alle Variable vorhanden
         // und ggf, falls Neueintrag Variable anlegen
         $genutzteIdents = [];
         //Schreibe alle benoetigten Warnvariablen Idents in das Array $genutzteIdents
@@ -397,7 +400,8 @@ public function RequestAction($Ident, $Value) {
             $ident = "Warnung_" . preg_replace('/\W+/', '_', $name);
             $identBoe = "WarnungBoe_" . preg_replace('/\W+/', '_', $name);
             $genutzteIdents[] = $ident;
-            $genutzteBoeIdents[] = $identBoe;
+            $genutzteIdents[] = $identBoe;
+            //$genutzteBoeIdents[] = $identBoe;
 
             //Pruefen ob Warnung_Name(Warnobjekt-Name) Variable existiert sonst erstellen
             if (!array_key_exists($ident, $alleVariablen)) {
@@ -430,21 +434,13 @@ public function RequestAction($Ident, $Value) {
         // Schritt 3: Variablen löschen, die zu entfernten Objekten gehören
         //also Objekt die nicht mehr im Array $genutzteIdents zu finden sind
         foreach ($alleVariablen as $ident => $objID) {
-            if (!in_array($ident, $genutzteIdents)&& !in_array($ident, $genutzteBoeIdents)) {
+            if (!in_array($ident, $genutzteIdents)) {
+            //if (!in_array($ident, $genutzteIdents)&& !in_array($ident, $genutzteBoeIdents)) {
                 IPS_LogMessage("WindMonitorPro", "ℹ️ Entferne überflüssige Statusvariable '$ident'");
                 IPS_DeleteVariable($objID);
             }
         }
-        /*
-        foreach ($alleVariablen as $identBoe => $objID) {
-            if (!in_array($identBoe, $genutzteBoeIdents)) {
-                IPS_LogMessage("WindMonitorPro", "ℹ️ Entferne überflüssige Statusvariable '$identBoe'");
-                IPS_DeleteVariable($objID);
-            }
-        }        
-        */
-        
-        
+            
         foreach ($schutzArray as $objekt) {
             $name = $objekt["Label"] ?? "Unbenannt";
             $ident = preg_replace('/\W+/', '_', $name);
