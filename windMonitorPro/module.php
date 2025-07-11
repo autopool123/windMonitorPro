@@ -368,9 +368,7 @@ public function RequestAction($Ident, $Value) {
 
 
 
-        //Bis hierher bin ich mit der Übernahme der neuen Anregungen aus Ideas gekommen
-//Naechste Aenderung waere der Aufruf der Funktion: extrahiereWetterdaten und die Daten-Uebernahme
-//Pruefen ob Variablen fuer Durchschnittswerte schon existieren ansonsten anlegen
+
 
         //$zeit = $data["data_current"]["time"][0] ?? "";
 
@@ -379,6 +377,52 @@ public function RequestAction($Ident, $Value) {
 
         $schutzArray = json_decode($this->ReadPropertyString("Schutzobjekte"), true);
 
+        // Schritt 1: Alle vorhandenen Schutz-Variablen der Instanz in ein Array schreiben
+        // Also ein Array mit allen bereits vorhandenen Schutzvariablen erstellen
+        $alleVariablen = [];
+        $instanzObjekte = IPS_GetChildrenIDs($this->InstanceID);
+        foreach ($instanzObjekte as $objID) {
+            $ident = IPS_GetObject($objID)["ObjectIdent"];
+            if (strpos($ident, "Warnung_") === 0) {
+                $alleVariablen[$ident] = $objID;
+            }
+        }
+
+        // Schritt 2: Mittels Eintaegen im Schutzobjekt prüfen ob alle Variable vorhanden
+        // und ggf, falls Neueintrag Variable anlegen
+        $genutzteIdents = [];
+        //Schreibe alle benoetigten Warnvariablen Idents in das Array $genutzteIdents
+        foreach ($schutzArray as $eintrag) {
+            $name = $eintrag["Label"] ?? "Unbenannt";
+            $ident = "Warnung_" . preg_replace('/\W+/', '_', $name);
+            $genutzteIdents[] = $ident;
+
+            //Pruefen ob Warnung_Name(Warnobjekt-Name) Variable existiert sonst erstellen
+            if (!array_key_exists($ident, $alleVariablen)) {
+                $vid = $this->RegisterVariableBoolean($ident, "Warnung: " . $name);
+                IPS_SetHidden($vid, false); // oder true, je nach Wunsch
+                $alleVariablen[$ident] = $vid;
+            }
+
+            //Pruefen ob WarnCount_Name(Warnobjekt-Name) Variable existiert sonst erstellen
+            $countIdent = "WarnCount_" . preg_replace('/\W+/', '_', $name);
+            if (!@IPS_VariableExists($this->GetIDForIdent($countIdent))) {
+                $this->RegisterVariableInteger($countIdent, "⚠️ Warnzähler: $name");
+            }
+            
+        }   
+
+        // Schritt 3: Variablen löschen, die zu entfernten Objekten gehören
+        //also Objekt die nicht mehr im Array $genutzteIdents zu finden sind
+        foreach ($alleVariablen as $ident => $objID) {
+            if (!in_array($ident, $genutzteIdents)) {
+                IPS_LogMessage("WindMonitorPro", "ℹ️ Entferne überflüssige Statusvariable '$ident'");
+                IPS_DeleteVariable($objID);
+            }
+        }
+        
+        
+        
         foreach ($schutzArray as $objekt) {
             $name = $objekt["Label"] ?? "Unbenannt";
             $ident = preg_replace('/\W+/', '_', $name);
@@ -413,10 +457,13 @@ public function RequestAction($Ident, $Value) {
 
 
            /* 
+//Bis hierher bin ich mit der Übernahme der neuen Anregungen aus Ideas gekommen
+//Naechste Aenderung waere der Aufruf der Funktion: extrahiereWetterdaten und die Daten-Uebernahme
+//Pruefen ob Variablen fuer Durchschnittswerte schon existieren ansonsten anlegen
 
 
-
-        // Schritt 1: Alle vorhandenen Schutz-Variablen in Instanz merken
+        // Schritt 1: Alle vorhandenen Schutz-Variablen in Instanz in Array schreiben
+        // Also ein Array mit allen bereits vorhandenen Schutzvariablen erstellen
         $alleVariablen = [];
         $instanzObjekte = IPS_GetChildrenIDs($this->InstanceID);
         foreach ($instanzObjekte as $objID) {
@@ -426,29 +473,6 @@ public function RequestAction($Ident, $Value) {
             }
         }
 
-        // Schritt 2: Schutzprüfung pro Objekt
-        $genutzteIdents = [];
-
-        foreach ($schutzArray as $eintrag) {
-            $name = $eintrag["Label"] ?? "Unbenannt";
-            $ident = "Warnung_" . preg_replace('/\W+/', '_', $name);
-            $genutzteIdents[] = $ident;
-            
-
-            // ✅ Variable erstellen (wenn nicht vorhanden)
-            if (!array_key_exists($ident, $alleVariablen)) {
-                $vid = $this->RegisterVariableBoolean($ident, "Warnung: " . $name);
-                IPS_SetHidden($vid, false); // oder true, je nach Wunsch
-                $alleVariablen[$ident] = $vid;
-            }
-
-            //Existiert die WarnCount-Variable?
-            $countIdent = "WarnCount_" . preg_replace('/\W+/', '_', $name);
-            if (!@IPS_VariableExists($this->GetIDForIdent($countIdent))) {
-                $this->RegisterVariableInteger($countIdent, "⚠️ Warnzähler: $name");
-            }
-            //SetValueInteger($this->GetIDForIdent($countIdent), GetValueInteger($this->GetIDForIdent($countIdent)) + 1);
-           
 
             
 
@@ -521,13 +545,8 @@ public function RequestAction($Ident, $Value) {
             }
 
         }
-        // Schritt 3: Variablen löschen, die zu entfernten Objekten gehören
-        foreach ($alleVariablen as $ident => $objID) {
-            if (!in_array($ident, $genutzteIdents)) {
-                IPS_LogMessage("WindMonitorPro", "ℹ️ Entferne überflüssige Statusvariable '$ident'");
-                IPS_DeleteVariable($objID);
-            }
-        }
+
+
 
 
 
