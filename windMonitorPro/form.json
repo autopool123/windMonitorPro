@@ -118,6 +118,13 @@
       "maximum": 720
     },
     {
+      "name": "MaxDatenAlter",
+      "type": "NumberSpinner",
+      "caption": "erlaubtes Alter der Daten in Stunden",
+      "minimum": 0,
+      "maximum": 6
+    },
+    {
       "type": "Select",
       "name": "Dateipfad",
       "caption": "Speicherpfad für JSON-Datei auswählen",

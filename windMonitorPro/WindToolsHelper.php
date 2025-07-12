@@ -46,7 +46,8 @@ class WindToolsHelper
         return $vRef * pow($zZiel / $zRef, $GelaendeAlpha);
     }
 
-    public static function getLokaleModelzeit(array $data): string {
+    public static function getLokaleModelzeit(array $data, DateTimeZone $targetZone): string {
+    //public static function getLokaleModelzeit(array $data): string {
         $rawUTC = $data["metadata"]["modelrun_updatetime_utc"] ?? "";
         if ($rawUTC === "" || strlen($rawUTC) < 10) {
             IPS_LogMessage("WindMonitorPro", "⚠️ Kein gültiger UTC-Zeitstempel im metadata gefunden");
@@ -56,10 +57,11 @@ class WindToolsHelper
         try {
             $utc = new DateTime($rawUTC, new DateTimeZone('UTC'));
             $lokal = clone $utc;
-            $lokal->setTimezone(new DateTimeZone('Europe/Berlin'));
+            //$lokal->setTimezone(new DateTimeZone('Europe/Berlin'));
+            $lokal->setTimezone($targetZone);
             return $lokal->format("Y-m-d H:i");
         } catch (Exception $e) {
-            IPS_LogMessage("WindMonitorPro", "❌ Fehler bei Zeitwandlung: " . $e->getMessage());
+            IPS_LogMessage("WindMonitorPro", "❌ Fehler bei MB-Model-Zeitwandlung: " . $e->getMessage());
             return gmdate("Y-m-d H:i") . " (Fehler)";
         }
     }

@@ -24,6 +24,7 @@ class windMonitorPro extends IPSModule {
 
 
         $this->RegisterPropertyInteger("FetchIntervall", 120);  // z. B. alle 2h
+        $this->RegisterPropertyInteger("MaxDatenAlter", 4);  // z. B. max 4 Std
         $this->RegisterPropertyInteger("ReadIntervall", 15);    // alle 15min
         $this->RegisterPropertyInteger("NachwirkzeitMin", 10);  // Nachwirkzeit in Minuten
         //$this->RegisterTimer("WindUpdateTimer", 0, 'IPS_RequestAction($_IPS["INSTANCE"], "UpdateWind", "");');
@@ -43,7 +44,7 @@ class windMonitorPro extends IPSModule {
 
         $this->RegisterVariableString("FetchJSON", "Letzter JSON-Download");
         $this->RegisterVariableString("SchutzStatusText", "🔍 Schutzstatus");
-        $this->RegisterVariableString("CurrentTime", "Zeitstempel der Daten");
+        $this->RegisterVariableString("CurrentTime", "Zeitstempel der Daten");//Startzeit 15 Minuten Slot
         $this->RegisterVariableString("UTC_ModelRun", "📦 UTC-Zeit der Modellgenerierung");
 
         $schutzArray = json_decode($this->ReadPropertyString("Schutzobjekte"), true);
@@ -158,12 +159,14 @@ public function ApplyChanges() {
 
     //Abrufintervalle und Nachwirkzeit
     $this->RegisterVariableString("FetchIntervalInfo", "Abrufintervall (Info)", "~TextBox");
+    $this->RegisterVariableString("MaxDatenAlterInfo", "Max Alter MB-Daten", "~TextBox");
     $this->RegisterVariableString("ReadIntervalInfo", "Dateileseintervall (Info)", "~TextBox");
     $this->RegisterVariableString("NachwirkzeitInfo", "Nachwirkzeit (Info)", "~TextBox");
     //$this->SetTimerInterval("WindUpdateTimer", 10 * 60 * 1000); // alle 10 Minuten
 
     // Werte aktualisieren
     SetValueString($this->GetIDForIdent("FetchIntervalInfo"), $this->ReadPropertyInteger("FetchIntervall") . " Minuten");
+    SetValueString($this->GetIDForIdent("MaxDatenAlterInfo"), $this->ReadPropertyInteger("MaxDatenAlter") . " Stunden");
     SetValueString($this->GetIDForIdent("ReadIntervalInfo"), $this->ReadPropertyInteger("ReadIntervall") . " Minuten");
     SetValueString($this->GetIDForIdent("NachwirkzeitInfo"), $this->ReadPropertyInteger("NachwirkzeitMin") . " Minuten");
   
@@ -175,6 +178,7 @@ public function ApplyChanges() {
     // Timerinterval aus Properties berechnen
     $fetchMin = $this->ReadPropertyInteger("FetchIntervall");
     $readMin  = $this->ReadPropertyInteger("ReadIntervall");
+  
 
     // Nur aktivieren, wenn Instanz "aktiv" ist
     if ($this->ReadPropertyBoolean("Aktiv")) {
@@ -289,8 +293,7 @@ public function RequestAction($Ident, $Value) {
             IPS_LogMessage($logtag, "❌ Current Data: Ungültige oder unvollständige JSON-Struktur");
             return;
         }
-        //Timestamp des Meteo-Blue Datensatzes laden und in lokale Zeit wandeln, von welcher Uhrzeit stammen die Daten?
-        $lokaleZeit = WindToolsHelper::getLokaleModelzeit($data);
+
 
         //Lade die von MeteoBlue verwendete Zeitzonen Abkuerzung aus dem Datenstring oder setze bei Fehler auf UTC
         $tzAbk = $data["metadata"]["timezone_abbreviation"] ?? 'UTC';//Zeitzone (Kuerzel aus Daten laden)
@@ -299,31 +302,52 @@ public function RequestAction($Ident, $Value) {
         $zone = $map[$tzAbk] ?? 'UTC';//Es wird geprueft, ob im Mapping-Array $map ein Eintrag für das ermittelte Kürzel $tzAbk existiert wenn nicht 'UTC' 
         //DateTimeZone-Objekt erzeugen
         $zone = new DateTimeZone($zone); // Erzeugt eine gültige PHP-Zeitzone
+        //Timestamp des Meteo-Blue Datensatzes laden und in lokale Zeit wandeln, von welcher Uhrzeit stammen die Daten?
+        //metadata":{"modelrun_updatetime_utc...
+        $ModelZeit = WindToolsHelper::getLokaleModelzeit($data,$zone);
+        SetValueString($this->GetIDForIdent("UTC_ModelRun"), $ModelZeit);
 
-        //15 Minuten Timeblock in $times 
+
+        //Pruefung auf veraltetem Zeitstempel der Daten und setzen Sperrflag
+        $datenZeit = DateTime::createFromFormat('Y-m-d H:i', $ModelZeit, new DateTimeZone('UTC'));
+        $jetztUTC = new DateTime('now', new DateTimeZone('UTC'));
+        $diff = $jetztUTC->getTimestamp() - $datenZeit->getTimestamp();
+        
+        $maxDatenAlterSekunden = ($this->ReadPropertyInteger("MaxDatenAlter")) * 3600;
+        if ($diff > $maxDatenAlterSekunden) {
+            $this->SetValue("SchutzStatusText", "🛑 Meteoblue-Daten älter als 4 Stunden (UTC: $ModelZeit)");
+            IPS_LogMessage("WindMonitorPro", "🛑 Meteoblue-Daten älter als 4 Stunden (UTC: $ModelZeit)");
+            SetValueBoolean($this->GetIDForIdent("WarnungAktiv"), false);
+            SetValueBoolean($this->GetIDForIdent("FetchDatenVeraltet"), true);
+            $this->SetValue("LetzteAktion", "⏱️ ReadFromFile übersprungen: Daten von $ModelZeit");
+        return;
+        } else {
+            $this->SetValue("SchutzStatusText", "✅ Schutzprüfung erfolgreich durchgeführt mit Daten von $ModelZeit");
+            SetValueBoolean($this->GetIDForIdent("FetchDatenVeraltet"), false);
+        }  
+
+        //Timestamp Auswertedatum, letztes Dateiupdate der Datei speichern, entspricht nicht dem TS: $ModelZeit der die Zeit der Meteodaten angibt 
+        $now = (new DateTime("now", $zone))->format("d.m.Y H:i:s");
+        SetValueString($this->GetIDForIdent("LetzteAuswertungDaten"), $now);
+        //15 Minuten Timeblock laden in $times 
         $times = $block['time'];
-        //1h Timeblock in $timesStd 
+        //1h Timeblock laden in $timesStd 
         $timesStd = $blockStd['time'];
-        //Zeitzone der Daten ermitteln
-        //$zone = new DateTimeZone($data['metadata']['timezone_abbrevation'] ?? 'UTC');
-
-        //$now = (new DateTime("now", new DateTimeZone($zone)))->format("d.m.Y H:i:s");
-        //naechstliegenden 15 Minuten Zeitzyklus (Index) ermitteln... zum auslesen der Arrays 
+        //naechstliegenden 15 Minuten Zeitzyklus (Index) ermitteln... zum auslesen der Werte-Arrays 
         $index = WindToolsHelper::getAktuellenZeitIndex($times, $zone);
-        if ($index === null) return;
-        IPS_LogMessage($logtag, "❌ index: $index");
+        if ($index === null) {
+            IPS_LogMessage($logtag, "❌ Konnte keinen X-Min-Index ermitteln");
+            return;
+        }
+        //naechstliegenden 1Std Zeitzyklus (IndexStd) ermitteln... zum auslesen der Werte-Arrays
         $indexStd = WindToolsHelper::getAktuellenZeitIndex($timesStd, $zone);
-        if ($indexStd === null) return;
-        IPS_LogMessage($logtag, "❌ index: $indexStd");
-
-
+        if ($indexStd === null) {
+            IPS_LogMessage($logtag, "❌ Konnte keinen 1Std-Index ermitteln");
+            return;
+        }
         //TS fuer das naechste 15 Minuten Intervall
-        $timeText = $times[$index];
-        SetValueString($this->GetIDForIdent("CurrentTime"), $timeText);
-        //TS für die Aktualitaet der MeteoBluedaten 
-        SetValueString($this->GetIDForIdent("UTC_ModelRun"), $lokaleZeit);
-        //Auslesdatum der Datei speichern, entspricht nicht dem TS: $lokaleZeit der die Zeit der Meteodaten angibt 
-        //SetValueString($this->GetIDForIdent("LetzteAuswertungDaten"), $now);
+        $timeSlot15Min = $times[$index];
+        SetValueString($this->GetIDForIdent("CurrentTime"), $timeSlot15Min);
 
         // Einzelwerte extrahieren Lade 1:1 aus Datei entsprechend Index
         $werte = WindToolsHelper::extrahiereWetterdaten($block, $index);
@@ -333,19 +357,16 @@ public function RequestAction($Ident, $Value) {
         $LuftDruck = $werte['pressure'];
         $LuftDichte = $werte['density'];
 
-
         // Einzelwerte (1Std-Werte) aus Datei entsprechend Stunden Index
         $temp = $blockStd["temperature"][$indexStd] ?? 0;
         $isDay = $blockStd["isdaylight"][$indexStd] ?? false;
         $uv = $blockStd["uvindex"][$indexStd] ?? 0;
 
-        $updateText = $data["metadata"]["modelrun_updatetime_utc"] ?? "";
-        if ($updateText === "" || strlen($updateText) < 10) {
-            IPS_LogMessage("WindMonitorPro", "⚠️ Kein gültiger Zeitstempel im metadata gefunden");
-            $updateText = gmdate("Y-m-d H:i"); // Fallback in UTC
-        }
 
-        // Durchschnittswerte berechnen
+
+// Hier gehts weiter----- Statusvariablen schreiben 
+
+
         $durchschnitt = WindToolsHelper::berechneDurchschnittswerte($block, $index, 4);
         $SpeedMS = $durchschnitt['avgWind'] ?? 0;
         $SpeedMaxMS = $durchschnitt['maxWind'] ?? 0;
@@ -376,21 +397,7 @@ public function RequestAction($Ident, $Value) {
         $alpha = $this->ReadPropertyFloat("GelaendeAlpha");
         */
 
-        //Pruefung auf veraltetem Zeitstempel der Daten und setzen Sperrflag
-        $utcDatum = substr($updateText, 0, 10); // z. B. "2025-07-04"
-        $heuteUTC = gmdate("Y-m-d"); // aktuelles UTC-Datum
-        if ($utcDatum !== $heuteUTC) {
-            $this->SetValue("SchutzStatusText", "🛑 Meteoblue-Daten stammen nicht vom heutigen UTC-Tag ($utcDatum)");
-            IPS_LogMessage("WindMonitorPro", "🛑 Meteoblue-Daten stammen nicht vom heutigen UTC-Tag ($utcDatum)");
-            SetValueBoolean($this->GetIDForIdent("WarnungAktiv"), false);
-            SetValueBoolean($this->GetIDForIdent("FetchDatenVeraltet"), true);
-            $this->SetValue("LetzteAktion", "⏱️ ReadFromFile übersprungen: Daten vom $utcDatum");
 
-            return; // ⛔ Verarbeitung sofort stoppen!
-        } else {
-            $this->SetValue("SchutzStatusText", "✅ Schutzprüfung erfolgreich durchgeführt mit Daten vom $utcDatum");
-            SetValueBoolean($this->GetIDForIdent("FetchDatenVeraltet"), false);
-        }
 
 
 
@@ -514,9 +521,7 @@ public function RequestAction($Ident, $Value) {
 
 
            /* 
-//Bis hierher bin ich mit der Übernahme der neuen Anregungen aus Ideas gekommen
-//Naechste Aenderung waere der Aufruf der Funktion: extrahiereWetterdaten und die Daten-Uebernahme
-//Pruefen ob Variablen fuer Durchschnittswerte schon existieren ansonsten anlegen
+
 
 
         // Schritt 1: Alle vorhandenen Schutz-Variablen in Instanz in Array schreiben
