@@ -41,6 +41,24 @@ class WindToolsHelper
         ];
     }
 
+    public static function formatToEuropeanDate(string $usDatum): string
+    {
+        // Versuche, mit Sekunden zu parsen
+        $dt = DateTime::createFromFormat('Y-m-d H:i:s', $usDatum);
+
+        // Falls das nicht klappt, versuche ohne Sekunden
+        if ($dt === false) {
+            $dt = DateTime::createFromFormat('Y-m-d H:i', $usDatum);
+        }
+
+        // Wenn das Parsen erfolgreich war, gib das europaeische Format zurück
+        if ($dt !== false) {
+            return $dt->format('d.m.Y H:i:s');
+        } else {
+            // Fallback: Gib den Originalstring zurück oder einen Fehlertext
+            return 'Ungültiges Datum: ' . $usDatum;
+        }
+    }
 
     public static function windXmToYm(float $vRef, float $zZiel, float $zRef = 80.0, float $GelaendeAlpha = 0.14): float {
         return $vRef * pow($zZiel / $zRef, $GelaendeAlpha);

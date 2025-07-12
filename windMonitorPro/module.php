@@ -306,7 +306,8 @@ public function RequestAction($Ident, $Value) {
         //Timestamp des Meteo-Blue Datensatzes laden und in lokale Zeit wandeln, von welcher Uhrzeit stammen die Daten?
         //metadata":{"modelrun_updatetime_utc...
         $ModelZeit = WindToolsHelper::getLokaleModelzeit($data,$zone);
-        SetValueString($this->GetIDForIdent("UTC_ModelRun"), $ModelZeit);
+        $ModelZeitEU = WindToolsHelper::formatToEuropeanDate($ModelZeit);
+        SetValueString($this->GetIDForIdent("UTC_ModelRun"), $ModelZeitEU);
         //Pruefung auf veraltetem Zeitstempel der Daten und setzen Sperrflag
         $datenZeit = DateTime::createFromFormat('Y-m-d H:i', $ModelZeit, new DateTimeZone('UTC'));
         $jetztUTC = new DateTime('now', new DateTimeZone('UTC'));
