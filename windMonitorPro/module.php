@@ -265,13 +265,15 @@ public function RequestAction($Ident, $Value) {
 
 
         $data = json_decode($json, true);
-        //data_xmin Segment zuweisen wenn existiert und nicht NULL, sonst $block au NULL
+
+        //Datensegment 15 Minuten-Werte (data_xmin) zuweisen wenn existiert und nicht NULL, sonst $block auf NULL
         $block = $data['data_xmin'] ?? null;
         //Pruefen ob Time-Block existiert
         if (!$block || !isset($block['time'])) {
             IPS_LogMessage($logtag, "❌ 15 Minutes (data_xmin): Ungültige oder unvollständige JSON-Struktur");
             return;
         }
+
         //Datensegment 1-Std-Werte
         $blockStd = $data['data_1h'] ?? null;
                 //Pruefen ob current-data existiert
@@ -280,32 +282,39 @@ public function RequestAction($Ident, $Value) {
             return;
         }
 
+        //Datensegment data-current
         $currentData = $data['data_current'] ?? null;
         //Pruefen ob current-data existiert
         if (!$currentData || !isset($currentData['time'])) {
             IPS_LogMessage($logtag, "❌ Current Data: Ungültige oder unvollständige JSON-Struktur");
             return;
         }
-        //Timestamp des Meteo-Blue Datensatzes laden, von welcher Uhrzeit stammen die Daten?
+        //Timestamp des Meteo-Blue Datensatzes laden und in lokale Zeit wandeln, von welcher Uhrzeit stammen die Daten?
         $lokaleZeit = WindToolsHelper::getLokaleModelzeit($data);
 
-        //Lade die von MeteoBlue verwendete Zeitzone aus dem Datenstring 
+        //Lade die von MeteoBlue verwendete Zeitzonen Abkuerzung aus dem Datenstring oder setze bei Fehler auf UTC
         $tzAbk = $data["metadata"]["timezone_abbreviation"] ?? 'UTC';//Zeitzone (Kuerzel aus Daten laden)
-        $map = WindToolsHelper::getTimezoneMap();//Mapping-Tabelle laden, Kürzel wie "CEST" auf PHP-Zeitzonen wie "Europe/Berlin" abbilden
-        //$zone = $map[$tzAbk] ?? 'UTC';//Es wird geprueft, ob im Mapping-Array $map ein Eintrag für das ermittelte Kürzel $tzAbk existiert wenn nicht 'UTC'  
-        
+        //Zum Kuerzel gehoerige Zeitzonenbezeichung ermitteln
+        $map = WindToolsHelper::getTimezoneMap();//Mapping-Tabelle laden, Kuerzel wie "CEST" auf PHP-Zeitzonen-Namen wie "Europe/Berlin" abbilden
+        $zone = $map[$tzAbk] ?? 'UTC';//Es wird geprueft, ob im Mapping-Array $map ein Eintrag für das ermittelte Kürzel $tzAbk existiert wenn nicht 'UTC' 
+        //DateTimeZone-Objekt erzeugen
+        $zone = new DateTimeZone($zone); // Erzeugt eine gültige PHP-Zeitzone
+
         //15 Minuten Timeblock in $times 
         $times = $block['time'];
         //1h Timeblock in $timesStd 
         $timesStd = $blockStd['time'];
         //Zeitzone der Daten ermitteln
-        $zone = new DateTimeZone($data['metadata']['timezone_abbrevation'] ?? 'UTC');
+        //$zone = new DateTimeZone($data['metadata']['timezone_abbrevation'] ?? 'UTC');
+
         //$now = (new DateTime("now", new DateTimeZone($zone)))->format("d.m.Y H:i:s");
         //naechstliegenden 15 Minuten Zeitzyklus (Index) ermitteln... zum auslesen der Arrays 
         $index = WindToolsHelper::getAktuellenZeitIndex($times, $zone);
         if ($index === null) return;
+        IPS_LogMessage($logtag, "❌ index: $index");
         $indexStd = WindToolsHelper::getAktuellenZeitIndex($timesStd, $zone);
         if ($indexStd === null) return;
+        IPS_LogMessage($logtag, "❌ index: $indexStd");
 
 
         //TS fuer das naechste 15 Minuten Intervall
