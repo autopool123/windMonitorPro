@@ -275,7 +275,7 @@ public function RequestAction($Ident, $Value) {
         //Datensegment 1-Std-Werte
         $blockStd = $data['data_1h'] ?? null;
                 //Pruefen ob current-data existiert
-        if ($blockStd || !isset($blockStd['time'])) {
+        if (!$blockStd || !isset($blockStd['time'])) {
             IPS_LogMessage($logtag, "❌ Stundenwerte(data_1h): Ungültige oder unvollständige JSON-Struktur");
             return;
         }
