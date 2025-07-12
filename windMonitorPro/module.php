@@ -352,6 +352,8 @@ public function RequestAction($Ident, $Value) {
         SetValue($this->GetIDForIdent("CurrentTemperature"), $temp);
         SetValue($this->GetIDForIdent("IsDaylight"), (bool) $isDay);
         SetValue($this->GetIDForIdent("UVIndex"), $uv);
+
+        IPS_LogMessage($logtag, "🔍 Std-Werte: UV: $uv, Temperature: $temp, tag: $isDay");
         //Falls Durchschnittwerte in Statusvariablen gespeichert werden sollen:
         /*
         SetValueFloat($this->GetIDForIdent("SpeedMS"), $SpeedMS);
