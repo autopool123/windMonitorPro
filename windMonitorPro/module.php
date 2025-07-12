@@ -45,7 +45,7 @@ class windMonitorPro extends IPSModule {
         $this->RegisterVariableString("FetchJSON", "Letzter JSON-Download");
         $this->RegisterVariableString("SchutzStatusText", "🔍 Schutzstatus");
         $this->RegisterVariableString("CurrentTime", "Zeitstempel x-min Segment");//Startzeit 15 Minuten Slot
-        $this->RegisterVariableString("UTC_ModelRun", "📦 UTC-Zeit der Modellgenerierung");
+        $this->RegisterVariableString("UTC_ModelRun", "UTC-Zeit der Modellgenerierung");
 
         $schutzArray = json_decode($this->ReadPropertyString("Schutzobjekte"), true);
 
@@ -508,6 +508,7 @@ public function RequestAction($Ident, $Value) {
                 $minWind,
                 $minGust,
                 $NachwirkZeit,
+                $this->GetIDForIdent("NachwirkEnde"),
                 $this->GetIDForIdent("Warnung_" . $ident),
                 $this->GetIDForIdent("WarnungBoe_" . $ident),
                 $this->GetIDForIdent("LetzteWarnungTS"),
