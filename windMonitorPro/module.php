@@ -269,7 +269,14 @@ public function RequestAction($Ident, $Value) {
         $block = $data['data_xmin'] ?? null;
         //Pruefen ob Time-Block existiert
         if (!$block || !isset($block['time'])) {
-            IPS_LogMessage($logtag, "❌ 15 Minutes: Ungültige oder unvollständige JSON-Struktur");
+            IPS_LogMessage($logtag, "❌ 15 Minutes (data_xmin): Ungültige oder unvollständige JSON-Struktur");
+            return;
+        }
+        //Datensegment 1-Std-Werte
+        $blockStd = $data['data_1h'] ?? null;
+                //Pruefen ob current-data existiert
+        if ($blockStd || !isset($blockStd['time'])) {
+            IPS_LogMessage($logtag, "❌ Stundenwerte(data_1h): Ungültige oder unvollständige JSON-Struktur");
             return;
         }
 
@@ -287,16 +294,21 @@ public function RequestAction($Ident, $Value) {
         $map = WindToolsHelper::getTimezoneMap();//Mapping-Tabelle laden, Kürzel wie "CEST" auf PHP-Zeitzonen wie "Europe/Berlin" abbilden
         //$zone = $map[$tzAbk] ?? 'UTC';//Es wird geprueft, ob im Mapping-Array $map ein Eintrag für das ermittelte Kürzel $tzAbk existiert wenn nicht 'UTC'  
         
-
+        //15 Minuten Timeblock in $times 
         $times = $block['time'];
+        //1h Timeblock in $timesStd 
+        $timesStd = $blockStd['time'];
         //Zeitzone der Daten ermitteln
         $zone = new DateTimeZone($data['metadata']['timezone_abbrevation'] ?? 'UTC');
         //$now = (new DateTime("now", new DateTimeZone($zone)))->format("d.m.Y H:i:s");
         //naechstliegenden 15 Minuten Zeitzyklus (Index) ermitteln... zum auslesen der Arrays 
         $index = WindToolsHelper::getAktuellenZeitIndex($times, $zone);
         if ($index === null) return;
+        $indexStd = WindToolsHelper::getAktuellenZeitIndex($timesStd, $zone);
+        if ($indexStd === null) return;
 
-        //TS für das nächste 15 Minuten Intervall
+
+        //TS fuer das naechste 15 Minuten Intervall
         $timeText = $times[$index];
         SetValueString($this->GetIDForIdent("CurrentTime"), $timeText);
         //TS für die Aktualitaet der MeteoBluedaten 
@@ -311,9 +323,12 @@ public function RequestAction($Ident, $Value) {
         $richtung = $werte['dir'];
         $LuftDruck = $werte['pressure'];
         $LuftDichte = $werte['density'];
-        $temp = $currentData["temperature"] ?? 0;
-        $isDay = $currentData["isdaylight"] ?? false;
-        $uv = $data["data_1h"]["uvindex"][0] ?? 0;
+
+
+        // Einzelwerte (1Std-Werte) aus Datei entsprechend Stunden Index
+        $temp = $blockStd["temperature"][$indexStd] ?? 0;
+        $isDay = $blockStd["isdaylight"][$indexStd] ?? false;
+        $uv = $blockStd["uvindex"][$indexStd] ?? 0;
 
         $updateText = $data["metadata"]["modelrun_updatetime_utc"] ?? "";
         if ($updateText === "" || strlen($updateText) < 10) {
