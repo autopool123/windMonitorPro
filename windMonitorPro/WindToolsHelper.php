@@ -272,7 +272,7 @@ class WindToolsHelper
         //Setze Warn-Variablen entsprechend Check
         SetValueBoolean($idWarnWind, $warnWind);
         SetValueBoolean($idWarnGust, $warnGust);
-        SetValueBoolean($idRestNachwirkStr, restNachwirkText);
+        SetValueBoolean($idRestNachwirkStr, $restNachwirkText);
 
         // Optionales Logging zur Diagnose
         IPS_LogMessage("WindMonitorPro",
