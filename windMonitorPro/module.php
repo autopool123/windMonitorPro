@@ -296,7 +296,7 @@ public function RequestAction($Ident, $Value) {
 
 
         //Lade die von MeteoBlue verwendete Zeitzonen Abkuerzung aus dem Datenstring oder setze bei Fehler auf UTC
-        $tzAbk = $data["metadata"]["timezone_abbreviation"] ?? 'UTC';//Zeitzone (Kuerzel aus Daten laden)
+        $tzAbk = $data["metadata"]["timezone_abbrevation"] ?? 'UTC';//Zeitzone (Kuerzel aus Daten laden)
         //Zum Kuerzel gehoerige Zeitzonenbezeichung ermitteln
         $map = WindToolsHelper::getTimezoneMap();//Mapping-Tabelle laden, Kuerzel wie "CEST" auf PHP-Zeitzonen-Namen wie "Europe/Berlin" abbilden
         $zoneAbk = $map[$tzAbk] ?? 'UTC';//Es wird geprueft, ob im Mapping-Array $map ein Eintrag für das ermittelte Kürzel $tzAbk existiert wenn nicht 'UTC' 
