@@ -299,13 +299,14 @@ public function RequestAction($Ident, $Value) {
         $tzAbk = $data["metadata"]["timezone_abbreviation"] ?? 'UTC';//Zeitzone (Kuerzel aus Daten laden)
         //Zum Kuerzel gehoerige Zeitzonenbezeichung ermitteln
         $map = WindToolsHelper::getTimezoneMap();//Mapping-Tabelle laden, Kuerzel wie "CEST" auf PHP-Zeitzonen-Namen wie "Europe/Berlin" abbilden
-        $zone = $map[$tzAbk] ?? 'UTC';//Es wird geprueft, ob im Mapping-Array $map ein Eintrag für das ermittelte Kürzel $tzAbk existiert wenn nicht 'UTC' 
+        $zoneAbk = $map[$tzAbk] ?? 'UTC';//Es wird geprueft, ob im Mapping-Array $map ein Eintrag für das ermittelte Kürzel $tzAbk existiert wenn nicht 'UTC' 
         //DateTimeZone-Objekt erzeugen
-        $zone = new DateTimeZone($zone); // Erzeugt eine gültige PHP-Zeitzone
+        $zone = new DateTimeZone($zoneAbk); // Erzeugt eine gültige PHP-Zeitzone
         //Timestamp des Meteo-Blue Datensatzes laden und in lokale Zeit wandeln, von welcher Uhrzeit stammen die Daten?
         //metadata":{"modelrun_updatetime_utc...
         $ModelZeit = WindToolsHelper::getLokaleModelzeit($data,$zone);
         SetValueString($this->GetIDForIdent("UTC_ModelRun"), $ModelZeit);
+        IPS_LogMessage("WindMonitorPro", "Zonenkuerzel: $tzAbk, gefunden: $zoneAbk, Modelzeit: $ModelZeit");
 
 
         //Pruefung auf veraltetem Zeitstempel der Daten und setzen Sperrflag
