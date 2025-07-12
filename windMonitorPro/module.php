@@ -214,8 +214,8 @@ public function RequestAction($Ident, $Value) {
         case "UpdateWind":
             return $this->ReadFromFileAndUpdate();
 
-        case "ReloadCSV":
-            return $this->ReloadCSVDatei();
+        case "ReloadWerteDatei":
+            return $this->ReloadWerteDatei();
 
         case "ResetStatus":
             return $this->ResetSchutzStatus();
@@ -662,8 +662,8 @@ public function RequestAction($Ident, $Value) {
     }
 
 
-    private function ReloadCSVDatei(): bool {
-        IPS_LogMessage("WindMonitorPro", "📁 CSV-Datei wird neu geladen");
+    private function ReloadWerteDatei(): bool {
+        IPS_LogMessage("WindMonitorPro", "📁 Werte-Datei aktualisiert");
         $this->ReadFromFileAndUpdate(); // oder andere Dateioperation
         return true;
     }

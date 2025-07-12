@@ -28,8 +28,8 @@
         },
         {
           "type": "Button",
-          "caption": "📁 CSV-Datei neu laden",
-          "onClick": "return IPS_RequestAction($id, 'ReloadCSV', '');"
+          "caption": "📁 Werte-Datei aktualisieren",
+          "onClick": "return IPS_RequestAction($id, 'ReloadWerteDatei', '');"
         },
         {
           "type": "NumberSpinner",
