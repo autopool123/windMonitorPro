@@ -44,7 +44,7 @@ class windMonitorPro extends IPSModule {
 
         $this->RegisterVariableString("FetchJSON", "Letzter JSON-Download");
         $this->RegisterVariableString("SchutzStatusText", "🔍 Schutzstatus");
-        $this->RegisterVariableString("CurrentTime", "Zeitstempel der Daten");//Startzeit 15 Minuten Slot
+        $this->RegisterVariableString("CurrentTime", "Zeitstempel x-min Segment");//Startzeit 15 Minuten Slot
         $this->RegisterVariableString("UTC_ModelRun", "📦 UTC-Zeit der Modellgenerierung");
 
         $schutzArray = json_decode($this->ReadPropertyString("Schutzobjekte"), true);
@@ -347,7 +347,8 @@ public function RequestAction($Ident, $Value) {
         }
         //TS fuer das naechste 15 Minuten Intervall
         $timeSlot15Min = $times[$index];
-        SetValueString($this->GetIDForIdent("CurrentTime"), $timeSlot15Min);
+        $ModelZeitEU = WindToolsHelper::formatToEuropeanDate($timeSlot15Min);        
+        SetValueString($this->GetIDForIdent("CurrentTime"), $ModelZeitEU);
 
         // Einzelwerte extrahieren Lade 1:1 aus Datei entsprechend Index
         $werte = WindToolsHelper::extrahiereWetterdaten($block, $index);
