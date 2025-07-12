@@ -204,6 +204,7 @@ public function ApplyChanges() {
 public function RequestAction($Ident, $Value) {
     // 🔍 Logging für Analysezwecke
     IPS_LogMessage("WindMonitorPro", "⏱️ RequestAction erhalten: $Ident mit Wert=" . print_r($Value, true));
+    $this->SetValue("LetzteAktion","🔀 RequestAction: $Ident Wert=" . print_r($Value, true) . " (" . date("d-m-Y H:i:s") . ")"    );
 
     // 🔀 Verteile an Aktion basierend auf Ident
     switch ($Ident) {
@@ -306,9 +307,6 @@ public function RequestAction($Ident, $Value) {
         //metadata":{"modelrun_updatetime_utc...
         $ModelZeit = WindToolsHelper::getLokaleModelzeit($data,$zone);
         SetValueString($this->GetIDForIdent("UTC_ModelRun"), $ModelZeit);
-        IPS_LogMessage("WindMonitorPro", "Zonenkuerzel: $tzAbk, gefunden: $zoneAbk, Modelzeit: $ModelZeit");
-
-
         //Pruefung auf veraltetem Zeitstempel der Daten und setzen Sperrflag
         $datenZeit = DateTime::createFromFormat('Y-m-d H:i', $ModelZeit, new DateTimeZone('UTC'));
         $jetztUTC = new DateTime('now', new DateTimeZone('UTC'));
