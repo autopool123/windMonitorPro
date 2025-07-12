@@ -448,14 +448,14 @@ public function RequestAction($Ident, $Value) {
 
             //Pruefen ob Warnung_Name(Warnobjekt-Name) Variable existiert sonst erstellen
             if (!array_key_exists($ident, $alleVariablen)) {
-                $vid = $this->RegisterVariableBoolean($ident, "Warnung: " . $name);
+                $vid = $this->RegisterVariableBoolean($ident, "Warnung: " . $name,"~Alert");
                 IPS_SetHidden($vid, false); // oder true, je nach Wunsch
                 $alleVariablen[$ident] = $vid;
             }
 
             //Pruefen ob WarnungBoe_Name(Warnobjekt-Name) Variable existiert sonst erstellen
             if (!array_key_exists($identBoe, $alleVariablen)) {
-                $vid = $this->RegisterVariableBoolean($identBoe, "WarnungBoe: " . $name);
+                $vid = $this->RegisterVariableBoolean($identBoe, "WarnungBoe: " . $name,"~Alert");
                 IPS_SetHidden($vid, false); // oder true, je nach Wunsch
                 $alleVariablen[$identBoe] = $vid;
             }
