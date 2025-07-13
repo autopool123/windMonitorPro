@@ -357,8 +357,10 @@ public function RequestAction($Ident, $Value) {
 
         // Einzelwerte extrahieren Lade 1:1 aus Datei entsprechend Index
         $werte = WindToolsHelper::extrahiereWetterdaten($block, $index);
-        $wind = WindToolsHelper::berechneWindObjekt($werte['wind'], WindToolsHelper::$zielHoeheStandard);
-        $boe  = WindToolsHelper::berechneWindObjekt($werte['gust'], WindToolsHelper::$zielHoeheStandard);
+        //$wind = WindToolsHelper::berechneWindObjekt($werte['wind'], WindToolsHelper::$zielHoeheStandard);
+        //$boe  = WindToolsHelper::berechneWindObjekt($werte['gust'], WindToolsHelper::$zielHoeheStandard);
+        $wind = $werte['wind'];
+        $boe  = $werte['gust'];
         $richtung = $werte['dir'];
         $LuftDruck = $werte['pressure'];
         $LuftDichte = $werte['density'];
@@ -496,20 +498,22 @@ public function RequestAction($Ident, $Value) {
             $minWind = $objekt["MinWind"] ?? 10.0;
             $minGust = $objekt["MinGust"] ?? 14.0;
             $richtungsliste = $objekt["RichtungsKuerzelListe"] ?? "";
-
+            $hoehe = $objekt["Hoehe"];
+            $windInObjHoehe = WindToolsHelper::windUmrechnungSmart($wind, WindToolsHelper::$referenzhoehe, $hoehe, WindToolsHelper::$gelaendeAlpha);
+            $boeInObjHoehe = WindToolsHelper::windUmrechnungSmart($boe, WindToolsHelper::$referenzhoehe, $hoehe, WindToolsHelper::$gelaendeAlpha);
 
             //Check ob Windrichtung die Warnung fuer Schutzobjekt betrifft
             $kuerzelArray = array_filter(array_map('trim', explode(',', $richtungsliste)));
             $inSektor = WindToolsHelper::richtungPasst($richtung, $kuerzelArray);
             //$inSektor = WindToolsHelper::richtungPasst($richtung, $richtungsliste);
             //Auf Warnstatus checken 
-            $warnung = $inSektor && ($wind >= $minWind || $boe >= $minGust);
+            //$warnung = $inSektor && ($wind >= $minWind || $boe >= $minGust);
             $NachwirkZeit = GetValueString($this->GetIDForIdent("NachwirkzeitInfo"));
             $NachwirkZeit = intval($NachwirkZeit);
 
             WindToolsHelper::berechneSchutzstatusMitNachwirkung(
-                $wind,
-                $boe,
+                $windInObjHoehe,
+                $boeInObjHoehe,
                 $minWind,
                 $minGust,
                 $NachwirkZeit,
