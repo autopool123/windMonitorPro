@@ -327,7 +327,7 @@ public function RequestAction($Ident, $Value) {
             $this->SetValue("LetzteAktion", "⏱️ ReadFromFile übersprungen: Daten von $ModelZeit");
         return;
         } else {
-            $this->SetValue("SchutzStatusText", "✅ Schutzprüfung erfolgreich durchgeführt mit Daten von $ModelZeit");
+            $this->SetValue("SchutzStatusText", "✅ MeteoBluedaten erfolgreich eingelesen und gespeichert mit MB-Timestamp: $ModelZeit");
             SetValueBoolean($this->GetIDForIdent("FetchDatenVeraltet"), false);
         }  
 
@@ -382,8 +382,10 @@ public function RequestAction($Ident, $Value) {
         $DirGrad = $durchschnitt['avgDir'] ?? 0;
         
         //💾 Beschreiben der Status-Variablen 
-        SetValueFloat($this->GetIDForIdent("Wind80m"), round($wind * 3.6, 1));
-        SetValueFloat($this->GetIDForIdent("Gust80m"), round($boe * 3.6, 1));
+        $windInObjHoehe = WindToolsHelper::windUmrechnungSmart($wind, WindToolsHelper::$referenzhoehe, WindToolsHelper::$zielHoeheStandard, WindToolsHelper::$gelaendeAlpha);
+        $boeInObjHoehe = WindToolsHelper::windUmrechnungSmart($boe, WindToolsHelper::$referenzhoehe, $WindToolsHelper::$zielHoeheStandard, WindToolsHelper::$gelaendeAlpha);
+        SetValueFloat($this->GetIDForIdent("Wind80m"), round($windInObjHoehe * 3.6, 1));
+        SetValueFloat($this->GetIDForIdent("Gust80m"), round($boeInObjHoehe * 3.6, 1));
         SetValueInteger($this->GetIDForIdent("WindDirection80m"), (int)$richtung);
         SetValueFloat($this->GetIDForIdent("AirPressure"),  round($LuftDruck, 3));
         SetValueFloat($this->GetIDForIdent("AirDensity"), round($LuftDichte, 3));
