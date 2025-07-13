@@ -115,6 +115,13 @@ public function ApplyChanges() {
         IPS_SetVariableProfileIcon("WMP.Temperature", "Temperature");
     }
 
+    if (!IPS_VariableProfileExists("WMP.Rain")) {
+        IPS_CreateVariableProfile("WMP.Rain", VARIABLETYPE_FLOAT);
+        IPS_SetVariableProfileText("WMP.Rain", "", " mm/h");
+        IPS_SetVariableProfileDigits("WMP.Rain", 1);
+        IPS_SetVariableProfileIcon("WMP.Rain", "Rain");
+    }
+
     $vid = $this->GetIDForIdent("FetchJSON");
     IPS_SetIcon($vid, "Database");
     IPS_SetVariableCustomProfile($vid, "");
@@ -142,6 +149,7 @@ public function ApplyChanges() {
     $this->RegisterVariableFloat("AirPressure", "Luftdruck", "WMP.AirPressure");
     $this->RegisterVariableFloat("AirDensity", "Luftdichte", "WMP.Density");
     $this->RegisterVariableFloat("CurrentTemperature", "Temperatur", "WMP.Temperature");
+    $this->RegisterVariableFloat("Rain", "Regenvorhersage", "WMP.Rain");
     $this->RegisterVariableBoolean("IsDaylight", "Tageslicht", "");
     $this->RegisterVariableInteger("UVIndex", "UV-Index", "");
     $this->RegisterVariableString("WindDirText", "Windrichtung (Text)", "");
@@ -369,6 +377,7 @@ public function RequestAction($Ident, $Value) {
         $temp = $blockStd["temperature"][$indexStd] ?? 0;
         $isDay = $blockStd["isdaylight"][$indexStd] ?? false;
         $uv = $blockStd["uvindex"][$indexStd] ?? 0;
+        $rain = $blockStd["precipitation"][$indexStd] ?? 0;  //Regen Stundenvorhersage in mm/h
 
 
 
@@ -392,8 +401,9 @@ public function RequestAction($Ident, $Value) {
         SetValue($this->GetIDForIdent("CurrentTemperature"), $temp);
         SetValue($this->GetIDForIdent("IsDaylight"), (bool) $isDay);
         SetValue($this->GetIDForIdent("UVIndex"), $uv);
+        SetValue($this->GetIDForIdent("Rain"), $rain);
 
-        IPS_LogMessage($logtag, "🔍 Std-Werte: UV: $uv, Temperature: $temp, tag: $isDay");
+        IPS_LogMessage($logtag, "🔍 Std-Werte: UV: $uv, Temperature: $temp, tag: $isDay, Regen: $rain");
         //Falls Durchschnittwerte in Statusvariablen gespeichert werden sollen:
         /*
         SetValueFloat($this->GetIDForIdent("SpeedMS"), $SpeedMS);
@@ -401,20 +411,6 @@ public function RequestAction($Ident, $Value) {
         SetValueFloat($this->GetIDForIdent("GustMaxMS"), $GustMaxM);
         SetValueInteger($this->GetIDForIdent("DirGrad"), $DirGrad);
         */
-
-        /*
-        //Aus alt uebernommen falls noch gebraucht werden sollte:
-        $alpha = $this->ReadPropertyFloat("GelaendeAlpha");
-        */
-
-
-
-
-
-
-
-        //$zeit = $data["data_current"]["time"][0] ?? "";
-
 
 
 
@@ -435,7 +431,7 @@ public function RequestAction($Ident, $Value) {
             if (strpos($ident, "WarnCount_") === 0) {
                 $alleVariablen[$ident] = $objID;
             }
-            if (strpos($ident, "WarnCountBoe_") === 0) {
+            if (strpos($ident, "Status_") === 0) {
                 $alleVariablen[$ident] = $objID;
             }
         }
@@ -450,10 +446,12 @@ public function RequestAction($Ident, $Value) {
             $identBoe = "WarnungBoe_" . preg_replace('/\W+/', '_', $name);
             $identWC = "WarnCount_" . preg_replace('/\W+/', '_', $name);
             $identWCBoe = "WarnCountBoe_" . preg_replace('/\W+/', '_', $name);
+            $identStatus = "Status_" . preg_replace('/\W+/', '_', $name);
             $genutzteIdents[] = $ident;
             $genutzteIdents[] = $identBoe;
             $genutzteIdents[] = $identWC;
             $genutzteIdents[] = $identWCBoe;
+            $genutzteIdents[] = $identStatus;
 
             //Pruefen ob Warnung_Name(Warnobjekt-Name) Variable existiert sonst erstellen
             if (!array_key_exists($ident, $alleVariablen)) {
@@ -481,7 +479,15 @@ public function RequestAction($Ident, $Value) {
                 $vid = $this->RegisterVariableInteger($identWCBoe, "WarnCountBoe: " . $name);
                 IPS_SetHidden($vid, false); // oder true, je nach Wunsch
                 $alleVariablen[$identWCBoe] = $vid;
-            }           
+            }  
+
+            //Pruefen ob Status_Name(Warnobjekt-Name) Variable existiert sonst erstellen
+            if (!array_key_exists($identWCBoe, $alleVariablen)) {
+                $vid = $this->RegisterVariableString($identWCBoe, "Status: " . $name);
+                IPS_SetHidden($vid, false); // oder true, je nach Wunsch
+                $alleVariablen[$identWCBoe] = $vid;
+            }             
+            
         }   
 
         // Schritt 3: Variablen löschen, die zu entfernten Objekten gehören
@@ -512,7 +518,7 @@ public function RequestAction($Ident, $Value) {
             //$warnung = $inSektor && ($wind >= $minWind || $boe >= $minGust);
             $NachwirkZeit = GetValueString($this->GetIDForIdent("NachwirkzeitInfo"));
             $NachwirkZeit = intval($NachwirkZeit);
-
+/*
             WindToolsHelper::berechneSchutzstatusMitNachwirkung(
                 $windInObjHoehe,
                 $boeInObjHoehe,
@@ -526,6 +532,19 @@ public function RequestAction($Ident, $Value) {
                 $this->GetIDForIdent("WarnungAktiv"),
                 $objekt["Label"] ?? "Unbenannt"
             );
+*/
+            WindToolsHelper::berechneSchutzstatusMitNachwirkungNeu(
+                $windInObjHoehe,
+                $boeInObjHoehe,
+                $minWind,
+                $minGust,
+                $NachwirkZeit,
+                $this->GetIDForIdent("NachwirkEnde"),
+                $this->GetIDForIdent("Warnung_" . $ident),
+                $this->GetIDForIdent("LetzteWarnungTS"),
+                $objekt["Label"] ?? "Unbenannt"
+            );
+
         }        
 
         // Dashboard aktualisieren
