@@ -16,7 +16,7 @@ class windMonitorPro extends IPSModule {
         $this->RegisterPropertyFloat("Longitude", 8.2791);
         $this->RegisterPropertyInteger("Altitude", 223);
         $this->RegisterPropertyFloat("Zielhoehe", 8.0);
-        $this->RegisterPropertyInteger("Referenzhoehe", 80);
+        $this->RegisterPropertyFloat("Referenzhoehe", 80);
         $this->RegisterPropertyFloat("GelaendeAlpha", 0.14);
 
         $this->RegisterPropertyBoolean("Aktiv", true);

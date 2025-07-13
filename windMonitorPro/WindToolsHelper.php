@@ -5,12 +5,12 @@ class WindToolsHelper
 
     // 🔧 Konfigurationseinstellungen
     public static float $gelaendeAlpha = 0.14;
-    public static float $referenzHoehe = 80.0;
+    public static float $referenzhoehe = 80.0;
     public static float $zielHoeheStandard = 10.0;
 
     public static function setKonfiguration(float $alpha, float $ref, float $ziel, string $typ = "logarithmisch"): void {
         self::$gelaendeAlpha     = $alpha;
-        self::$referenzHoehe     = $ref;
+        self::$referenzhoehe     = $ref;
         self::$zielHoeheStandard = $ziel;
     }
 
@@ -107,12 +107,12 @@ class WindToolsHelper
 
     public static function berechneDurchschnittswerte(array $block, int $index, int $steps): array {
         $speeds = array_map(
-            fn($v) => self::berechneWindObjekt($v, self::$zielHoeheStandard, self::$referenzHoehe, self::$gelaendeAlpha),
+            fn($v) => self::berechneWindObjekt($v, self::$zielHoeheStandard, self::$referenzhoehe, self::$gelaendeAlpha),
             array_filter(array_slice($block['windspeed_80m'] ?? [], $index, $steps), 'is_numeric')
         );
 
         $gusts = array_map(
-            fn($v) => self::berechneWindObjekt($v, self::$zielHoeheStandard, self::$referenzHoehe, self::$gelaendeAlpha),
+            fn($v) => self::berechneWindObjekt($v, self::$zielHoeheStandard, self::$referenzhoehe, self::$gelaendeAlpha),
             array_filter(array_slice($block['gust'] ?? [], $index, $steps), 'is_numeric')
         );
 
