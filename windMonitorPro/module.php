@@ -171,7 +171,12 @@ public function ApplyChanges() {
     SetValueString($this->GetIDForIdent("NachwirkzeitInfo"), $this->ReadPropertyInteger("NachwirkzeitMin") . " Minuten");
   
 
-    //WindToolsHelper::$GelaendeAlpha = $this->ReadPropertyFloat("GelaendeAlpha");
+    WindToolsHelper::setKonfiguration(
+        $this->ReadPropertyFloat("GelaendeAlpha"),
+        $this->ReadPropertyFloat("Referenzhoehe"),
+        $this->ReadPropertyFloat("Zielhoehe"),
+        "logarithmisch"
+    );
 
 
 
