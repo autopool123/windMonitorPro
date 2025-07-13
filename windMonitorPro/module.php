@@ -136,8 +136,8 @@ public function ApplyChanges() {
 
 
     // 🧾 Variablen registrieren
-    $this->RegisterVariableFloat("Wind80m", "Windgeschwindigkeit (80 m)", "WindPro.Speed.1");
-    $this->RegisterVariableFloat("Gust80m", "Böe (80 m)", "WindPro.Speed.1");
+    $this->RegisterVariableFloat("Wind80m", "Wind80m-->Lokal)", "WindPro.Speed.1");
+    $this->RegisterVariableFloat("Gust80m", "Boe80m-->Lokal", "WindPro.Speed.1");
     $this->RegisterVariableInteger("WindDirection80m", "Windrichtung (80 m)", "WindPro.Direction.Degree");
     $this->RegisterVariableFloat("AirPressure", "Luftdruck", "WMP.AirPressure");
     $this->RegisterVariableFloat("AirDensity", "Luftdichte", "WMP.Density");
