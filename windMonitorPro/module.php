@@ -383,7 +383,7 @@ public function RequestAction($Ident, $Value) {
         
         //💾 Beschreiben der Status-Variablen 
         $windInObjHoehe = WindToolsHelper::windUmrechnungSmart($wind, WindToolsHelper::$referenzhoehe, WindToolsHelper::$zielHoeheStandard, WindToolsHelper::$gelaendeAlpha);
-        $boeInObjHoehe = WindToolsHelper::windUmrechnungSmart($boe, WindToolsHelper::$referenzhoehe, $WindToolsHelper::$zielHoeheStandard, WindToolsHelper::$gelaendeAlpha);
+        $boeInObjHoehe = WindToolsHelper::windUmrechnungSmart($boe, WindToolsHelper::$referenzhoehe, WindToolsHelper::$zielHoeheStandard, WindToolsHelper::$gelaendeAlpha);
         SetValueFloat($this->GetIDForIdent("Wind80m"), round($windInObjHoehe * 3.6, 1));
         SetValueFloat($this->GetIDForIdent("Gust80m"), round($boeInObjHoehe * 3.6, 1));
         SetValueInteger($this->GetIDForIdent("WindDirection80m"), (int)$richtung);
