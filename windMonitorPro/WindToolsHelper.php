@@ -285,9 +285,9 @@ class WindToolsHelper
         $jsonStatus = [
             "objekt"      => ($objektName === null || $objektName === "") ? "" : $objektName,
             "restzeit"    => $restNachwirkText,
-            "limitWind"   => $thresholdWind,
+            "limitWind"   => round($thresholdWind,1),
             "wind"        => round($windMS, 1),            
-            "limitBoe"    => $thresholdGust,
+            "limitBoe"    => round($thresholdGust,1),
             "boe"         => round($gustMS, 1),            
             "warnWind"    => GetValueBoolean($idWarnWind),
             "warnGust"    => GetValueBoolean($idWarnGust),
