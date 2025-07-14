@@ -227,7 +227,8 @@ class WindToolsHelper
         }
         return round($windReferenz * pow($hoeheObjekt / $hoeheReferenz, $GelaendeAlpha), 2);
     }
-    
+
+    //$windInObjHoehe = WindToolsHelper::windUmrechnungSmart($wind, WindToolsHelper::$referenzhoehe, WindToolsHelper::$zielHoeheStandard, WindToolsHelper::$gelaendeAlpha);
     public static function berechneSchutzstatusMitNachwirkung(
     float $windMS,
     float $gustMS,
@@ -237,7 +238,10 @@ class WindToolsHelper
     int $idstatusStr,
     int $idWarnWind,
     int $idWarnGust,
-    string $objektName = ""
+    string $objektName = "",
+    float $zielHoehe,
+    array $data
+
     ): void {
         $nachwirkSekunden = $nachwirkMinuten * 60;
         $jetzt = time();
@@ -282,7 +286,9 @@ class WindToolsHelper
         $sek = $rest % 60;
         $restNachwirkText = sprintf("%02d:%02d", $min, $sek);
 
-        $jsonStatus = [
+        $BoeGefahrVorschau = self::ermittleWindAufkommen($data, $thresholdGust, $zielHoehe);
+
+        $StatusCheckValuesJson = [
             "objekt"      => ($objektName === null || $objektName === "") ? "" : $objektName,
             "restzeit"    => $restNachwirkText,
             "limitWind"   => round($thresholdWind,1),
@@ -292,9 +298,10 @@ class WindToolsHelper
             "warnWind"    => GetValueBoolean($idWarnWind),
             "warnGust"    => GetValueBoolean($idWarnGust),
             "nachwirk"    => $nachwirkMinuten,
+            "boeVorschau" => $BoeGefahrVorschau
         ];
 
-        SetValueString($idstatusStr, json_encode($jsonStatus));
+        SetValueString($idstatusStr, json_encode($StatusCheckValuesJson));
 
         // --- Logging (optional) ---
         //IPS_LogMessage("WindMonitorPro",
@@ -302,8 +309,37 @@ class WindToolsHelper
         //);
     }
 
+    public static function ermittleWindAufkommen(array $data, float $threshold, float $Objhoehe): string {
+        $now = time();
+        $times = $data["time"];
+        $boes = $data["gust"];
+        //$threshold = 5.0; // Beispiel-Grenzwert
 
-    //public static function erzeugeSchutzDashboard(array $schutzArray): string {
+        $warnzeit = null;
+        $warnwert = null;
+        $Warnung = false;
+
+        foreach ($times as $i => $zeitStr) {
+            $ts = strtotime($zeitStr);
+            $boeInObjHoehe = WindToolsHelper::windUmrechnungSmart($boes[$i], WindToolsHelper::$referenzhoehe, $Objhoehe, WindToolsHelper::$gelaendeAlpha);
+            if ($ts >= $now && $boeInObjHoehe >= $threshold) {
+                $warnzeit = $zeitStr;
+                $warnwert = $boeInObjHoehe;
+                break; // Nur den ersten Treffer nehmen!
+            }
+        }
+
+        if ($warnzeit !== null) {
+            // Zeit ggf. schön formatieren
+            $uhrzeit = date("H:i", strtotime($warnzeit));
+            $result = "Erhöhtes Windaufkommen ab $uhrzeit Uhr ($warnwert m/s)";
+        } else {
+            $result = "Kein erhöhtes Windaufkommen erwartet";
+        }
+        return $result;
+    }
+
+
     public static function erzeugeSchutzDashboard(array $schutzArray, int $instanceID): string {
         
 
@@ -320,6 +356,31 @@ class WindToolsHelper
             <td style='padding:4px;'>📊 Zähler</td>
 
         </tr>";
+
+        /*
+                $html .= "<tr style='font-weight:bold; background:#f0f0f0;'>
+            <td style='padding:4px;'>📛 Name</td>
+            <td style='padding:4px;'>📏 Höhe</td>
+            <td style='padding:4px;'>🌬️ Wind</td>
+            <td style='padding:4px;'>💥 Böe</td>
+            <td style='padding:4px;'>🧭 Richtung</td>
+            <td style='padding:4px;'>⚠️ Status</td>
+            <td style='padding:4px;'>⏱️ Letzte Warnung</td>
+            <td style='padding:4px;'>📊 Zähler</td>
+            <td style='padding:4px;'>📊 LastWind</td>
+            <td style='padding:4px;'>📊 LastBoe</td>
+            <td style='padding:4px;'>📊 RestZeit</td>
+
+        </tr>";
+
+
+        Mit richtigen Überschriften würde das so aussehen:
+        $html .= "<tr style='font-weight:bold; background:#f0f0f0;'>
+            <th style='padding:4px;'>📛 Name</th>
+            <th style='padding:4px;'>📏 Höhe</th>
+            ...
+        </tr>";
+        */
 
         foreach ($schutzArray as $objekt) {
             $label = $objekt["Label"] ?? "–";

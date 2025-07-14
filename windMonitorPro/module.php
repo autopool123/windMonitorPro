@@ -416,9 +416,10 @@ public function RequestAction($Ident, $Value) {
 
         //Erzeuge das Schutzobjekt-Array welches alle ueber die form.json erstellten Schutzobjekte samt Inhalt enthaelt 
         $schutzArray = json_decode($this->ReadPropertyString("Schutzobjekte"), true);
-        IPS_LogMessage("Debug", print_r($schutzArray, true));
-        // Schritt 1: Alle vorhandenen Schutz-Variablen der Instanz in ein Array schreiben
-        // Also ein Array mit allen bereits vorhandenen Schutzvariablen erstellen
+        //IPS_LogMessage("Debug", print_r($schutzArray, true));
+        // Schritt 1: Alle vorhandenen Schutz-Variablen der Instanz in ein Array (alleVariablen) schreiben
+        // Also ein Array mit allen bereits vorhandenen Schutzvariablen erstellen um spaeter zu pruefen ob eine Variable bereits vorhanden
+        // oder neu erstellt werden muss
         $alleVariablen = [];
         $instanzObjekte = IPS_GetChildrenIDs($this->InstanceID);
         foreach ($instanzObjekte as $objID) {
@@ -524,7 +525,6 @@ public function RequestAction($Ident, $Value) {
             //$warnung = $inSektor && ($wind >= $minWind || $boe >= $minGust);
             $NachwirkZeit = GetValueString($this->GetIDForIdent("NachwirkzeitInfo"));
             $NachwirkZeit = intval($NachwirkZeit);
-
             WindToolsHelper::berechneSchutzstatusMitNachwirkung(
                 $windInObjHoehe,
                 $boeInObjHoehe,
@@ -534,7 +534,9 @@ public function RequestAction($Ident, $Value) {
                 $this->GetIDForIdent("Status_" . $ident), 
                 $this->GetIDForIdent("Warnung_" . $ident),
                 $this->GetIDForIdent("WarnungBoe_" . $ident),
-                $objekt["Label"] ?? "Unbenannt"
+                $objekt["Label"] ?? "Unbenannt",
+                $hoehe,
+                $block
             );
         }        
 
