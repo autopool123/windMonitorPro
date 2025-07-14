@@ -310,7 +310,7 @@ class WindToolsHelper
     }
 
     public static function ermittleWindAufkommen(array $data, float $threshold, float $Objhoehe): string {
-        /*$timezone = new DateTimeZone('Europe/Berlin');
+        $timezone = new DateTimeZone('Europe/Berlin');
         $now = time();
         $times = $data["time"];
         $boes = $data["gust"];
@@ -333,10 +333,7 @@ class WindToolsHelper
                 break; // Nur den ersten Treffer nehmen!
             }
         }
-        // --- Logging (optional) ---
-        //IPS_LogMessage("WindMonitorPro",
-        //    "📡 Zeit aktuell ($nachwirkMinuten min) '$objektName' Wind=$windMS Boe=$gustMS Schwellen=$thresholdWind/$thresholdGust WarnWind=" . (GetValueBoolean($idWarnWind) ? "JA" : "NEIN") . " WarnGust=" . (GetValueBoolean($idWarnGust) ? "JA" : "NEIN") . " Nachwirkzeit: $restNachwirkText"
-        //);
+
         if ($warnzeit !== null) {
             // Zeit ggf. schön formatieren
             $dt = DateTime::createFromFormat('Y-m-d H:i', $warnzeit, $timezone);
@@ -346,50 +343,14 @@ class WindToolsHelper
         } else {
             $result = "Kein erhöhtes Windaufkommen erwartet";
         }
+
+        // --- Logging (optional) ---
+        IPS_LogMessage("WindMonitorPro",
+            "if ($ts >= $now && $boeInObjHoehe >= $threshold)"
+        );
         return $result;
     }
-*/
 
-    $now = time();
-$times = $data["time"];
-$boes = $data["gust"];
-$threshold = 5.0; // Beispiel-Grenzwert
-
-$warnzeit = null;
-$warnwert = null;
-
-// Zeitzone CEST (Europa/Berlin)
-$timezone = new DateTimeZone('Europe/Berlin');
-
-foreach ($times as $i => $zeitStr) {
-    // Zeitstring mit Zeitzone CEST parsen
-    $dt = DateTime::createFromFormat('Y-m-d H:i', $zeitStr, $timezone);
-    if (!$dt) continue; // Fehler beim Parsen überspringen
-
-    $ts = $dt->getTimestamp();
-
-    $boeInObjHoehe = WindToolsHelper::windUmrechnungSmart(
-        $boes[$i], WindToolsHelper::$referenzhoehe, $Objhoehe, WindToolsHelper::$gelaendeAlpha
-    );
-
-    if ($ts >= $now && $boeInObjHoehe >= $threshold) {
-        $warnzeit = $zeitStr;
-        $warnwert = $boeInObjHoehe;
-        break; // Erster Treffer
-    }
-}
-
-if ($warnzeit !== null) {
-    // Ausgabe in lokaler Zeit (CEST)
-    $dt = DateTime::createFromFormat('Y-m-d H:i', $warnzeit, $timezone);
-    $uhrzeit = $dt->format('H:i');
-    $result = "Erhöhtes Windaufkommen ab $uhrzeit Uhr ($warnwert m/s)";
-} else {
-    $result = "Kein erhöhtes Windaufkommen erwartet";
-}
-
-return $result;
-    }
 
     public static function erzeugeSchutzDashboard(array $schutzArray, int $instanceID): string {
         
