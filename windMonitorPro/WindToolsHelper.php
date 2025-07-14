@@ -235,7 +235,7 @@ class WindToolsHelper
         float $thresholdWind,
         float $thresholdGust,
         int $nachwirkMinuten,
-        int $idRestNachwirkStr,
+        int $idstatusStr,
         int $idWarnWind,
         int $idWarnGust,
         string $objektName = ""
@@ -248,14 +248,14 @@ class WindToolsHelper
         $warnGust = $gustMS >= $thresholdGust;
 
         // --- Restnachwirkzeit auslesen und berechnen ---
-        $restzeitString = GetValueString($idRestNachwirkStr); // z.B. "09:45"
+        $restzeitString = GetValueString($idstatusStr); // z.B. "09:45"
         $restzeitTeile = explode(':', $restzeitString);
         $alteRestzeitSek = 0;
         if (count($restzeitTeile) === 2) {
             $alteRestzeitSek = intval($restzeitTeile[0]) * 60 + intval($restzeitTeile[1]);
         }
 
-        $letzterRestzeitTS = IPS_GetVariable($idRestNachwirkStr)['VariableUpdated'];
+        $letzterRestzeitTS = IPS_GetVariable($idstatusStr)['VariableUpdated'];
         $vergangen = $jetzt - $letzterRestzeitTS;
         $rest = max($alteRestzeitSek - $vergangen, 0);
 
@@ -279,7 +279,7 @@ class WindToolsHelper
         $min = floor($rest / 60);
         $sek = $rest % 60;
         $restNachwirkText = sprintf("%02d:%02d", $min, $sek);
-        SetValueString($idRestNachwirkStr, $restNachwirkText);
+        SetValueString($idstatusStr, $restNachwirkText);
 
         // --- Logging (optional) ---
         IPS_LogMessage("WindMonitorPro",
@@ -290,56 +290,79 @@ class WindToolsHelper
     
     
     public static function berechneSchutzstatusMitNachwirkung(
-        float $windMS,
-        float $gustMS,
-        float $thresholdWind,
-        float $thresholdGust,
-        int $nachwirkMinuten,
-        int $idRestNachwirkStr,
-        int $idWarnWind,
-        int $idWarnGust,
-        int $idLetzteWarnungTS,
-        int $idSchutzAktiv,
-        string $objektName = ""
-    ): void {
-        $jetzt = time();
+    float $windMS,
+    float $gustMS,
+    float $thresholdWind,
+    float $thresholdGust,
+    int $nachwirkMinuten,
+    int $idstatusStr,
+    int $idWarnWind,
+    int $idWarnGust,
+    string $objektName = ""
+): void {
+    $nachwirkSekunden = $nachwirkMinuten * 60;
+    $jetzt = time();
 
-        //Check ob Warngrenzen erreicht
-        $letzteWarnung = GetValueInteger($idLetzteWarnungTS);
-        $warnWind = $windMS >= $thresholdWind;
-        $warnGust = $gustMS >= $thresholdGust;
-        $nachwirkSekunden = $nachwirkMinuten * 60;
-        $verstrichen = $jetzt - $letzteWarnung;
-        $restNachwirkSekunden = $nachwirkSekunden - $verstrichen;
-        
+    // --- Warnbedingungen prüfen ---
+    $warnWind = $windMS >= $thresholdWind;
+    $warnGust = $gustMS >= $thresholdGust;
 
-
-        if ($warnWind || $warnGust) {
-            SetValueInteger($idLetzteWarnungTS, $jetzt);
+    // --- Restnachwirkzeit auslesen und berechnen ---
+    $restzeitJson = GetValueString($idstatusStr); // z.B. '{"restzeit":"09:45",...}'
+    $status = @json_decode($restzeitJson, true);
+    if (!is_array($status)) {
+        $status = [];
+    }
+    $alteRestzeitSek = 0;
+    if (isset($status['restzeit'])) {
+        $zeitTeile = explode(':', $status['restzeit']);
+        if (count($zeitTeile) === 2) {
+            $alteRestzeitSek = intval($zeitTeile[0]) * 60 + intval($zeitTeile[1]);
         }
+    }
 
-        $letzteWarnung = GetValueInteger($idLetzteWarnungTS);
-        //$schutzAktiv = ($jetzt - $letzteWarnung) <= $nachwirkMinuten*60;
-        $schutzAktiv = $restNachwirkSekunden > 0;
+    $letzterRestzeitTS = IPS_GetVariable($idstatusStr)['VariableUpdated'];
+    $vergangen = $jetzt - $letzterRestzeitTS;
+    $rest = max($alteRestzeitSek - $vergangen, 0);
 
-        SetValueBoolean($idSchutzAktiv, $schutzAktiv);
-        // Restliche Nachwirkzeit berechnen (nur falls > 0)
-        $restNachwirkText = "00:00 min";
-        if ($restNachwirkSekunden > 0) {
-            $min = floor($restNachwirkSekunden / 60);
-            $sek = $restNachwirkSekunden % 60;
-            $restNachwirkText = sprintf(" | Nachwirkzeit: %02d:%02d min", $min, $sek);
-        }
-        //Setze Warn-Variablen entsprechend Check
+    // --- Logik für Nachwirkzeit und Warnvariablen ---
+    if ($warnWind || $warnGust) {
+        $rest = $nachwirkSekunden;
         SetValueBoolean($idWarnWind, $warnWind);
         SetValueBoolean($idWarnGust, $warnGust);
-        SetValueString($idRestNachwirkStr, $restNachwirkText);
-
-        // Optionales Logging zur Diagnose
-        IPS_LogMessage("WindMonitorPro",
-        "📡 Nachwirkcheck($nachwirkMinuten min) '$objektName' Wind=$windMS Boe=$gustMS Schwellen=$thresholdWind/$thresholdGust SchutzAktiv=" . ($schutzAktiv ? "JA" : "NEIN") . $restNachwirkText
-        );
+    } elseif ($rest > 0) {
+        SetValueBoolean($idWarnWind, true);
+        SetValueBoolean($idWarnGust, true);
+    } else {
+        SetValueBoolean($idWarnWind, false);
+        SetValueBoolean($idWarnGust, false);
     }
+
+    // --- Restzeit-String + Zusatzinfos als Array bauen ---
+    $min = floor($rest / 60);
+    $sek = $rest % 60;
+    $restNachwirkText = sprintf("%02d:%02d", $min, $sek);
+
+    $jsonStatus = [
+        "restzeit"    => $restNachwirkText,
+        "wind"        => round($windMS, 1),
+        "boe"         => round($gustMS, 1),
+        "warnWind"    => GetValueBoolean($idWarnWind),
+        "warnGust"    => GetValueBoolean($idWarnGust),
+        "nachwirk"    => $nachwirkMinuten,
+    ];
+    if ($objektName != "") {
+        $jsonStatus["objekt"] = $objektName;
+    }
+
+    SetValueString($idstatusStr, json_encode($jsonStatus));
+
+    // --- Logging (optional) ---
+    IPS_LogMessage("WindMonitorPro",
+        "📡 Nachwirkcheck($nachwirkMinuten min) '$objektName' Wind=$windMS Boe=$gustMS Schwellen=$thresholdWind/$thresholdGust WarnWind=" . (GetValueBoolean($idWarnWind) ? "JA" : "NEIN") . " WarnGust=" . (GetValueBoolean($idWarnGust) ? "JA" : "NEIN") . " Nachwirkzeit: $restNachwirkText"
+    );
+}
+
 
 
     //public static function erzeugeSchutzDashboard(array $schutzArray): string {
