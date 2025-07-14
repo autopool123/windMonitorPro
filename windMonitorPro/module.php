@@ -414,8 +414,9 @@ public function RequestAction($Ident, $Value) {
 
 
 
+        //Erzeuge das Schutzobjekt-Array welches alle ueber die form.json erstellten Schutzobjekte samt Inhalt enthaelt 
         $schutzArray = json_decode($this->ReadPropertyString("Schutzobjekte"), true);
-
+        IPS_LogMessage("Debug", print_r($schutzArray, true));
         // Schritt 1: Alle vorhandenen Schutz-Variablen der Instanz in ein Array schreiben
         // Also ein Array mit allen bereits vorhandenen Schutzvariablen erstellen
         $alleVariablen = [];
@@ -438,15 +439,20 @@ public function RequestAction($Ident, $Value) {
 
         // Schritt 2: Mittels Eintraegen im Schutzobjekt prüfen ob alle Variable vorhanden
         // und ggf, falls Neueintrag Variable anlegen
-        $genutzteIdents = [];
-        //Schreibe alle benoetigten Warnvariablen Idents in das Array $genutzteIdents
+
+        //Lege ein Array $genutzteIdents[] an, welches sämtliche Identtexte fasst die fuer ein Schutzobjekt benoetigt werden 
+        //generiere die Identtexte und schreibe diese in das Array. Aus diesem werden spaeter die Idents gholt m ein Statusvariable
+        //zu lesen oder zu shreiben 
+        $genutzteIdents = [];//erzeuge das array
         foreach ($schutzArray as $eintrag) {
+            //generiere die Idents nach dem Schema: "Inhaltsbescheibung_Schutzobjektname"
             $name = $eintrag["Label"] ?? "Unbenannt";
             $ident = "Warnung_" . preg_replace('/\W+/', '_', $name);
             $identBoe = "WarnungBoe_" . preg_replace('/\W+/', '_', $name);
             $identWC = "WarnCount_" . preg_replace('/\W+/', '_', $name);
             $identWCBoe = "WarnCountBoe_" . preg_replace('/\W+/', '_', $name);
             $identStatus = "Status_" . preg_replace('/\W+/', '_', $name);
+            //Beschreibe die Arrayfelder mit den erzeugten Idents
             $genutzteIdents[] = $ident;
             $genutzteIdents[] = $identBoe;
             $genutzteIdents[] = $identWC;
@@ -518,33 +524,7 @@ public function RequestAction($Ident, $Value) {
             //$warnung = $inSektor && ($wind >= $minWind || $boe >= $minGust);
             $NachwirkZeit = GetValueString($this->GetIDForIdent("NachwirkzeitInfo"));
             $NachwirkZeit = intval($NachwirkZeit);
-/*
-                public static function berechneSchutzstatusMitNachwirkungNeu(
-        float $windMS,
-        float $gustMS,
-        float $thresholdWind,
-        float $thresholdGust,
-        int $nachwirkMinuten,
-        int $idRestNachwirkStr,
-        int $idWarnWind,
-        int $idWarnGust,
-        string $objektName = ""
 
-
-            WindToolsHelper::berechneSchutzstatusMitNachwirkung(
-                $windInObjHoehe,
-                $boeInObjHoehe,
-                $minWind,
-                $minGust,
-                $NachwirkZeit,
-                $this->GetIDForIdent("NachwirkEnde"),
-                $this->GetIDForIdent("Warnung_" . $ident),
-                $this->GetIDForIdent("WarnungBoe_" . $ident),
-                $this->GetIDForIdent("LetzteWarnungTS"),
-                $this->GetIDForIdent("WarnungAktiv"),
-                $objekt["Label"] ?? "Unbenannt"
-            );
-*/
             WindToolsHelper::berechneSchutzstatusMitNachwirkung(
                 $windInObjHoehe,
                 $boeInObjHoehe,
@@ -556,7 +536,6 @@ public function RequestAction($Ident, $Value) {
                 $this->GetIDForIdent("WarnungBoe_" . $ident),
                 $objekt["Label"] ?? "Unbenannt"
             );
-
         }        
 
         // Dashboard aktualisieren
