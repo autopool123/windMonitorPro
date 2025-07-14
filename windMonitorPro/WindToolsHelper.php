@@ -310,6 +310,7 @@ class WindToolsHelper
     }
 
     public static function ermittleWindAufkommen(array $data, float $threshold, float $Objhoehe): string {
+        $timezone = new DateTimeZone('Europe/Berlin');
         $now = time();
         $times = $data["time"];
         $boes = $data["gust"];
@@ -320,7 +321,14 @@ class WindToolsHelper
         $Warnung = false;
 
         foreach ($times as $i => $zeitStr) {
-            $ts = strtotime($zeitStr);
+
+            $dt = DateTime::createFromFormat('Y-m-d H:i', $zeitStr, $timezone);
+            if (!$dt) continue; // Fehler beim Parsen überspringen
+
+            $ts = $dt->getTimestamp();
+
+
+            //$ts = strtotime($zeitStr);
             $boeInObjHoehe = WindToolsHelper::windUmrechnungSmart($boes[$i], WindToolsHelper::$referenzhoehe, $Objhoehe, WindToolsHelper::$gelaendeAlpha);
             if ($ts >= $now && $boeInObjHoehe >= $threshold) {
                 $warnzeit = $zeitStr;
@@ -331,7 +339,9 @@ class WindToolsHelper
 
         if ($warnzeit !== null) {
             // Zeit ggf. schön formatieren
-            $uhrzeit = date("H:i", strtotime($warnzeit));
+            $dt = DateTime::createFromFormat('Y-m-d H:i', $warnzeit, $timezone);
+            $uhrzeit = $dt->format('H:i');
+            //$uhrzeit = date("H:i", strtotime($warnzeit));
             $result = "Erhöhtes Windaufkommen ab $uhrzeit Uhr ($warnwert m/s)";
         } else {
             $result = "Kein erhöhtes Windaufkommen erwartet";
