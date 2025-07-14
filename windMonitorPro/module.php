@@ -506,7 +506,6 @@ public function RequestAction($Ident, $Value) {
             $minWind = $objekt["MinWind"] ?? 10.0;
             $minGust = $objekt["MinGust"] ?? 14.0;
             $richtungsliste = $objekt["RichtungsKuerzelListe"] ?? "";
-            $status = $objekt["Status"];
             $hoehe = $objekt["Hoehe"];
             $windInObjHoehe = WindToolsHelper::windUmrechnungSmart($wind, WindToolsHelper::$referenzhoehe, $hoehe, WindToolsHelper::$gelaendeAlpha);
             $boeInObjHoehe = WindToolsHelper::windUmrechnungSmart($boe, WindToolsHelper::$referenzhoehe, $hoehe, WindToolsHelper::$gelaendeAlpha);
