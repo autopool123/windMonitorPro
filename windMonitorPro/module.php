@@ -519,6 +519,18 @@ public function RequestAction($Ident, $Value) {
             $NachwirkZeit = GetValueString($this->GetIDForIdent("NachwirkzeitInfo"));
             $NachwirkZeit = intval($NachwirkZeit);
 /*
+                public static function berechneSchutzstatusMitNachwirkungNeu(
+        float $windMS,
+        float $gustMS,
+        float $thresholdWind,
+        float $thresholdGust,
+        int $nachwirkMinuten,
+        int $idRestNachwirkStr,
+        int $idWarnWind,
+        int $idWarnGust,
+        string $objektName = ""
+
+
             WindToolsHelper::berechneSchutzstatusMitNachwirkung(
                 $windInObjHoehe,
                 $boeInObjHoehe,
@@ -541,7 +553,7 @@ public function RequestAction($Ident, $Value) {
                 $NachwirkZeit,
                 $this->GetIDForIdent("NachwirkEnde"),
                 $this->GetIDForIdent("Warnung_" . $ident),
-                $this->GetIDForIdent("LetzteWarnungTS"),
+                $this->GetIDForIdent("WarnungBoe_" . $ident),
                 $objekt["Label"] ?? "Unbenannt"
             );
 
