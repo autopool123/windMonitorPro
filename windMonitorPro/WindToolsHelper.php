@@ -338,15 +338,16 @@ class WindToolsHelper
             // Zeit ggf. schön formatieren
             $dt = DateTime::createFromFormat('Y-m-d H:i', $warnzeit, $timezone);
             $uhrzeit = $dt->format('H:i');
+            $datum = $dt->format('d-m-Y');
             //$uhrzeit = date("H:i", strtotime($warnzeit));
-            $result = "Erhöhtes Windaufkommen ab $uhrzeit Uhr ($warnwert m/s)";
+            $result = "Erhöhtes Windaufkommen ab $datum um $uhrzeit Uhr ($warnwert m/s)";
         } else {
             $result = "Kein erhöhtes Windaufkommen erwartet";
         }
 
         // --- Logging (optional) ---
         IPS_LogMessage("WindMonitorPro",
-            "if ($ts >= $now && $boeInObjHoehe >= $threshold)"
+            "if ($ts >= $now && $boeInObjHoehe >= $threshold) in Index: $i "
         );
         return $result;
     }
