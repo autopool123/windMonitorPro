@@ -84,7 +84,7 @@ public function ApplyChanges() {
     if (!IPS_VariableProfileExists("WindPro.Speed.1")) {
         IPS_CreateVariableProfile("WindPro.Speed.1", VARIABLETYPE_FLOAT);
         IPS_SetVariableProfileDigits("WindPro.Speed.1", 1);
-        IPS_SetVariableProfileText("WindPro.Speed.1", "", " km/h");
+        IPS_SetVariableProfileText("WindPro.Speed.1", "", " m/s");
         IPS_SetVariableProfileIcon("WindPro.Speed.1", "WindSpeed");
     }
 
@@ -143,8 +143,8 @@ public function ApplyChanges() {
 
 
     // 🧾 Variablen registrieren
-    $this->RegisterVariableFloat("Wind80m", "Wind80m-->Lokal)", "WindPro.Speed.1");
-    $this->RegisterVariableFloat("Gust80m", "Boe80m-->Lokal", "WindPro.Speed.1");
+    $this->RegisterVariableFloat("Wind80m", "Wind80m[MB_15Min_Date])", "WindPro.Speed.1");
+    $this->RegisterVariableFloat("Gust80m", "Boe80m[MB_15Min_Date]", "WindPro.Speed.1");
     $this->RegisterVariableInteger("WindDirection80m", "Windrichtung (80 m)", "WindPro.Direction.Degree");
     $this->RegisterVariableFloat("AirPressure", "Luftdruck", "WMP.AirPressure");
     $this->RegisterVariableFloat("AirDensity", "Luftdichte", "WMP.Density");
@@ -393,8 +393,8 @@ public function RequestAction($Ident, $Value) {
         //💾 Beschreiben der Status-Variablen 
         $windInObjHoehe = WindToolsHelper::windUmrechnungSmart($wind, WindToolsHelper::$referenzhoehe, WindToolsHelper::$zielHoeheStandard, WindToolsHelper::$gelaendeAlpha);
         $boeInObjHoehe = WindToolsHelper::windUmrechnungSmart($boe, WindToolsHelper::$referenzhoehe, WindToolsHelper::$zielHoeheStandard, WindToolsHelper::$gelaendeAlpha);
-        SetValueFloat($this->GetIDForIdent("Wind80m"), round($windInObjHoehe * 3.6, 1));
-        SetValueFloat($this->GetIDForIdent("Gust80m"), round($boeInObjHoehe * 3.6, 1));
+        SetValueFloat($this->GetIDForIdent("Wind80m"), round($windInObjHoehe, 2));
+        SetValueFloat($this->GetIDForIdent("Gust80m"), round($boeInObjHoehe, 2));
         SetValueInteger($this->GetIDForIdent("WindDirection80m"), (int)$richtung);
         SetValueFloat($this->GetIDForIdent("AirPressure"),  round($LuftDruck, 3));
         SetValueFloat($this->GetIDForIdent("AirDensity"), round($LuftDichte, 3));
