@@ -547,18 +547,21 @@ class WindToolsHelper
                 <td style='padding:4px;'>$status</td>
                 <td style='padding:4px;'>$tsText</td>
                 <td style='padding:4px;'>$zaehler</td>
-
             </tr>";
 
             $html .= "<tr>
-            <td colspan='8' style='padding:4px 16px; font-size:13px; background:#f8f8f8; color:#333;'>
-            <span style='opacity:.7;'>🌬️ Prognose für Limitüberschreitung:</span>
-            <span style='margin-left:20px;'>am Datum: <b>$DatumPrognose</b></span>
-            <span style='margin-left:20px;'> um Uhrzeit: <b>$TimePrognose</b></span>
-            <span style='margin-left:20px;'>mit Wert: <b>$WindPrognose m/s</b></span>
-            </td>
-            </td>
-        </tr>";
+                <td colspan='8' style='padding:4px 16px; font-size:13px; color:#333;'>
+                <span style='opacity:.7;'>🌬️ Prognose für Limitüberschreitung:</span>
+                <span style='margin-left:20px;'>am Datum: <b>$DatumPrognose</b></span>
+                <span style='margin-left:20px;'> um Uhrzeit: <b>$TimePrognose</b></span>
+                <span style='margin-left:20px;'>mit Wert: <b>$WindPrognose m/s</b></span>
+                </td>
+            </tr>";
+
+            // Leerzeile einfügen:
+            $html .= "<tr>
+                <td colspan='8' style='height:12px; border: none;'>
+            </td></tr>";
         }
 
         $html .= "</table></div>";
