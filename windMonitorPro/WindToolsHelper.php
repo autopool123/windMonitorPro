@@ -415,6 +415,23 @@ class WindToolsHelper
             $tsID = @IPS_GetObjectIDByIdent("LetzteWarnungTS_" . preg_replace('/\W+/', '_', $label), $instanceID);
                 $tsText = ($tsID !== false && IPS_VariableExists($tsID)) ? date("H:i", GetValueInteger($tsID)) . " Uhr" : "–";
 
+
+            //Json-Variable Schutzobjekt-Status laden 
+            $vid = @IPS_GetObjectIDByIdent("Status_" . preg_replace('/\W+/', '_', $label), $instanceID);
+            $JsonProperties = GetValueString($vid);    
+            // JSON zu Array
+            $properties = json_decode($JsonProperties, true);
+            $JsonWindPrognose = $properties['boeVorschau'];
+            $prognose = json_decode($JsonWindPrognose, true);
+            $DatumPrognose = $prognose['datum'];
+            $TimePrognose = $prognose['uhrzeit'];
+            $WindPrognose = $prognose['wert'];
+
+
+
+
+
+
             //$wind = GetValueFormatted(@IPS_GetObjectIDByIdent("Warnung_" . preg_replace('/\W+/', '_', $label)));
             
             //$status = $wind === "true" ? "<span style='color:#e74c3c;'>⚠️ Aktiv</span>" : "<span style='color:#2ecc71;'>✅ Inaktiv</span>";
@@ -510,7 +527,16 @@ class WindToolsHelper
             
             //$status = $wind === "true" ? "<span style='color:#e74c3c;'>⚠️ Aktiv</span>" : "<span style='color:#2ecc71;'>✅ Inaktiv</span>";
 
-
+            //Json-Variable Schutzobjekt-Status laden 
+            $vid = @IPS_GetObjectIDByIdent("Status_" . preg_replace('/\W+/', '_', $label), $instanceID);
+            $JsonProperties = GetValueString($vid);    
+            // JSON zu Array
+            $properties = json_decode($JsonProperties, true);
+            $JsonWindPrognose = $properties['boeVorschau'];
+            $prognose = json_decode($JsonWindPrognose, true);
+            $DatumPrognose = $prognose['datum'] ?? '–';
+            $TimePrognose  = $prognose['uhrzeit'] ?? '–';
+            $WindPrognose  = isset($prognose['wert']) && $prognose['wert'] !== null ? number_format($prognose['wert'], 2, ',', '') : '–';
 
             $html .= "<tr>
                 <td style='padding:4px;'>$label</td>
@@ -523,6 +549,15 @@ class WindToolsHelper
                 <td style='padding:4px;'>$zaehler</td>
 
             </tr>";
+
+            $html .= "<tr>
+            <td colspan='8' style='padding:4px 16px; font-size:13px; background:#f8f8f8; color:#333;'>
+            <span style='opacity:.7;'>🌬️ Prognose:</span>
+            <span style='margin-left:20px;'>Datum: <b>$DatumPrognose</b></span>
+            <span style='margin-left:20px;'>Uhrzeit: <b>$TimePrognose</b></span>
+            <span style='margin-left:20px;'>Wert: <b>$WindPrognose m/s</b></span>
+            </td>
+        </tr>";
         }
 
         $html .= "</table></div>";
