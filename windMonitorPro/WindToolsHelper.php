@@ -552,10 +552,11 @@ class WindToolsHelper
 
             $html .= "<tr>
             <td colspan='8' style='padding:4px 16px; font-size:13px; background:#f8f8f8; color:#333;'>
-            <span style='opacity:.7;'>🌬️ Prognose:</span>
-            <span style='margin-left:20px;'>Datum: <b>$DatumPrognose</b></span>
-            <span style='margin-left:20px;'>Uhrzeit: <b>$TimePrognose</b></span>
-            <span style='margin-left:20px;'>Wert: <b>$WindPrognose m/s</b></span>
+            <span style='opacity:.7;'>🌬️ Prognose für Limitüberschreitung:</span>
+            <span style='margin-left:20px;'>am Datum: <b>$DatumPrognose</b></span>
+            <span style='margin-left:20px;'> um Uhrzeit: <b>$TimePrognose</b></span>
+            <span style='margin-left:20px;'>mit Wert: <b>$WindPrognose m/s</b></span>
+            </td>
             </td>
         </tr>";
         }
