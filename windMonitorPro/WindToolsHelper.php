@@ -465,7 +465,7 @@ class WindToolsHelper
                 <span style='margin-left:20px;'>am Datum: <b>$DatumPrognose</b></span>
                 <span style='margin-left:20px;'> um Uhrzeit: <b>$TimePrognose</b></span>
                 <span style='margin-left:20px;'>mit Wert: <b>$WindPrognose m/s</b></span>
-                <span style='margin-left:10px;'>Dir: <b>$WindDirection m/s</b></span>
+                <span style='margin-left:5px;'>Dir: <b>$WindDirection</b></span>
                 </td>
             </tr>";
 
