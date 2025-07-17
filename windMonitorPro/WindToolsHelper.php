@@ -362,9 +362,20 @@ class WindToolsHelper
 
     
     public static function erzeugeSchutzDashboard(array $schutzArray, int $instanceID): string {
+
+        @$updateVarID = @IPS_GetObjectIDByIdent("UTC_ModelRun", $instanceID);
+        $updateMBString = ($updateVarID && IPS_VariableExists($updateVarID)) ? GetValueString($updateVarID) : '';
         
         @$updateVarID = @IPS_GetObjectIDByIdent("LetzteAuswertungDaten", $instanceID);
         $updateString = ($updateVarID && IPS_VariableExists($updateVarID)) ? GetValueString($updateVarID) : '';
+
+        if ($updateMBString !== '' && preg_match('/^(\d{2}\.\d{2}\.\d{4})\s+(\d{2}:\d{2}):\d{2}$/', $updateMBString, $m)) {
+            // Nur Datum und Stunden:Minuten ausgeben, sekundengenau meist nicht nötig
+            $standText = $m[1] . ' ' . $m[2] . ' Uhr';
+        } else {
+            // Fallback: Original oder –
+            $standMBText = $updateMBString !== '' ? $updateMBString : '–';
+        }
 
         if ($updateString !== '' && preg_match('/^(\d{2}\.\d{2}\.\d{4})\s+(\d{2}:\d{2}):\d{2}$/', $updateString, $m)) {
             // Nur Datum und Stunden:Minuten ausgeben, sekundengenau meist nicht nötig
@@ -378,7 +389,7 @@ class WindToolsHelper
         $html = "<div style='font-family:sans-serif; padding:10px;'>
             <h3>🧯 Schutzobjekt-Übersicht
             <span style='font-size:13px; font-weight:normal; margin-left:18px; color:#888;'>
-            (Stand: $standText)
+            (MeteoBlue-Daten vom: $standMBText<span style='margin-left:22px;'>Datei ausgelesen am: $standText</span>)
             </span>
             </h3>
             <table style='font-size:14px; border-collapse:collapse;'>";
