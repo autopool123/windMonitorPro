@@ -84,7 +84,8 @@ class windMonitorPro extends IPSModule {
         // Timer für API-Abruf (meteoblue) -- FetchTimer
         $this->RegisterTimer("FetchTimer", 0, 'WMP_FetchMeteoblue($_IPS[\'TARGET\']);');
         // Timer für Datei-Auswertung
-        $this->RegisterTimer("ReadTimer", 0, 'WMP_ReadFromFile($_IPS[\'TARGET\']);');
+        //$this->RegisterTimer("ReadTimer", 0, 'WMP_ReadFromFile($_IPS[\'TARGET\']);');
+        $this->RegisterTimer("ReadTimer", 0, 'IPS_RequestAction($_IPS[\'TARGET\'], "UpdateWind", "");');
 
         $this->RegisterVariableString("FetchJSON", "Letzter JSON-Download");
         $this->RegisterVariableString("SchutzStatusText", "🔍 Schutzstatus");
@@ -240,7 +241,8 @@ public function ApplyChanges() {
     // Nur aktivieren, wenn Instanz "aktiv" ist
     if ($this->ReadPropertyBoolean("Aktiv")) {
         $this->SetTimerInterval("FetchTimer", $fetchMin * 60 * 1000);
-        $this->SetTimerInterval("ReadTimer",  $readMin  * 60 * 1000);
+        //$this->SetTimerInterval("ReadTimer",  $readMin  * 60 * 1000);
+        $this->SetTimerInterval("ReadTimer", max(1, $readMin) * 60 * 1000);
     } else {
         $this->SetTimerInterval("FetchTimer", 0); // deaktivieren
         $this->SetTimerInterval("ReadTimer",  0);
@@ -248,8 +250,8 @@ public function ApplyChanges() {
 
 //---------------------------------------------------------------------------
 //ZUM TEST DIE DATEN AUSWERTEN AUCH WENN INAKTIV    
-//$this->SetTimerInterval("ReadTimer",  $readMin  * 60 * 1000);
-//IPS_LogMessage("WindMonitorPro", "ReadTimer gestartet: $readMin in Minuten");
+$this->SetTimerInterval("ReadTimer", max(1, $readMin) * 60 * 1000);
+IPS_LogMessage("WindMonitorPro", "ReadTimer gestartet: $readMin in Minuten");
 //---------------------------------------------------------------------------
 
 
