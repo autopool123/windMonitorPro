@@ -546,9 +546,11 @@ class WindToolsHelper
 
 
             $dt = DateTime::createFromFormat('d.m.Y', $DatumPrognose);
+            $wochentage = ['So','Mo','Di','Mi','Do','Fr','Sa'];
             if ($dt) {
-                $fmt = new IntlDateFormatter('de_DE', IntlDateFormatter::NONE, IntlDateFormatter::NONE, null, null, 'EEE');
-                $dayShort = $fmt->format($dt); // z.B. "Mi
+                $dayShort = $wochentage[$dt->format('w')]; // 'w' ist 0 (So) bis 6 (Sa)
+                //$fmt = new IntlDateFormatter('de_DE', IntlDateFormatter::NONE, IntlDateFormatter::NONE, null, null, 'EEE');
+                //$dayShort = $fmt->format($dt); // z.B. "Mi
                 $datumMitTag = "$dayShort, $DatumPrognose";
             } else {
                 $datumMitTag = $DatumPrognose;
