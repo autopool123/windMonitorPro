@@ -349,7 +349,8 @@ class WindToolsHelper
                 $result = [
                     'datum' => $dt->format('d.m.Y'),
                     'uhrzeit' => $dt->format('H:i'),
-                    'wert' => round($boeInObjHoehe, 2)
+                    'wert' => round($boeInObjHoehe, 2),
+                    'richtung' => gradZuRichtung($data["winddirection_80m"][$i])
                 ];
                 break;
             }
@@ -429,6 +430,7 @@ class WindToolsHelper
             $DatumPrognose = $prognose['datum'] ?? '–';
             $TimePrognose  = $prognose['uhrzeit'] ?? '–';
             $WindPrognose  = isset($prognose['wert']) && $prognose['wert'] !== null ? number_format($prognose['wert'], 2, ',', '') : '–';
+            $WindDirection = $prognose['richtung']?? '–';
 
             $dt = DateTime::createFromFormat('d.m.Y', $DatumPrognose);
             //Die Klasse IntlDateFormatter fehlt deshalb Umweg fuer Wochentage ueber $wochentage = ['So','Mo','...
@@ -463,6 +465,7 @@ class WindToolsHelper
                 <span style='margin-left:20px;'>am Datum: <b>$DatumPrognose</b></span>
                 <span style='margin-left:20px;'> um Uhrzeit: <b>$TimePrognose</b></span>
                 <span style='margin-left:20px;'>mit Wert: <b>$WindPrognose m/s</b></span>
+                <span style='margin-left:10px;'>Dir: <b>$WindDirection m/s</b></span>
                 </td>
             </tr>";
 
