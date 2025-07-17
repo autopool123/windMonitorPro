@@ -205,6 +205,7 @@ public function ApplyChanges() {
 //---------------------------------------------------------------------------
 //ZUM TEST DIE DATEN AUSWERTEN AUCH WENN INAKTIV    
 $this->SetTimerInterval("ReadTimer",  $readMin  * 60 * 1000);
+IPS_LogMessage("WindMonitorPro", "ReadTimer gestartet: $readMin in Minuten");
 //---------------------------------------------------------------------------
 
 
@@ -526,24 +527,24 @@ public function RequestAction($Ident, $Value) {
             //Check ob Windrichtung die Warnung fuer Schutzobjekt betrifft
             $kuerzelArray = array_filter(array_map('trim', explode(',', $richtungsliste)));
             $inSektor = WindToolsHelper::richtungPasst($richtung, $kuerzelArray);
-            //$inSektor = WindToolsHelper::richtungPasst($richtung, $richtungsliste);
             //Auf Warnstatus checken 
-            //$warnung = $inSektor && ($wind >= $minWind || $boe >= $minGust);
-            $NachwirkZeit = GetValueString($this->GetIDForIdent("NachwirkzeitInfo"));
-            $NachwirkZeit = intval($NachwirkZeit);
-            WindToolsHelper::berechneSchutzstatusMitNachwirkung(
-                $windInObjHoehe,
-                $boeInObjHoehe,
-                $minWind,
-                $minGust,
-                $NachwirkZeit,
-                $this->GetIDForIdent("Status_" . $ident), 
-                $this->GetIDForIdent("Warnung_" . $ident),
-                $this->GetIDForIdent("WarnungBoe_" . $ident),
-                $objekt["Label"] ?? "Unbenannt",
-                $hoehe,
-                $block
-            );
+            //if ($inSektor){ 
+                $NachwirkZeit = GetValueString($this->GetIDForIdent("NachwirkzeitInfo"));
+                $NachwirkZeit = intval($NachwirkZeit);
+                WindToolsHelper::berechneSchutzstatusMitNachwirkung(
+                    $windInObjHoehe,
+                    $boeInObjHoehe,
+                    $minWind,
+                    $minGust,
+                    $NachwirkZeit,
+                    $this->GetIDForIdent("Status_" . $ident), 
+                    $this->GetIDForIdent("Warnung_" . $ident),
+                    $this->GetIDForIdent("WarnungBoe_" . $ident),
+                    $objekt["Label"] ?? "Unbenannt",
+                    $hoehe,
+                    $block
+                );
+            //}
         }        
 
         // Dashboard aktualisieren
