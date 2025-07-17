@@ -2,51 +2,6 @@
 
 require_once(__DIR__ . "/WindToolsHelper.php"); // ⬅️ Dein Helferlein 
 
-function erzeugeSchutzHTML(bool $aktiv, string $zeitstempel, int $nachwirkZeitSek, int $richtung): string {
-    $farbe = $aktiv ? "#FF4444" : "#44AA44";
-    $text  = $aktiv ? "⚠️ Windwarnung aktiv" : "✔️ Kein Schutz aktiv";
-
-    $gradText = WindToolsHelper::gradZuRichtung($richtung) . " (" . $richtung . "°)";
-    $restzeitMin = $nachwirkZeitSek > 0 ? round($nachwirkZeitSek / 60) . " min" : "keine";
-
-    return <<<HTML
-    <style>
-    .box { padding:10px; border-radius:6px; background-color:$farbe; color:#fff; font-family:Arial; }
-    .small { font-size:0.9em; color:#eee; margin-top:6px; }
-    </style>
-    <div class="box">
-    <b>$text</b><br>
-    Richtung: $gradText<br>
-    Zeitpunkt: $zeitstempel<br>
-    Nachwirkzeit: $restzeitMin
-    <div class="small">WindMonitorPro</div>
-    </div>
-    HTML;
-}
-
-
-//Pruefen und ggf in Klasse aendern ob es erforderlich ist die beiden in der Klasse integrierten Funktionen ausserhalb der Klasse aufzurufen Wurden momentan mit dem Zusatz Wrapper hier eigebaut
-//Weil IP-Symcon bei Timer- und Event-Ausführungen nur global sichtbare Funktionen aufrufen kann also ausserhalb der Klasse. Daher ist this->FetchAndStoreMeteoblueData() bei Timern nicht moeglich
-//Wrapper Funktion fuer Timer zu FetchAndStoreMeteoblueData
-function WMP_FetchMeteoblue($instanceID) {
-    $info = IPS_GetInstance($instanceID);
-    if ($info['ModuleInfo']['ModuleName'] === "WindMonitorPro") {
-        IPS_RunScriptTextEx($instanceID, 'FetchAndStoreMeteoblueData();');
-    }
-}
-
-
-
-
-//Wrapper Funktion fuer Timer zu ReadFromFileAndUpdate    
-//Problematik wie oben beschrieben beachten...
-function WMP_ReadFromFile($instanceID) {
-    $info = IPS_GetInstance($instanceID);
-    if ($info['ModuleInfo']['ModuleName'] === "WindMonitorPro") {
-        IPS_RunScriptTextEx($instanceID, 'ReadFromFileAndUpdate();');
-    }
-
-}
 class windMonitorPro extends IPSModule {
 
     public function Create() {
@@ -80,7 +35,6 @@ class windMonitorPro extends IPSModule {
         // Timer für API-Abruf (meteoblue) -- FetchTimer
         $this->RegisterTimer("FetchTimer", 0, 'IPS_RequestAction($_IPS[\'TARGET\'], "UpdateFromMeteoblue", "");');
         // Timer für Datei-Auswertung
-        //$this->RegisterTimer("ReadTimer", 0, 'WMP_ReadFromFile($_IPS[\'TARGET\']);');
         $this->RegisterTimer("ReadTimer", 0, 'IPS_RequestAction($_IPS[\'TARGET\'], "UpdateWind", "");');
 
         $this->RegisterVariableString("FetchJSON", "Letzter JSON-Download");
@@ -110,189 +64,181 @@ class windMonitorPro extends IPSModule {
         //$this->RegisterVariableInteger("WarnCount_" . preg_replace('/\W+/', '_', $name), "⚠️ Warnzähler: $name");
         //$this->RegisterVariableInteger($countIdent, "⚠️ Warnzähler: $name");
 
+    }
+    public function ApplyChanges() {
+        parent::ApplyChanges();
+
+        // 🔧 Profile erstellen
+        if (!IPS_VariableProfileExists("WindPro.Speed.1")) {
+            IPS_CreateVariableProfile("WindPro.Speed.1", VARIABLETYPE_FLOAT);
+            IPS_SetVariableProfileDigits("WindPro.Speed.1", 1);
+            IPS_SetVariableProfileText("WindPro.Speed.1", "", " m/s");
+            IPS_SetVariableProfileIcon("WindPro.Speed.1", "WindSpeed");
+        }
+
+        if (!IPS_VariableProfileExists("WindPro.Direction.Degree")) {
+            IPS_CreateVariableProfile("WindPro.Direction.Degree", VARIABLETYPE_INTEGER);
+            IPS_SetVariableProfileText("WindPro.Direction.Degree", "", "°");
+            IPS_SetVariableProfileIcon("WindPro.Direction.Degree", "WindDirection");
+        }
+
+        if (!IPS_VariableProfileExists("WMP.AirPressure")) {
+            IPS_CreateVariableProfile("WMP.AirPressure", VARIABLETYPE_FLOAT);
+            IPS_SetVariableProfileText("WMP.AirPressure", "", " hPa");
+            IPS_SetVariableProfileDigits("WMP.AirPressure", 1);
+            IPS_SetVariableProfileIcon("WMP.AirPressure", "Gauge");
+        }
+
+        if (!IPS_VariableProfileExists("WMP.Density")) {
+            IPS_CreateVariableProfile("WMP.Density", VARIABLETYPE_FLOAT);
+            IPS_SetVariableProfileText("WMP.Density", "", " kg/m³");
+            IPS_SetVariableProfileDigits("WMP.Density", 3);
+            IPS_SetVariableProfileIcon("WMP.Density", "Gauge");
+        }
+
+        if (!IPS_VariableProfileExists("WMP.Temperature")) {
+            IPS_CreateVariableProfile("WMP.Temperature", VARIABLETYPE_FLOAT);
+            IPS_SetVariableProfileText("WMP.Temperature", "", " °C");
+            IPS_SetVariableProfileDigits("WMP.Temperature", 1);
+            IPS_SetVariableProfileIcon("WMP.Temperature", "Temperature");
+        }
+
+        if (!IPS_VariableProfileExists("WMP.Rain")) {
+            IPS_CreateVariableProfile("WMP.Rain", VARIABLETYPE_FLOAT);
+            IPS_SetVariableProfileText("WMP.Rain", "", " mm/h");
+            IPS_SetVariableProfileDigits("WMP.Rain", 1);
+            IPS_SetVariableProfileIcon("WMP.Rain", "Rain");
+        }
+
+        $vid = $this->GetIDForIdent("FetchJSON");
+        IPS_SetIcon($vid, "Database");
+        IPS_SetVariableCustomProfile($vid, "");
+        IPS_SetHidden($vid, false); // oder true, wenn du sie intern hältst
+
+        $vid = $this->GetIDForIdent("SchutzStatusText");
+        IPS_SetIcon($vid, "Shield");
+        $vid = $this->GetIDForIdent("CurrentTime");
+        IPS_SetIcon($vid, "Clock"); 
+        $vid = $this->GetIDForIdent("UTC_ModelRun");
+        IPS_SetIcon($vid, "Database");
+        //$vid = $this->GetIDForIdent($ident);
+        //IPS_SetIcon($vid, "Shield");
+        //$txtVid = $this->GetIDForIdent($txtIdent);
+        //IPS_SetIcon($txtVid, "Alert"); // oder "Information"
 
 
 
+
+
+        // 🧾 Variablen registrieren
+        $this->RegisterVariableFloat("Wind80m", "Wind80m[MB_15Min_Date])", "WindPro.Speed.1");
+        $this->RegisterVariableFloat("Gust80m", "Boe80m[MB_15Min_Date]", "WindPro.Speed.1");
+        $this->RegisterVariableInteger("WindDirection80m", "Windrichtung (80 m)", "WindPro.Direction.Degree");
+        $this->RegisterVariableFloat("AirPressure", "Luftdruck", "WMP.AirPressure");
+        $this->RegisterVariableFloat("AirDensity", "Luftdichte", "WMP.Density");
+        $this->RegisterVariableFloat("CurrentTemperature", "Temperatur", "WMP.Temperature");
+        $this->RegisterVariableFloat("Rain", "Regenvorhersage", "WMP.Rain");
+        $this->RegisterVariableBoolean("IsDaylight", "Tageslicht", "");
+        $this->RegisterVariableInteger("UVIndex", "UV-Index", "");
+        $this->RegisterVariableString("WindDirText", "Windrichtung (Text)", "");
+        $this->RegisterVariableString("WindDirArrow", "Windrichtung (Symbol)", "");
+        $this->RegisterVariableInteger("LetzteWarnungTS", "Letzter Warnzeitpunkt", "");
+        $this->RegisterVariableBoolean("WarnungAktiv", "Schutz aktiv", "~Alert");
+        $this->RegisterVariableString("SchutzHTML", "Schutzstatus (HTML)", "~HTMLBox");
+        $this->RegisterVariableString("LetzterFetch", "Letzter API-Abruf", "~TextBox");
+        $this->RegisterVariableString("LetzteAuswertungDaten", "Letzte Dateiverarbeitung", "~TextBox");
+        $this->RegisterVariableString("NachwirkEnde", "Nachwirkzeit endet um", "~TextBox");
+        $this->RegisterVariableBoolean("FetchDatenVeraltet", "Daten zu alt", "~Alert");
+        $this->RegisterVariableString("LetzteAktion", "Letzte Aktion");
+
+
+
+        //Abrufintervalle und Nachwirkzeit
+        $this->RegisterVariableString("FetchIntervalInfo", "Abrufintervall (Info)", "~TextBox");
+        $this->RegisterVariableString("MaxDatenAlterInfo", "Max Alter MB-Daten", "~TextBox");
+        $this->RegisterVariableString("ReadIntervalInfo", "Dateileseintervall (Info)", "~TextBox");
+        $this->RegisterVariableString("NachwirkzeitInfo", "Nachwirkzeit (Info)", "~TextBox");
+        //$this->SetTimerInterval("WindUpdateTimer", 10 * 60 * 1000); // alle 10 Minuten
+
+        // Werte aktualisieren
+        SetValueString($this->GetIDForIdent("FetchIntervalInfo"), $this->ReadPropertyInteger("FetchIntervall") . " Minuten");
+        SetValueString($this->GetIDForIdent("MaxDatenAlterInfo"), $this->ReadPropertyInteger("MaxDatenAlter") . " Stunden");
+        SetValueString($this->GetIDForIdent("ReadIntervalInfo"), $this->ReadPropertyInteger("ReadIntervall") . " Minuten");
+        SetValueString($this->GetIDForIdent("NachwirkzeitInfo"), $this->ReadPropertyInteger("NachwirkzeitMin") . " Minuten");
+    
+
+        WindToolsHelper::setKonfiguration(
+            $this->ReadPropertyFloat("GelaendeAlpha"),
+            $this->ReadPropertyFloat("Referenzhoehe"),
+            $this->ReadPropertyFloat("Zielhoehe"),
+            "logarithmisch"
+        );
+
+
+
+        // Timerinterval aus Properties berechnen
+        $fetchMin = $this->ReadPropertyInteger("FetchIntervall");
+        $readMin  = $this->ReadPropertyInteger("ReadIntervall");
+    
+
+        // Nur aktivieren, wenn Instanz "aktiv" ist
+        if ($this->ReadPropertyBoolean("Aktiv")) {
+            $this->SetTimerInterval("FetchTimer", max(15,$fetchMin) * 60 * 1000);
+            //$this->SetTimerInterval("ReadTimer",  $readMin  * 60 * 1000);
+            $this->SetTimerInterval("ReadTimer", max(15, $readMin) * 60 * 1000);
+        } else {
+            $this->SetTimerInterval("FetchTimer", 0); // deaktivieren
+            $this->SetTimerInterval("ReadTimer",  0); // deaktivieren
+        }
+
+    //---------------------------------------------------------------------------
+    //ZUM TEST DIE DATEN AUSWERTEN AUCH WENN INAKTIV    
+    $this->SetTimerInterval("ReadTimer", max(1, $readMin) * 60 * 1000);
+    IPS_LogMessage("WindMonitorPro", "ReadTimer gestartet: $readMin in Minuten");
+    //---------------------------------------------------------------------------
+
+
+        foreach (json_decode($this->ReadPropertyString("Schutzobjekte"), true) as $objekt) {
+            $ident = "Warnung_" . preg_replace('/\W+/', '_', $objekt["Label"]);//generiere aus json Textobjekt den zugehörigen ident
+            $vid = @IPS_GetObjectIDByIdent($ident, $this->InstanceID);
+            if ($vid !== false) {
+                IPS_SetIcon($vid, "Shield");
+                IPS_SetVariableCustomProfile($vid, "~Alert"); // optionales Profil
+                IPS_LogMessage("WindMonitorPro", "erzeugter Ident: $ident zu Var-ID: $vid");
+            }
+        }
 
     }
 
-        // Weitere folgen später…
+    public function RequestAction($Ident, $Value) {
+        // 🔍 Logging für Analysezwecke
+        IPS_LogMessage("WindMonitorPro", "⏱️ RequestAction erhalten: $Ident mit Wert=" . print_r($Value, true));
+        $this->SetValue("LetzteAktion","🔀 RequestAction: $Ident Wert=" . print_r($Value, true) . " (" . date("d-m-Y H:i:s") . ")"    );
 
-public function ApplyChanges() {
-    parent::ApplyChanges();
+        // 🔀 Verteile an Aktion basierend auf Ident
+        switch ($Ident) {
+            case "UpdateMeteoBlue":
+                return $this->UpdateFromMeteoblue();
 
-    // 🔧 Profile erstellen
-    if (!IPS_VariableProfileExists("WindPro.Speed.1")) {
-        IPS_CreateVariableProfile("WindPro.Speed.1", VARIABLETYPE_FLOAT);
-        IPS_SetVariableProfileDigits("WindPro.Speed.1", 1);
-        IPS_SetVariableProfileText("WindPro.Speed.1", "", " m/s");
-        IPS_SetVariableProfileIcon("WindPro.Speed.1", "WindSpeed");
-    }
+            case "UpdateWind":
+                return $this->ReadFromFileAndUpdate();
 
-    if (!IPS_VariableProfileExists("WindPro.Direction.Degree")) {
-        IPS_CreateVariableProfile("WindPro.Direction.Degree", VARIABLETYPE_INTEGER);
-        IPS_SetVariableProfileText("WindPro.Direction.Degree", "", "°");
-        IPS_SetVariableProfileIcon("WindPro.Direction.Degree", "WindDirection");
-    }
+            case "ReloadWerteDatei":
+                return $this->ReloadWerteDatei();
 
-    if (!IPS_VariableProfileExists("WMP.AirPressure")) {
-        IPS_CreateVariableProfile("WMP.AirPressure", VARIABLETYPE_FLOAT);
-        IPS_SetVariableProfileText("WMP.AirPressure", "", " hPa");
-        IPS_SetVariableProfileDigits("WMP.AirPressure", 1);
-        IPS_SetVariableProfileIcon("WMP.AirPressure", "Gauge");
-    }
+            case "ResetStatus":
+                return $this->ResetSchutzStatus();
 
-    if (!IPS_VariableProfileExists("WMP.Density")) {
-        IPS_CreateVariableProfile("WMP.Density", VARIABLETYPE_FLOAT);
-        IPS_SetVariableProfileText("WMP.Density", "", " kg/m³");
-        IPS_SetVariableProfileDigits("WMP.Density", 3);
-        IPS_SetVariableProfileIcon("WMP.Density", "Gauge");
-    }
+            case "ClearWarnungen":
+                return $this->WarnungsVariablenLeeren();
 
-    if (!IPS_VariableProfileExists("WMP.Temperature")) {
-        IPS_CreateVariableProfile("WMP.Temperature", VARIABLETYPE_FLOAT);
-        IPS_SetVariableProfileText("WMP.Temperature", "", " °C");
-        IPS_SetVariableProfileDigits("WMP.Temperature", 1);
-        IPS_SetVariableProfileIcon("WMP.Temperature", "Temperature");
-    }
+            case "SetGrenze":
+                return $this->SetzeGrenzwert(floatval($Value));
 
-    if (!IPS_VariableProfileExists("WMP.Rain")) {
-        IPS_CreateVariableProfile("WMP.Rain", VARIABLETYPE_FLOAT);
-        IPS_SetVariableProfileText("WMP.Rain", "", " mm/h");
-        IPS_SetVariableProfileDigits("WMP.Rain", 1);
-        IPS_SetVariableProfileIcon("WMP.Rain", "Rain");
-    }
-
-    $vid = $this->GetIDForIdent("FetchJSON");
-    IPS_SetIcon($vid, "Database");
-    IPS_SetVariableCustomProfile($vid, "");
-    IPS_SetHidden($vid, false); // oder true, wenn du sie intern hältst
-
-    $vid = $this->GetIDForIdent("SchutzStatusText");
-    IPS_SetIcon($vid, "Shield");
-    $vid = $this->GetIDForIdent("CurrentTime");
-    IPS_SetIcon($vid, "Clock"); 
-    $vid = $this->GetIDForIdent("UTC_ModelRun");
-    IPS_SetIcon($vid, "Database");
-    //$vid = $this->GetIDForIdent($ident);
-    //IPS_SetIcon($vid, "Shield");
-    //$txtVid = $this->GetIDForIdent($txtIdent);
-    //IPS_SetIcon($txtVid, "Alert"); // oder "Information"
-
-
-
-
-
-    // 🧾 Variablen registrieren
-    $this->RegisterVariableFloat("Wind80m", "Wind80m[MB_15Min_Date])", "WindPro.Speed.1");
-    $this->RegisterVariableFloat("Gust80m", "Boe80m[MB_15Min_Date]", "WindPro.Speed.1");
-    $this->RegisterVariableInteger("WindDirection80m", "Windrichtung (80 m)", "WindPro.Direction.Degree");
-    $this->RegisterVariableFloat("AirPressure", "Luftdruck", "WMP.AirPressure");
-    $this->RegisterVariableFloat("AirDensity", "Luftdichte", "WMP.Density");
-    $this->RegisterVariableFloat("CurrentTemperature", "Temperatur", "WMP.Temperature");
-    $this->RegisterVariableFloat("Rain", "Regenvorhersage", "WMP.Rain");
-    $this->RegisterVariableBoolean("IsDaylight", "Tageslicht", "");
-    $this->RegisterVariableInteger("UVIndex", "UV-Index", "");
-    $this->RegisterVariableString("WindDirText", "Windrichtung (Text)", "");
-    $this->RegisterVariableString("WindDirArrow", "Windrichtung (Symbol)", "");
-    $this->RegisterVariableInteger("LetzteWarnungTS", "Letzter Warnzeitpunkt", "");
-    $this->RegisterVariableBoolean("WarnungAktiv", "Schutz aktiv", "~Alert");
-    $this->RegisterVariableString("SchutzHTML", "Schutzstatus (HTML)", "~HTMLBox");
-    $this->RegisterVariableString("LetzterFetch", "Letzter API-Abruf", "~TextBox");
-    $this->RegisterVariableString("LetzteAuswertungDaten", "Letzte Dateiverarbeitung", "~TextBox");
-    $this->RegisterVariableString("NachwirkEnde", "Nachwirkzeit endet um", "~TextBox");
-    $this->RegisterVariableBoolean("FetchDatenVeraltet", "Daten zu alt", "~Alert");
-    $this->RegisterVariableString("LetzteAktion", "Letzte Aktion");
-
-
-
-    //Abrufintervalle und Nachwirkzeit
-    $this->RegisterVariableString("FetchIntervalInfo", "Abrufintervall (Info)", "~TextBox");
-    $this->RegisterVariableString("MaxDatenAlterInfo", "Max Alter MB-Daten", "~TextBox");
-    $this->RegisterVariableString("ReadIntervalInfo", "Dateileseintervall (Info)", "~TextBox");
-    $this->RegisterVariableString("NachwirkzeitInfo", "Nachwirkzeit (Info)", "~TextBox");
-    //$this->SetTimerInterval("WindUpdateTimer", 10 * 60 * 1000); // alle 10 Minuten
-
-    // Werte aktualisieren
-    SetValueString($this->GetIDForIdent("FetchIntervalInfo"), $this->ReadPropertyInteger("FetchIntervall") . " Minuten");
-    SetValueString($this->GetIDForIdent("MaxDatenAlterInfo"), $this->ReadPropertyInteger("MaxDatenAlter") . " Stunden");
-    SetValueString($this->GetIDForIdent("ReadIntervalInfo"), $this->ReadPropertyInteger("ReadIntervall") . " Minuten");
-    SetValueString($this->GetIDForIdent("NachwirkzeitInfo"), $this->ReadPropertyInteger("NachwirkzeitMin") . " Minuten");
-  
-
-    WindToolsHelper::setKonfiguration(
-        $this->ReadPropertyFloat("GelaendeAlpha"),
-        $this->ReadPropertyFloat("Referenzhoehe"),
-        $this->ReadPropertyFloat("Zielhoehe"),
-        "logarithmisch"
-    );
-
-
-
-    // Timerinterval aus Properties berechnen
-    $fetchMin = $this->ReadPropertyInteger("FetchIntervall");
-    $readMin  = $this->ReadPropertyInteger("ReadIntervall");
-  
-
-    // Nur aktivieren, wenn Instanz "aktiv" ist
-    if ($this->ReadPropertyBoolean("Aktiv")) {
-        $this->SetTimerInterval("FetchTimer", max(15,$fetchMin) * 60 * 1000);
-        //$this->SetTimerInterval("ReadTimer",  $readMin  * 60 * 1000);
-        $this->SetTimerInterval("ReadTimer", max(15, $readMin) * 60 * 1000);
-    } else {
-        $this->SetTimerInterval("FetchTimer", 0); // deaktivieren
-        $this->SetTimerInterval("ReadTimer",  0); // deaktivieren
-    }
-
-//---------------------------------------------------------------------------
-//ZUM TEST DIE DATEN AUSWERTEN AUCH WENN INAKTIV    
-$this->SetTimerInterval("ReadTimer", max(1, $readMin) * 60 * 1000);
-IPS_LogMessage("WindMonitorPro", "ReadTimer gestartet: $readMin in Minuten");
-//---------------------------------------------------------------------------
-
-
-    foreach (json_decode($this->ReadPropertyString("Schutzobjekte"), true) as $objekt) {
-        $ident = "Warnung_" . preg_replace('/\W+/', '_', $objekt["Label"]);//generiere aus json Textobjekt den zugehörigen ident
-        $vid = @IPS_GetObjectIDByIdent($ident, $this->InstanceID);
-        if ($vid !== false) {
-            IPS_SetIcon($vid, "Shield");
-            IPS_SetVariableCustomProfile($vid, "~Alert"); // optionales Profil
-            IPS_LogMessage("WindMonitorPro", "erzeugter Ident: $ident zu Var-ID: $vid");
+            default:
+                throw new Exception("⚠️ Ungültiger Aktion-Identifier: " . $Ident);
         }
     }
-
-}
-
-public function RequestAction($Ident, $Value) {
-    // 🔍 Logging für Analysezwecke
-    IPS_LogMessage("WindMonitorPro", "⏱️ RequestAction erhalten: $Ident mit Wert=" . print_r($Value, true));
-    $this->SetValue("LetzteAktion","🔀 RequestAction: $Ident Wert=" . print_r($Value, true) . " (" . date("d-m-Y H:i:s") . ")"    );
-
-    // 🔀 Verteile an Aktion basierend auf Ident
-    switch ($Ident) {
-        case "UpdateMeteoBlue":
-            return $this->UpdateFromMeteoblue();
-
-        case "UpdateWind":
-            return $this->ReadFromFileAndUpdate();
-
-        case "ReloadWerteDatei":
-            return $this->ReloadWerteDatei();
-
-        case "ResetStatus":
-            return $this->ResetSchutzStatus();
-
-        case "ClearWarnungen":
-            return $this->WarnungsVariablenLeeren();
-
-        case "SetGrenze":
-            return $this->SetzeGrenzwert(floatval($Value));
-
-        default:
-            throw new Exception("⚠️ Ungültiger Aktion-Identifier: " . $Ident);
-    }
-}
-
 
     private function getLokaleModelzeit(array $data): string {
         $rawUTC = $data["metadata"]["modelrun_updatetime_utc"] ?? "";
@@ -311,9 +257,6 @@ public function RequestAction($Ident, $Value) {
             return gmdate("Y-m-d H:i") . " (Fehler)";
         }
     }
-
-
-
 
     public function ReadFromFileAndUpdate(): void {
         $pfad = $this->ReadPropertyString("Dateipfad");
@@ -596,132 +539,8 @@ public function RequestAction($Ident, $Value) {
         SetValueString($this->GetIDForIdent("SchutzDashboardHTML"), $html);
 
 
-           /* 
-
-
-
-        // Schritt 1: Alle vorhandenen Schutz-Variablen in Instanz in Array schreiben
-        // Also ein Array mit allen bereits vorhandenen Schutzvariablen erstellen
-        $alleVariablen = [];
-        $instanzObjekte = IPS_GetChildrenIDs($this->InstanceID);
-        foreach ($instanzObjekte as $objID) {
-            $ident = IPS_GetObject($objID)["ObjectIdent"];
-            if (strpos($ident, "Warnung_") === 0) {
-                $alleVariablen[$ident] = $objID;
-            }
-        }
-
-
-            
-
-            // 🧮 Prüfung wie gewohnt
-            $minWind = floatval($eintrag["MinWind"] ?? 0);
-            $minGust = floatval($eintrag["MinGust"] ?? 0);
-            $kuerzelText = $eintrag["RichtungsKuerzelListe"] ?? "";
-            $kuerzelArray = array_map("trim", explode(",", $kuerzelText));
-
-            $richtung = $data["data_xmin"]["winddirection_80m"][0] ?? 0;
-            $hoehe = floatval($eintrag["Hoehe"] ?? $this->ReadPropertyFloat("StandardHoehe"));
-            //$wind = WindToolsHelper::berechneWindObjekt($data["data_xmin"]["windspeed_80m"][0] ?? 0, $hoehe, 80.0, $this->ReadPropertyFloat("GelaendeAlpha"));
-            //$boe  = WindToolsHelper::berechneWindObjekt($data["data_xmin"]["gust"][0] ?? 0, $hoehe, 80.0, $this->ReadPropertyFloat("GelaendeAlpha"));
-            
-            
-
-            $wind = WindToolsHelper::berechneWindObjekt($data["data_xmin"]["windspeed_80m"][0] ?? 0,$hoehe,80.0,$alpha);
-            $boe  = WindToolsHelper::berechneWindObjekt($data["data_xmin"]["gust"][0] ?? 0, $hoehe, 80.0, $alpha);
-
-            $inSektor = false;
-            foreach ($kuerzelArray as $kuerzel) {
-                if (!WindToolsHelper::isValidKuerzel($kuerzel)) {
-                    IPS_LogMessage("WindMonitorPro", "❌ Ungültiges Kürzel '$kuerzel' bei '$name'");
-                    continue;
-                }
-                list($minGrad, $maxGrad) = WindToolsHelper::kuerzelZuWinkelbereich($kuerzel);
-                $treffer = ($minGrad < $maxGrad)
-                    ? ($richtung >= $minGrad && $richtung <= $maxGrad)
-                    : ($richtung >= $minGrad || $richtung <= $maxGrad);
-                if ($treffer) {
-                    $inSektor = true;
-                    break;
-                }
-            }
-
-            $warnung = $inSektor && ($wind >= $minWind || $boe >= $minGust);
-            SetValue($alleVariablen[$ident], $warnung);
-
-            $statusText = $warnung
-                ? "⚠️ Schutz aktiv für $name – Wind: $wind m/s, Böe: $boe m/s"
-                : "✅ Kein Schutz nötig für $name – Wind: $wind m/s";
-
-            $txtIdent = "Status_" . preg_replace('/\W+/', '_', $name);
-            if (!@IPS_VariableExists($this->GetIDForIdent($txtIdent))) {
-                $this->RegisterVariableString($txtIdent, "🛡️ Status: $name");
-            }
-            SetValueString($this->GetIDForIdent($txtIdent), $statusText);
-            $schutzStatus[] = [
-                'Label'     => $name,
-                'Warnung'   => $warnung,
-                'Wind'      => round($wind, 2),
-                'Boe'       => round($boe, 2),
-                'Richtung'  => $richtung,
-                'Hoehe'     => $hoehe
-            ];
-
-
-            if ($warnung) {
-                //IPS_LogMessage("WindWarnung", "⚠️ '$name' meldet Warnung bei Wind=$wind m/s, Boe=$boe m/s Richtung=$richtung ");
-                IPS_LogMessage("WindWarnung", "⚠️ '$name' meldet Warnung bei Wind={$wind} m/s, Boe={$boe} m/s Richtung={$richtung} ");
-
-                
-
-                //Counter für Anzahl Warnungen
-                if (@IPS_VariableExists($this->GetIDForIdent($countIdent))) {
-                    //$this->RegisterVariableInteger($countIdent, "⚠️ Warnzähler: $name");
-                    SetValueInteger($this->GetIDForIdent($countIdent), GetValueInteger($this->GetIDForIdent($countIdent)) + 1);
-                }
-
-            }
-
-        }
-
-
-
-
-
-
-
-
-        // 🎯 Richtungstext & Pfeil
-        if (class_exists("WindToolsHelper")) {
-            $txt = WindToolsHelper::gradZuRichtung($winddir);
-            $arrow = WindToolsHelper::gradZuPfeil($winddir);
-            SetValue($this->GetIDForIdent("WindDirText"), $txt);
-            SetValue($this->GetIDForIdent("WindDirArrow"), $arrow);
-
-            // 🔐 Schutzlogik
-            $windGrenze = 10.0; // Schwelle in m/s, individuell anpassbar
-            $boeGrenze = 14.0;
-
-            $warnungAktiv = ($wind80 >= $windGrenze || $gust80 >= $boeGrenze);
-            $this->AktualisiereSchutzstatus($warnungAktiv, $winddir);
-        }
-        IPS_LogMessage($logtag, "✅ Datei erfolgreich verarbeitet – Zeitstempel: $updateText");
-
-        //$html = WindToolsHelper::erzeugeSchutzDashboard($schutzArray);
-        $html = WindToolsHelper::erzeugeSchutzDashboard($schutzArray, $this->InstanceID);
-
-        SetValueString($this->GetIDForIdent("SchutzDashboardHTML"), $html);     
-        
-        
-        */
     }
 
-
-
-
-
-
-    
     public function UpdateFromMeteoblue() {
         //$modus = $this->ReadPropertyString("Modus");Relikt aus erster Version
         $logtag = "WindMonitorPro";
@@ -737,7 +556,6 @@ public function RequestAction($Ident, $Value) {
             //IPS_LogMessage($logtag, "❌ Unbekannter Modus: '$modus'");
         //}
     }
-
 
     private function ReloadWerteDatei(): bool {
         IPS_LogMessage("WindMonitorPro", "📁 Werte-Datei aktualisiert");
@@ -781,10 +599,6 @@ public function RequestAction($Ident, $Value) {
         SetValue($this->GetIDForIdent("Wind80m"), $value);
     }
 
-
-
-
-    
     public function FetchAndStoreMeteoblueData(): void {
         $logtag = "WindFetcher";
 
@@ -849,62 +663,6 @@ public function RequestAction($Ident, $Value) {
         SetValueString($this->GetIDForIdent("LetzterFetch"), $now);
 
     }
-
-    public function AktualisiereSchutzstatus(bool $warnungGeradeAktiv, int $grad) {
-        $nachwirkZeitSek = $this->ReadPropertyInteger("NachwirkzeitMin") * 60;
-        $now = time();
-
-        $lastTS = GetValueInteger($this->GetIDForIdent("LetzteWarnungTS"));
-        $warAktiv = GetValueBoolean($this->GetIDForIdent("WarnungAktiv"));
-
-        // ⏱️ Wenn neue Warnung → Zeitstempel setzen
-        if ($warnungGeradeAktiv) {
-            $lastTS = $now;
-            SetValueInteger($this->GetIDForIdent("LetzteWarnungTS"), $lastTS);
-        }
-
-        // 🧠 Nachwirkzeit berücksichtigen
-        $schutzAktiv = ($now - $lastTS) < $nachwirkZeitSek;
-
-        // 🛡️ Schutzstatus setzen
-        SetValueBoolean($this->GetIDForIdent("WarnungAktiv"), $schutzAktiv);
-
-        $ablaufTS = $lastTS + $nachwirkZeitSek;
-        $ablaufDT = (new DateTime("@$ablaufTS"))->setTimezone(new DateTimeZone('Europe/Berlin'))->format("d.m.Y H:i:s");
-        SetValueString($this->GetIDForIdent("NachwirkEnde"), $ablaufDT);        
-
-        // 🖼️ HTML-Ausgabe aktualisieren
-        require_once(__DIR__ . "/WindToolsHelper.php"); // damit erzeugeSchutzHTML verfügbar ist
-
-        $html = erzeugeSchutzHTML($schutzAktiv, $lastTS, $nachwirkZeitSek, $grad);
-        SetValueString($this->GetIDForIdent("SchutzHTML"), $html);
-
-        // 🧾 Schutzstatus-Text setzen
-        $richtungText = class_exists("WindToolsHelper") ? WindToolsHelper::gradZuRichtung($grad) : "$grad°";
-        $statusText = $schutzAktiv
-            ? "⚠️ Schutz aktiv – Windrichtung: $richtungText"
-            : "✅ Kein Schutz nötig – Windrichtung: $richtungText";
-
-        SetValueString($this->GetIDForIdent("SchutzStatusText"), $statusText);
-    }
-
-/*
-    public function WMP_FetchMeteoblueOld() {
-        $this->FetchAndStoreMeteoblueData(); // holt Daten & speichert JSON
-
-        // Zeitpunkt setzen
-        $now = (new DateTime("now", new DateTimeZone("Europe/Berlin")))->format("d.m.Y H:i:s");
-        SetValueString($this->GetIDForIdent("LetzterFetch"), $now);
-        }
-
-    public function WMP_ReadFromFileOld() {
-        $this->ReadFromFileAndUpdate(); // liest JSON & aktualisiert Variablen
-
-        // Zeitpunkt setzen
-        $now = (new DateTime("now", new DateTimeZone("Europe/Berlin")))->format("d.m.Y H:i:s");
-        SetValueString($this->GetIDForIdent("LetzteAuswertungDaten"), $now);
-    }  
-*/          
 
 }
 
