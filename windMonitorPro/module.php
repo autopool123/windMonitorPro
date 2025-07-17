@@ -2,7 +2,51 @@
 
 require_once(__DIR__ . "/WindToolsHelper.php"); // ⬅️ Dein Helferlein 
 
+function erzeugeSchutzHTML(bool $aktiv, string $zeitstempel, int $nachwirkZeitSek, int $richtung): string {
+    $farbe = $aktiv ? "#FF4444" : "#44AA44";
+    $text  = $aktiv ? "⚠️ Windwarnung aktiv" : "✔️ Kein Schutz aktiv";
 
+    $gradText = WindToolsHelper::gradZuRichtung($richtung) . " (" . $richtung . "°)";
+    $restzeitMin = $nachwirkZeitSek > 0 ? round($nachwirkZeitSek / 60) . " min" : "keine";
+
+    return <<<HTML
+    <style>
+    .box { padding:10px; border-radius:6px; background-color:$farbe; color:#fff; font-family:Arial; }
+    .small { font-size:0.9em; color:#eee; margin-top:6px; }
+    </style>
+    <div class="box">
+    <b>$text</b><br>
+    Richtung: $gradText<br>
+    Zeitpunkt: $zeitstempel<br>
+    Nachwirkzeit: $restzeitMin
+    <div class="small">WindMonitorPro</div>
+    </div>
+    HTML;
+}
+
+
+//Pruefen und ggf in Klasse aendern ob es erforderlich ist die beiden in der Klasse integrierten Funktionen ausserhalb der Klasse aufzurufen Wurden momentan mit dem Zusatz Wrapper hier eigebaut
+//Weil IP-Symcon bei Timer- und Event-Ausführungen nur global sichtbare Funktionen aufrufen kann also ausserhalb der Klasse. Daher ist this->FetchAndStoreMeteoblueData() bei Timern nicht moeglich
+//Wrapper Funktion fuer Timer zu FetchAndStoreMeteoblueData
+function WMP_FetchMeteoblue($instanceID) {
+    $info = IPS_GetInstance($instanceID);
+    if ($info['ModuleInfo']['ModuleName'] === "WindMonitorPro") {
+        IPS_RunScriptTextEx($instanceID, 'FetchAndStoreMeteoblueData();');
+    }
+}
+
+
+
+
+//Wrapper Funktion fuer Timer zu ReadFromFileAndUpdate    
+//Problematik wie oben beschrieben beachten...
+function WMP_ReadFromFile($instanceID) {
+    $info = IPS_GetInstance($instanceID);
+    if ($info['ModuleInfo']['ModuleName'] === "WindMonitorPro") {
+        IPS_RunScriptTextEx($instanceID, 'ReadFromFileAndUpdate();');
+    }
+
+}
 class windMonitorPro extends IPSModule {
 
     public function Create() {
@@ -863,51 +907,7 @@ public function RequestAction($Ident, $Value) {
 */          
 
 }
-function erzeugeSchutzHTML(bool $aktiv, string $zeitstempel, int $nachwirkZeitSek, int $richtung): string {
-    $farbe = $aktiv ? "#FF4444" : "#44AA44";
-    $text  = $aktiv ? "⚠️ Windwarnung aktiv" : "✔️ Kein Schutz aktiv";
 
-    $gradText = WindToolsHelper::gradZuRichtung($richtung) . " (" . $richtung . "°)";
-    $restzeitMin = $nachwirkZeitSek > 0 ? round($nachwirkZeitSek / 60) . " min" : "keine";
-
-    return <<<HTML
-    <style>
-    .box { padding:10px; border-radius:6px; background-color:$farbe; color:#fff; font-family:Arial; }
-    .small { font-size:0.9em; color:#eee; margin-top:6px; }
-    </style>
-    <div class="box">
-    <b>$text</b><br>
-    Richtung: $gradText<br>
-    Zeitpunkt: $zeitstempel<br>
-    Nachwirkzeit: $restzeitMin
-    <div class="small">WindMonitorPro</div>
-    </div>
-    HTML;
-}
-
-
-//Pruefen und ggf in Klasse aendern ob es erforderlich ist die beiden in der Klasse integrierten Funktionen ausserhalb der Klasse aufzurufen Wurden momentan mit dem Zusatz Wrapper hier eigebaut
-//Weil IP-Symcon bei Timer- und Event-Ausführungen nur global sichtbare Funktionen aufrufen kann also ausserhalb der Klasse. Daher ist this->FetchAndStoreMeteoblueData() bei Timern nicht moeglich
-//Wrapper Funktion fuer Timer zu FetchAndStoreMeteoblueData
-function WMP_FetchMeteoblue($instanceID) {
-    $info = IPS_GetInstance($instanceID);
-    if ($info['ModuleInfo']['ModuleName'] === "WindMonitorPro") {
-        IPS_RunScriptTextEx($instanceID, 'FetchAndStoreMeteoblueData();');
-    }
-}
-
-
-
-
-//Wrapper Funktion fuer Timer zu ReadFromFileAndUpdate    
-//Problematik wie oben beschrieben beachten...
-function WMP_ReadFromFile($instanceID) {
-    $info = IPS_GetInstance($instanceID);
-    if ($info['ModuleInfo']['ModuleName'] === "WindMonitorPro") {
-        IPS_RunScriptTextEx($instanceID, 'ReadFromFileAndUpdate();');
-    }
-
-}
 
 
 
