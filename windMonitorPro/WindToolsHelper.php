@@ -371,7 +371,7 @@ class WindToolsHelper
 
         if ($updateMBString !== '' && preg_match('/^(\d{2}\.\d{2}\.\d{4})\s+(\d{2}:\d{2}):\d{2}$/', $updateMBString, $m)) {
             // Nur Datum und Stunden:Minuten ausgeben, sekundengenau meist nicht nötig
-            $standText = $m[1] . ' ' . $m[2] . ' Uhr';
+            $standMBText = $m[1] . ' ' . $m[2] . ' Uhr';
         } else {
             // Fallback: Original oder –
             $standMBText = $updateMBString !== '' ? $updateMBString : '–';
