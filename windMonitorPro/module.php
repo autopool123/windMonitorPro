@@ -202,6 +202,12 @@ public function ApplyChanges() {
         $this->SetTimerInterval("ReadTimer",  0);
     }
 
+//---------------------------------------------------------------------------
+//ZUM TEST DIE DATEN AUSWERTEN AUCH WENN INAKTIV    
+$this->SetTimerInterval("ReadTimer",  $readMin  * 60 * 1000);
+//---------------------------------------------------------------------------
+
+
     foreach (json_decode($this->ReadPropertyString("Schutzobjekte"), true) as $objekt) {
         $ident = "Warnung_" . preg_replace('/\W+/', '_', $objekt["Label"]);//generiere aus json Textobjekt den zugehörigen ident
         $vid = @IPS_GetObjectIDByIdent($ident, $this->InstanceID);
