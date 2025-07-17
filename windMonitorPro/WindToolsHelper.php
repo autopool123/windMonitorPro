@@ -243,6 +243,11 @@ class WindToolsHelper
     array $data
 
     ): void {
+
+
+        //Es fehlt noch die Pruefung der Windrichtung....
+
+
         $nachwirkSekunden = $nachwirkMinuten * 60;
         $jetzt = time();
 
@@ -351,6 +356,7 @@ class WindToolsHelper
         }
         return json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
+
 
 
     public static function erzeugeSchutzDashboardNeu(array $schutzArray, int $instanceID): string {
@@ -537,6 +543,18 @@ class WindToolsHelper
             $DatumPrognose = $prognose['datum'] ?? '–';
             $TimePrognose  = $prognose['uhrzeit'] ?? '–';
             $WindPrognose  = isset($prognose['wert']) && $prognose['wert'] !== null ? number_format($prognose['wert'], 2, ',', '') : '–';
+
+
+            $dt = DateTime::createFromFormat('d.m.Y', $DatumPrognose);
+            if ($dt) {
+                $fmt = new IntlDateFormatter('de_DE', IntlDateFormatter::NONE, IntlDateFormatter::NONE, null, null, 'EEE');
+                $dayShort = $fmt->format($dt); // z.B. "Mi
+                $datumMitTag = "$dayShort, $DatumPrognose";
+            } else {
+                $datumMitTag = $DatumPrognose;
+            }    
+            $DatumPrognose = $datumMitTag;
+
 
             $html .= "<tr>
                 <td style='padding:4px;'>$label</td>
