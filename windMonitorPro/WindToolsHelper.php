@@ -389,7 +389,7 @@ class WindToolsHelper
         $html = "<div style='font-family:sans-serif; padding:10px;'>
             <h3>🧯 Schutzobjekt-Übersicht
             <span style='font-size:13px; font-weight:normal; margin-left:18px; color:#888;'>
-            (MeteoBlue-Daten vom: $standMBText<span style='margin-left:10px;'>Datei gelesen am: $standText</span>)
+            (MeteoBlue vom: $standMBText<span style='margin-left:8px;'>Datei gelesen: $standText</span>)
             </span>
             </h3>
             <table style='font-size:14px; border-collapse:collapse;'>";
