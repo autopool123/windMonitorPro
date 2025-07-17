@@ -350,7 +350,7 @@ class WindToolsHelper
                     'datum' => $dt->format('d.m.Y'),
                     'uhrzeit' => $dt->format('H:i'),
                     'wert' => round($boeInObjHoehe, 2),
-                    'richtung' => gradZuRichtung($data["winddirection_80m"][$i])
+                    'richtung' => self::gradZuRichtung($data["winddirection_80m"][$i])
                 ];
                 break;
             }
