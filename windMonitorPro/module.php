@@ -248,8 +248,8 @@ public function ApplyChanges() {
 
 //---------------------------------------------------------------------------
 //ZUM TEST DIE DATEN AUSWERTEN AUCH WENN INAKTIV    
-$this->SetTimerInterval("ReadTimer",  $readMin  * 60 * 1000);
-IPS_LogMessage("WindMonitorPro", "ReadTimer gestartet: $readMin in Minuten");
+//$this->SetTimerInterval("ReadTimer",  $readMin  * 60 * 1000);
+//IPS_LogMessage("WindMonitorPro", "ReadTimer gestartet: $readMin in Minuten");
 //---------------------------------------------------------------------------
 
 
