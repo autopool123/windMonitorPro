@@ -71,10 +71,6 @@ class windMonitorPro extends IPSModule {
         $this->RegisterPropertyInteger("MaxDatenAlter", 4);  // z. B. max 4 Std
         $this->RegisterPropertyInteger("ReadIntervall", 15);    // alle 15min
         $this->RegisterPropertyInteger("NachwirkzeitMin", 10);  // Nachwirkzeit in Minuten
-        //$this->RegisterTimer("WindUpdateTimer", 0, 'IPS_RequestAction($_IPS["INSTANCE"], "UpdateWind", "");');
-
-
-
 
         // 📦 Einstellungen für das Abruf-/Auswerteverhalten
         //$this->RegisterPropertyString("Modus", "fetch"); // "fetch" oder "readfile" Relikt aus der ersten Version
@@ -82,7 +78,7 @@ class windMonitorPro extends IPSModule {
         $this->RegisterPropertyInteger("StringVarID", 0); // Optional: ~TextBox-ID
 
         // Timer für API-Abruf (meteoblue) -- FetchTimer
-        $this->RegisterTimer("FetchTimer", 0, 'WMP_FetchMeteoblue($_IPS[\'TARGET\']);');
+        $this->RegisterTimer("FetchTimer", 0, 'IPS_RequestAction($_IPS[\'TARGET\'], "UpdateFromMeteoblue", "");');
         // Timer für Datei-Auswertung
         //$this->RegisterTimer("ReadTimer", 0, 'WMP_ReadFromFile($_IPS[\'TARGET\']);');
         $this->RegisterTimer("ReadTimer", 0, 'IPS_RequestAction($_IPS[\'TARGET\'], "UpdateWind", "");');
@@ -240,12 +236,12 @@ public function ApplyChanges() {
 
     // Nur aktivieren, wenn Instanz "aktiv" ist
     if ($this->ReadPropertyBoolean("Aktiv")) {
-        $this->SetTimerInterval("FetchTimer", $fetchMin * 60 * 1000);
+        $this->SetTimerInterval("FetchTimer", max(15,$fetchMin) * 60 * 1000);
         //$this->SetTimerInterval("ReadTimer",  $readMin  * 60 * 1000);
-        $this->SetTimerInterval("ReadTimer", max(1, $readMin) * 60 * 1000);
+        $this->SetTimerInterval("ReadTimer", max(15, $readMin) * 60 * 1000);
     } else {
         $this->SetTimerInterval("FetchTimer", 0); // deaktivieren
-        $this->SetTimerInterval("ReadTimer",  0);
+        $this->SetTimerInterval("ReadTimer",  0); // deaktivieren
     }
 
 //---------------------------------------------------------------------------
@@ -565,32 +561,34 @@ public function RequestAction($Ident, $Value) {
             $ident = preg_replace('/\W+/', '_', $name);
             $minWind = $objekt["MinWind"] ?? 10.0;
             $minGust = $objekt["MinGust"] ?? 14.0;
+            //Bilde ein array aus den in der form.json eingegebenen gefärdenden Windrichtungen
             $richtungsliste = $objekt["RichtungsKuerzelListe"] ?? "";
+            $kuerzelArray = array_filter(array_map('trim', explode(',', $richtungsliste)));
             $hoehe = $objekt["Hoehe"];
             $windInObjHoehe = WindToolsHelper::windUmrechnungSmart($wind, WindToolsHelper::$referenzhoehe, $hoehe, WindToolsHelper::$gelaendeAlpha);
             $boeInObjHoehe = WindToolsHelper::windUmrechnungSmart($boe, WindToolsHelper::$referenzhoehe, $hoehe, WindToolsHelper::$gelaendeAlpha);
 
             //Check ob Windrichtung die Warnung fuer Schutzobjekt betrifft
-            $kuerzelArray = array_filter(array_map('trim', explode(',', $richtungsliste)));
-            $inSektor = WindToolsHelper::richtungPasst($richtung, $kuerzelArray);
+            //$inSektor = WindToolsHelper::richtungPasst($richtung, $kuerzelArray);//wird jetzt in berechneSchutzstatusMitNachwirkung behandelt
             //Auf Warnstatus checken 
-            //if ($inSektor){ 
-                $NachwirkZeit = GetValueString($this->GetIDForIdent("NachwirkzeitInfo"));
-                $NachwirkZeit = intval($NachwirkZeit);
-                WindToolsHelper::berechneSchutzstatusMitNachwirkung(
-                    $windInObjHoehe,
-                    $boeInObjHoehe,
-                    $minWind,
-                    $minGust,
-                    $NachwirkZeit,
-                    $this->GetIDForIdent("Status_" . $ident), 
-                    $this->GetIDForIdent("Warnung_" . $ident),
-                    $this->GetIDForIdent("WarnungBoe_" . $ident),
-                    $objekt["Label"] ?? "Unbenannt",
-                    $hoehe,
-                    $block
-                );
-            //}
+
+            $NachwirkZeit = GetValueString($this->GetIDForIdent("NachwirkzeitInfo"));
+            $NachwirkZeit = intval($NachwirkZeit);
+            WindToolsHelper::berechneSchutzstatusMitNachwirkung(
+                $windInObjHoehe,
+                $boeInObjHoehe,
+                $minWind,
+                $minGust,
+                $richtung,
+                $kuerzelArray,
+                $NachwirkZeit,
+                $this->GetIDForIdent("Status_" . $ident), 
+                $this->GetIDForIdent("Warnung_" . $ident),
+                $this->GetIDForIdent("WarnungBoe_" . $ident),
+                $objekt["Label"] ?? "Unbenannt",
+                $hoehe,
+                $block
+            );
         }        
 
         // Dashboard aktualisieren

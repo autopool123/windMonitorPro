@@ -234,6 +234,8 @@ class WindToolsHelper
     float $gustMS,
     float $thresholdWind,
     float $thresholdGust,
+    float $richtung,
+    array $kuerzelArray,
     int $nachwirkMinuten,
     int $idstatusStr,
     int $idWarnWind,
@@ -244,16 +246,14 @@ class WindToolsHelper
 
     ): void {
 
-
-        //Es fehlt noch die Pruefung der Windrichtung....
-
+        $inSektor = self::richtungPasst($richtung, $kuerzelArray);
 
         $nachwirkSekunden = $nachwirkMinuten * 60;
         $jetzt = time();
 
         // --- Warnbedingungen prüfen ---
-        $warnWind = $windMS >= $thresholdWind;
-        $warnGust = $gustMS >= $thresholdGust;
+        $warnWind = $inSektor && ($windMS >= $thresholdWind);
+        $warnGust = $inSektor && ($gustMS >= $thresholdGust);
 
         // --- Restnachwirkzeit auslesen und berechnen ---
         $restzeitJson = GetValueString($idstatusStr); // z.B. '{"restzeit":"09:45",...}'
@@ -359,119 +359,28 @@ class WindToolsHelper
 
 
 
-    public static function erzeugeSchutzDashboardNeu(array $schutzArray, int $instanceID): string {
-        
-
-        $html = "<div style='font-family:sans-serif; padding:10px;'><h3>🧯 Schutzobjekt-Übersicht</h3><table style='font-size:14px; border-collapse:collapse;'>";
-
-        $html .= "<tr style='font-weight:bold; background:#f0f0f0;'>
-            <td style='padding:4px;'>📛 Name</td>
-            <td style='padding:4px;'>📏 Höhe</td>
-            <td style='padding:4px;'>🌬️ Wind</td>
-            <td style='padding:4px;'>💥 Böe</td>
-            <td style='padding:4px;'>🧭 Richtung</td>
-            <td style='padding:4px;'>⚠️ Status</td>
-            <td style='padding:4px;'>⏱️ Letzte Warnung</td>
-            <td style='padding:4px;'>📊 Zähler</td>
-            <td style='padding:4px;'>📈 Prognose</td>  <!-- NEU -->
-
-        </tr>";
-
-        /*
-                $html .= "<tr style='font-weight:bold; background:#f0f0f0;'>
-            <td style='padding:4px;'>📛 Name</td>
-            <td style='padding:4px;'>📏 Höhe</td>
-            <td style='padding:4px;'>🌬️ Wind</td>
-            <td style='padding:4px;'>💥 Böe</td>
-            <td style='padding:4px;'>🧭 Richtung</td>
-            <td style='padding:4px;'>⚠️ Status</td>
-            <td style='padding:4px;'>⏱️ Letzte Warnung</td>
-            <td style='padding:4px;'>📊 Zähler</td>
-            <td style='padding:4px;'>📊 LastWind</td>
-            <td style='padding:4px;'>📊 LastBoe</td>
-            <td style='padding:4px;'>📊 RestZeit</td>
-
-        </tr>";
-
-
-        Mit richtigen Überschriften würde das so aussehen:
-        $html .= "<tr style='font-weight:bold; background:#f0f0f0;'>
-            <th style='padding:4px;'>📛 Name</th>
-            <th style='padding:4px;'>📏 Höhe</th>
-            ...
-        </tr>";
-        */
-
-        foreach ($schutzArray as $objekt) {
-            $label = $objekt["Label"] ?? "–";
-            $hoehe = $objekt["Hoehe"] ?? "–";
-
-            $vid = @IPS_GetObjectIDByIdent("Warnung_" . preg_replace('/\W+/', '_', $label), $instanceID);
-            //$wind = $vid !== false ? GetValueFormatted($vid) : "–";
-            $wind = ($vid !== false && IPS_VariableExists($vid)) ? GetValueFormatted($vid) : "–";
-            $warnung = ($vid !== false && GetValueBoolean($vid));
-            $status = $warnung
-                ? "<span style='color:#e74c3c;'>⚠️ Aktiv</span>"
-                : "<span style='color:#2ecc71;'>✅ Inaktiv</span>";
-            $richtung = $objekt["RichtungsKuerzelListe"] ?? "–";            
-
-            $countID = @IPS_GetObjectIDByIdent("WarnCount_" . preg_replace('/\W+/', '_', $label), $instanceID);
-                $zaehler = ($countID !== false && IPS_VariableExists($countID)) ? GetValueInteger($countID) : "–";
-
-            $tsID = @IPS_GetObjectIDByIdent("LetzteWarnungTS_" . preg_replace('/\W+/', '_', $label), $instanceID);
-                $tsText = ($tsID !== false && IPS_VariableExists($tsID)) ? date("H:i", GetValueInteger($tsID)) . " Uhr" : "–";
-
-
-            //Json-Variable Schutzobjekt-Status laden 
-            $vid = @IPS_GetObjectIDByIdent("Status_" . preg_replace('/\W+/', '_', $label), $instanceID);
-            $JsonProperties = GetValueString($vid);    
-            // JSON zu Array
-            $properties = json_decode($JsonProperties, true);
-            $JsonWindPrognose = $properties['boeVorschau'];
-            $prognose = json_decode($JsonWindPrognose, true);
-            $DatumPrognose = $prognose['datum'];
-            $TimePrognose = $prognose['uhrzeit'];
-            $WindPrognose = $prognose['wert'];
-
-
-
-
-
-
-            //$wind = GetValueFormatted(@IPS_GetObjectIDByIdent("Warnung_" . preg_replace('/\W+/', '_', $label)));
-            
-            //$status = $wind === "true" ? "<span style='color:#e74c3c;'>⚠️ Aktiv</span>" : "<span style='color:#2ecc71;'>✅ Inaktiv</span>";
-                // 🚀 Windprognose berechnen
-                //"Windaufkommen ab $datum um $uhrzeit Uhr ({$warnwert} m/s)";
-                //@IPS_GetObjectIDByIdent("Status_" . $ident),
-    $WindPrognose = WindTools::ermittleWindAufkommen(
-    //    $objekt['mbforecast'],
-    //    $objekt['windschwelle'],
-    //    $objekt['Hoehe']
-    );
-
-
-            $html .= "<tr>
-                <td style='padding:4px;'>$label</td>
-                <td style='padding:4px;'>$hoehe m</td>
-                <td style='padding:4px;'>{$objekt["MinWind"]} m/s</td>
-                <td style='padding:4px;'>{$objekt["MinGust"]} m/s</td>
-                <td style='padding:4px;'>$richtung</td>
-                <td style='padding:4px;'>$status</td>
-                <td style='padding:4px;'>$tsText</td>
-                <td style='padding:4px;'>$zaehler</td>
-                <td style='padding:4px;'>$WindPrognose</td>
-            </tr>";
-        }
-
-        $html .= "</table></div>";
-        return $html;
-    }
-
+    
     public static function erzeugeSchutzDashboard(array $schutzArray, int $instanceID): string {
         
+        @$updateVarID = @IPS_GetObjectIDByIdent("LetzteAuswertungDaten", $instanceID);
+        $updateString = ($updateVarID && IPS_VariableExists($updateVarID)) ? GetValueString($updateVarID) : '';
 
-        $html = "<div style='font-family:sans-serif; padding:10px;'><h3>🧯 Schutzobjekt-Übersicht</h3><table style='font-size:14px; border-collapse:collapse;'>";
+        if ($updateString !== '' && preg_match('/^(\d{2}\.\d{2}\.\d{4})\s+(\d{2}:\d{2}):\d{2}$/', $updateString, $m)) {
+            // Nur Datum und Stunden:Minuten ausgeben, sekundengenau meist nicht nötig
+            $standText = $m[1] . ' ' . $m[2] . ' Uhr';
+        } else {
+            // Fallback: Original oder –
+            $standText = $updateString !== '' ? $updateString : '–';
+        }
+
+
+        $html = "<div style='font-family:sans-serif; padding:10px;'>
+            <h3>🧯 Schutzobjekt-Übersicht
+            <span style='font-size:13px; font-weight:normal; margin-left:18px; color:#888;'>
+            (Stand: $standText)
+            </span>
+            </h3>
+            <table style='font-size:14px; border-collapse:collapse;'>";
 
         $html .= "<tr style='font-weight:bold; background:#f0f0f0;'>
             <td style='padding:4px;'>📛 Name</td>
@@ -485,30 +394,7 @@ class WindToolsHelper
 
         </tr>";
 
-        /*
-                $html .= "<tr style='font-weight:bold; background:#f0f0f0;'>
-            <td style='padding:4px;'>📛 Name</td>
-            <td style='padding:4px;'>📏 Höhe</td>
-            <td style='padding:4px;'>🌬️ Wind</td>
-            <td style='padding:4px;'>💥 Böe</td>
-            <td style='padding:4px;'>🧭 Richtung</td>
-            <td style='padding:4px;'>⚠️ Status</td>
-            <td style='padding:4px;'>⏱️ Letzte Warnung</td>
-            <td style='padding:4px;'>📊 Zähler</td>
-            <td style='padding:4px;'>📊 LastWind</td>
-            <td style='padding:4px;'>📊 LastBoe</td>
-            <td style='padding:4px;'>📊 RestZeit</td>
 
-        </tr>";
-
-
-        Mit richtigen Überschriften würde das so aussehen:
-        $html .= "<tr style='font-weight:bold; background:#f0f0f0;'>
-            <th style='padding:4px;'>📛 Name</th>
-            <th style='padding:4px;'>📏 Höhe</th>
-            ...
-        </tr>";
-        */
 
         foreach ($schutzArray as $objekt) {
             $label = $objekt["Label"] ?? "–";
@@ -544,11 +430,13 @@ class WindToolsHelper
             $TimePrognose  = $prognose['uhrzeit'] ?? '–';
             $WindPrognose  = isset($prognose['wert']) && $prognose['wert'] !== null ? number_format($prognose['wert'], 2, ',', '') : '–';
 
-
             $dt = DateTime::createFromFormat('d.m.Y', $DatumPrognose);
+            //Die Klasse IntlDateFormatter fehlt deshalb Umweg fuer Wochentage ueber $wochentage = ['So','Mo','...
+            //Alternativ: Extension fuer Lokalisierungs- und Datumsfunktionen nachinstallieren
             $wochentage = ['So','Mo','Di','Mi','Do','Fr','Sa'];
             if ($dt) {
                 $dayShort = $wochentage[$dt->format('w')]; // 'w' ist 0 (So) bis 6 (Sa)
+                //mit vorhandener Extension:
                 //$fmt = new IntlDateFormatter('de_DE', IntlDateFormatter::NONE, IntlDateFormatter::NONE, null, null, 'EEE');
                 //$dayShort = $fmt->format($dt); // z.B. "Mi
                 $datumMitTag = "$dayShort, $DatumPrognose";
