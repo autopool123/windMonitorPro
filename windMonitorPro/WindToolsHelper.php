@@ -467,7 +467,7 @@ class WindToolsHelper
                 <td style='padding:4px;'>{$objekt["MinGust"]} m/s</td>
                 <td style='padding:4px;'>$richtung</td>
                 <td style='padding:4px;'>$status</td>
-                <td style='padding:4px;'>$RestZeitWarnung</td>
+                <td style='padding:4px;'>$RestZeitWarnung min</td>
                 <td style='padding:4px;'>$zaehler</td>
             </tr>";
 
