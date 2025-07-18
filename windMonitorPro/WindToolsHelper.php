@@ -401,7 +401,7 @@ class WindToolsHelper
             <td style='padding:4px;'>💥 Böe</td>
             <td style='padding:4px;'>🧭 Richtung</td>
             <td style='padding:4px;'>⚠️ Status</td>
-            <td style='padding:4px;'>⏱️ Letzte Warnung</td>
+            <td style='padding:4px;'>⏱️ Restzeit Warn</td>
             <td style='padding:4px;'>📊 Zähler</td>
 
         </tr>";
@@ -442,6 +442,7 @@ class WindToolsHelper
             $TimePrognose  = $prognose['uhrzeit'] ?? '–';
             $WindPrognose  = isset($prognose['wert']) && $prognose['wert'] !== null ? number_format($prognose['wert'], 2, ',', '') : '–';
             $WindDirection = $prognose['richtung']?? '–';
+            $RestZeitWarnung = $properties['restzeit'];
 
             $dt = DateTime::createFromFormat('d.m.Y', $DatumPrognose);
             //Die Klasse IntlDateFormatter fehlt deshalb Umweg fuer Wochentage ueber $wochentage = ['So','Mo','...
@@ -466,7 +467,7 @@ class WindToolsHelper
                 <td style='padding:4px;'>{$objekt["MinGust"]} m/s</td>
                 <td style='padding:4px;'>$richtung</td>
                 <td style='padding:4px;'>$status</td>
-                <td style='padding:4px;'>$tsText</td>
+                <td style='padding:4px;'>$RestZeitWarnung</td>
                 <td style='padding:4px;'>$zaehler</td>
             </tr>";
 
