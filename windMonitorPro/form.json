@@ -66,8 +66,15 @@
       "name": "PackageSuffix",
       "caption": "Meteoblue-Paket auswählen",
       "options": [
-        { "caption": "Daily-Wetter, 15min-Wind&Böen", "value": "basic-1h_wind-15min,current" }
-      ]
+      {
+        "caption": "Std.-Wetter, 15min-Wind&Boen, aktuelles Wetter",
+        "value": "basic-1h_wind-15min,current"
+      },
+      {
+        "caption": "Std.-Wetter, 15min-Wind&Boen",
+        "value": "basic-1h_wind-15min"
+      }
+    ]
     },
     {
       "name": "Latitude",

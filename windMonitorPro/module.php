@@ -292,6 +292,7 @@ class windMonitorPro extends IPSModule {
             return;
         }
 
+        /*
         //Datensegment data-current
         $currentData = $data['data_current'] ?? null;
         //Pruefen ob current-data existiert
@@ -299,7 +300,7 @@ class windMonitorPro extends IPSModule {
             IPS_LogMessage($logtag, "❌ Current Data: Ungültige oder unvollständige JSON-Struktur");
             return;
         }
-
+        */
 
         //Lade die von MeteoBlue verwendete Zeitzonen Abkuerzung aus dem Datenstring oder setze bei Fehler auf UTC
         $tzAbk = $data["metadata"]["timezone_abbrevation"] ?? 'UTC';//Zeitzone (Kuerzel aus Daten laden)
