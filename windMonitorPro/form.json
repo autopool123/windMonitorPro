@@ -129,7 +129,7 @@
       "type": "NumberSpinner",
       "caption": "erlaubtes Alter der Daten in Stunden",
       "minimum": 0,
-      "maximum": 14
+      "maximum": 24
     },
     {
       "type": "Select",
