@@ -193,7 +193,7 @@ class windMonitorPro extends IPSModule {
 
     //---------------------------------------------------------------------------
     //ZUM TEST DIE DATEN AUSWERTEN AUCH WENN INAKTIV    
-    $this->SetTimerInterval("ReadTimer", max(1, $readMin) * 60 * 1000);
+    //$this->SetTimerInterval("ReadTimer", max(1, $readMin) * 60 * 1000);
     IPS_LogMessage("WindMonitorPro", "ReadTimer gestartet: $readMin in Minuten");
     //---------------------------------------------------------------------------
 
