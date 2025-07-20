@@ -398,7 +398,7 @@ class WindToolsHelper
                     width:100%; 
                     height:100%; 
                     object-fit:cover; 
-                    opacity:0.2;   /* Deckkraft nach Geschmack */
+                    opacity:0.6;   /* Deckkraft nach Geschmack */
                     z-index:0;
                 ' />
             <div style='
