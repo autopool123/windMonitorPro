@@ -159,7 +159,8 @@ class WindToolsHelper
      * Wandelt Grad in Symbolpfeil um (z. B. „↗“)
      */
     public static function gradZuPfeil(float $grad): string {
-        $pfeile = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
+        //$pfeile = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];//Zeigt auf Richtung aus der der Wind kommt
+        $pfeile = ["↓", "↙", "←", "↖", "↑", "↗", "→", "↘"];//Zeigt in Windrichtung
         $index = round(($grad % 360) / 45) % 8;
         return $pfeile[$index];
     }
