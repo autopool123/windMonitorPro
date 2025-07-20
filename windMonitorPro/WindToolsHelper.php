@@ -387,7 +387,30 @@ class WindToolsHelper
         }
 
 
-        $html = "<div style='font-family:sans-serif; padding:10px;'>
+        /*$html = "<div style='font-family:sans-serif; padding:10px;'>*/
+
+        $html = "<div style='
+            font-family:sans-serif;
+            padding:10px;
+            min-height:100vh;
+            position:relative;
+            /* Hintergrundbild, Größe, kein Wiederholen */
+            /*background: url(\"/pfad/zu/deinem-bild.jpg\") center center / cover no-repeat;*/
+            background: url(\"/user/wetterkarte.png\") center center / cover no-repeat;
+        '>
+            <div style='
+                position:absolute;
+                top:0; left:0;
+                width:100%; height:100%;
+                background:rgba(255,255,255,0.7); /* Weißer Overlay für bessere Lesbarkeit, 70% Deckkraft */
+                z-index:0;
+                pointer-events:none;
+            '></div>
+        <div style='position:relative; z-index:1;'>
+
+
+
+
             <h3>🧯 Schutzobjekt-Übersicht
             <span style='font-size:13px; font-weight:normal; margin-left:18px; color:#888;'>
             (MeteoBlue vom: $standMBText<span style='margin-left:8px;'>Datei gelesen: $standText</span>)
