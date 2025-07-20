@@ -28,12 +28,11 @@ class windMonitorPro extends IPSModule {
         $this->RegisterPropertyInteger("NachwirkzeitMin", 10);  // Nachwirkzeit in Minuten
 
         // 📦 Einstellungen für das Abruf-/Auswerteverhalten
-        //$this->RegisterPropertyString("Modus", "fetch"); // "fetch" oder "readfile" Relikt aus der ersten Version
         $this->RegisterPropertyString("Dateipfad", "/var/lib/symcon/user/winddata_15min.json");
         $this->RegisterPropertyInteger("StringVarID", 0); // Optional: ~TextBox-ID
 
         // Timer für API-Abruf (meteoblue) -- FetchTimer
-        $this->RegisterTimer("FetchTimer", 0, 'IPS_RequestAction($_IPS[\'TARGET\'], "UpdateFromMeteoblue", "");');
+        $this->RegisterTimer("FetchTimer", 0, 'IPS_RequestAction($_IPS[\'TARGET\'], "UpdateMeteoBlue", "");');
         // Timer für Datei-Auswertung
         $this->RegisterTimer("ReadTimer", 0, 'IPS_RequestAction($_IPS[\'TARGET\'], "UpdateWind", "");');
 
