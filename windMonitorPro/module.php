@@ -322,7 +322,7 @@ class windMonitorPro extends IPSModule {
         if ($diff > $maxDatenAlterSekunden) {
             $this->SetValue("SchutzStatusText", "🛑 Meteoblue-Daten älter als 4 Stunden (UTC: $ModelZeit)");
             IPS_LogMessage("WindMonitorPro", "🛑 Meteoblue-Daten älter als 4 Stunden (UTC: $ModelZeit)");
-            SetValueBoolean($this->GetIDForIdent("WarnungAktiv"), false);
+            //SetValueBoolean($this->GetIDForIdent("WarnungAktiv"), false);
             SetValueBoolean($this->GetIDForIdent("FetchDatenVeraltet"), true);
             $this->SetValue("LetzteAktion", "⏱️ ReadFromFile übersprungen: Daten von $ModelZeit");
         return;
@@ -500,7 +500,8 @@ class windMonitorPro extends IPSModule {
                 IPS_DeleteVariable($objID);
             }
         }
-            
+        
+        $SammelWarnung = false;
         foreach ($schutzArray as $objekt) {
             $name = $objekt["Label"] ?? "Unbenannt";
             $ident = preg_replace('/\W+/', '_', $name);
@@ -534,7 +535,14 @@ class windMonitorPro extends IPSModule {
                 $hoehe,
                 $block
             );
-        }        
+            if(GetValueBoolean($this->GetIDForIdent("Warnung_" . $ident)) || GetValueBoolean($this->GetIDForIdent("WarnungBoe_" . $ident))) {
+                $SammelWarnung = true;
+                //SetValueBoolean($this->GetIDForIdent("WarnungAktiv"), true);
+            } 
+
+        } 
+
+        SetValueBoolean($this->GetIDForIdent("WarnungAktiv"), $SammelWarnung);
 
         // Dashboard aktualisieren
         $html = WindToolsHelper::erzeugeSchutzDashboard($schutzArray, $this->InstanceID);
