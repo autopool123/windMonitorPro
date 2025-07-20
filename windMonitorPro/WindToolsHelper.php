@@ -390,7 +390,7 @@ class WindToolsHelper
         /*$html = "<div style='font-family:sans-serif; padding:10px;'>*/
 
         $html = "<div style='position:relative; min-height:100vh;'>
-            <img src=\"/var/lib/symcon/user/WetterKarte.png\"
+            <img src=\"/user/WetterKarte.png\"
                 style='
                     position:absolute; 
                     left:0; 
