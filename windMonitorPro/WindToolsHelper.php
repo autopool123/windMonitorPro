@@ -396,7 +396,7 @@ class WindToolsHelper
             position:relative;
             /* Hintergrundbild, Größe, kein Wiederholen */
             /*background: url(\"/pfad/zu/deinem-bild.jpg\") center center / cover no-repeat;*/
-            background: url(\"/user/wetterkarte.png\") center center / cover no-repeat;
+            background: url(\"/user/WetterKarte.png\") center center / cover no-repeat;
         '>
             <div style='
                 position:absolute;
