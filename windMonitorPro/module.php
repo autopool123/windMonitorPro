@@ -388,7 +388,7 @@ class windMonitorPro extends IPSModule {
         SetValueFloat($this->GetIDForIdent("Wind80m"), round($windInObjHoehe, 2));
         SetValueFloat($this->GetIDForIdent("Gust80m"), round($boeInObjHoehe, 2));
         SetValueInteger($this->GetIDForIdent("WindDirection80m"), (int)$richtung);
-        SetValueInteger($this->GetIDForIdent("WindDirText"),WindToolsHelper::gradZuRichtung($richtung));
+        SetValueString($this->GetIDForIdent("WindDirText"),WindToolsHelper::gradZuRichtung($richtung));
         SetValueFloat($this->GetIDForIdent("AirPressure"),  round($LuftDruck, 3));
         SetValueFloat($this->GetIDForIdent("AirDensity"), round($LuftDichte, 3));
         SetValue($this->GetIDForIdent("CurrentTemperature"), $temp);
