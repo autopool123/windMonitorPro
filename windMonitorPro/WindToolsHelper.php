@@ -443,8 +443,8 @@ class WindToolsHelper
             $vid = @IPS_GetObjectIDByIdent("Warnung_" . preg_replace('/\W+/', '_', $label), $instanceID);
             $vidBoe = @IPS_GetObjectIDByIdent("WarnungBoe_" . preg_replace('/\W+/', '_', $label), $instanceID);
             //$wind = $vid !== false ? GetValueFormatted($vid) : "–";
-            $wind = ($vid !== false && IPS_VariableExists($vid)) ? GetValueFormatted($vid) : "–";
-            $Boe = ($vidBoe !== false && IPS_VariableExists($vidBoe)) ? GetValueFormatted($vidBoe) : "–";
+            $wind = ($vid !== false && IPS_VariableExists($vid)) ? GetValueBoolean($vid) : false;
+            $Boe = ($vidBoe !== false && IPS_VariableExists($vidBoe)) ? GetValueBoolean($vidBoe) : false;
             //$warnung = ($vid !== false && GetValueBoolean($vid));
             $warnung = $wind ||  $Boe;
             $status = $warnung
