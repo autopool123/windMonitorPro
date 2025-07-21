@@ -439,13 +439,12 @@ class WindToolsHelper
         foreach ($schutzArray as $objekt) {
             $label = $objekt["Label"] ?? "–";
             $hoehe = $objekt["Hoehe"] ?? "–";
-            $wind = false;
-            $Boe = false;
+
             $vid = @IPS_GetObjectIDByIdent("Warnung_" . preg_replace('/\W+/', '_', $label), $instanceID);
             $vidBoe = @IPS_GetObjectIDByIdent("WarnungBoe_" . preg_replace('/\W+/', '_', $label), $instanceID);
             //$wind = $vid !== false ? GetValueFormatted($vid) : "–";
             $wind = ($vid !== false && IPS_VariableExists($vid)) ? GetValueFormatted($vid) : "–";
-            $Boe = ($vid !== false && IPS_VariableExists($vidBoe)) ? GetValueFormatted($vidBoe) : "–";
+            $Boe = ($vidBoe !== false && IPS_VariableExists($vidBoe)) ? GetValueFormatted($vidBoe) : "–";
             //$warnung = ($vid !== false && GetValueBoolean($vid));
             $warnung = $wind ||  $Boe;
             $status = $warnung
