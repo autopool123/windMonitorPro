@@ -441,9 +441,12 @@ class WindToolsHelper
             $hoehe = $objekt["Hoehe"] ?? "–";
 
             $vid = @IPS_GetObjectIDByIdent("Warnung_" . preg_replace('/\W+/', '_', $label), $instanceID);
+            $vidBoe = @IPS_GetObjectIDByIdent("WarnungBoe_" . preg_replace('/\W+/', '_', $label), $instanceID);
             //$wind = $vid !== false ? GetValueFormatted($vid) : "–";
             $wind = ($vid !== false && IPS_VariableExists($vid)) ? GetValueFormatted($vid) : "–";
-            $warnung = ($vid !== false && GetValueBoolean($vid));
+            $Boe = ($vid !== false && IPS_VariableExists($vidBoe)) ? GetValueFormatted($vidBoe) : "–";
+            //$warnung = ($vid !== false && GetValueBoolean($vid));
+            $warnung = $wind ||  $Boe;
             $status = $warnung
                 ? "<span style='color:#e74c3c;'>⚠️ Aktiv</span>"
                 : "<span style='color:#2ecc71;'>✅ Inaktiv</span>";
