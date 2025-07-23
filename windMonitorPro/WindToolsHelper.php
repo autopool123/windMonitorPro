@@ -229,7 +229,6 @@ class WindToolsHelper
         return round($windReferenz * pow($hoeheObjekt / $hoeheReferenz, $GelaendeAlpha), 2);
     }
 
-    //$windInObjHoehe = WindToolsHelper::windUmrechnungSmart($wind, WindToolsHelper::$referenzhoehe, WindToolsHelper::$zielHoeheStandard, WindToolsHelper::$gelaendeAlpha);
     public static function berechneSchutzstatusMitNachwirkung(
     float $windMS,
     float $gustMS,
@@ -244,77 +243,97 @@ class WindToolsHelper
     string $objektName = "",
     float $zielHoehe,
     array $data
+): void {
 
-    ): void {
+    $inSektor = self::richtungPasst($richtung, $kuerzelArray);
 
-        $inSektor = self::richtungPasst($richtung, $kuerzelArray);
+    $nachwirkSekunden = $nachwirkMinuten * 60;
+    $jetzt = time();
 
-        $nachwirkSekunden = $nachwirkMinuten * 60;
-        $jetzt = time();
-
-        // --- Warnbedingungen prüfen ---
-        $warnWind = $inSektor && ($windMS >= $thresholdWind);
-        $warnGust = $inSektor && ($gustMS >= $thresholdGust);
-
-        // --- Restnachwirkzeit auslesen und berechnen ---
-        $restzeitJson = GetValueString($idstatusStr); // z.B. '{"restzeit":"09:45",...}'
-        $status = @json_decode($restzeitJson, true);
-        if (!is_array($status)) {
-            $status = [];
-        }
-        $alteRestzeitSek = 0;
-        if (isset($status['restzeit'])) {
-            $zeitTeile = explode(':', $status['restzeit']);
-            if (count($zeitTeile) === 2) {
-                $alteRestzeitSek = intval($zeitTeile[0]) * 60 + intval($zeitTeile[1]);
-            }
-        }
-
-        $letzterRestzeitTS = IPS_GetVariable($idstatusStr)['VariableUpdated'];
-        $vergangen = $jetzt - $letzterRestzeitTS;
-        $rest = max($alteRestzeitSek - $vergangen, 0);
-
-        // --- Logik für Nachwirkzeit und Warnvariablen ---
-        if ($warnWind || $warnGust) {
-            $rest = $nachwirkSekunden;
-            SetValueBoolean($idWarnWind, $warnWind);
-            SetValueBoolean($idWarnGust, $warnGust);
-        } elseif ($rest > 0) {
-            // Nachwirkzeit läuft: NICHTS an den Warnvariablen ändern!
-            // (Status bleibt wie beim letzten Auslösen)
-        } else {
-            SetValueBoolean($idWarnWind, false);
-            SetValueBoolean($idWarnGust, false);
-        }
-
-        // --- Restzeit-String + Zusatzinfos als Array bauen ---
-        $min = floor($rest / 60);
-        $sek = $rest % 60;
-        $restNachwirkText = sprintf("%02d:%02d", $min, $sek);
-
-        $BoeGefahrVorschau = self::ermittleWindAufkommen($data, $thresholdGust, $zielHoehe);
-
-        $StatusCheckValuesJson = [
-            "objekt"      => ($objektName === null || $objektName === "") ? "" : $objektName,
-            "hoehe"       => $zielHoehe,
-            "restzeit"    => $restNachwirkText,
-            "limitWind"   => round($thresholdWind,1),
-            "wind"        => round($windMS, 1),            
-            "limitBoe"    => round($thresholdGust,1),
-            "boe"         => round($gustMS, 1),            
-            "warnWind"    => GetValueBoolean($idWarnWind),
-            "warnGust"    => GetValueBoolean($idWarnGust),
-            "nachwirk"    => $nachwirkMinuten,
-            "boeVorschau" => $BoeGefahrVorschau
-        ];
-
-        SetValueString($idstatusStr, json_encode($StatusCheckValuesJson));
-
-        // --- Logging (optional) ---
-        //IPS_LogMessage("WindMonitorPro",
-        //    "📡 Nachwirkcheck($nachwirkMinuten min) '$objektName' Wind=$windMS Boe=$gustMS Schwellen=$thresholdWind/$thresholdGust WarnWind=" . (GetValueBoolean($idWarnWind) ? "JA" : "NEIN") . " WarnGust=" . (GetValueBoolean($idWarnGust) ? "JA" : "NEIN") . " Nachwirkzeit: $restNachwirkText"
-        //);
+    // Status-Json laden und absichern
+    $statusJson = GetValueString($idstatusStr);
+    $status = @json_decode($statusJson, true);
+    if (!is_array($status)) {
+        $status = [];
     }
+
+    // Alte Warn- und Zählerwerte sicher auslesen
+    $WarnWindAlt  = $status['warnWind'] ?? false;
+    $WarnGustAlt  = $status['warnGust'] ?? false;
+    $countWindAlt = $status['countWind'] ?? 0;
+    $countGustAlt = $status['countGust'] ?? 0;
+
+    // Neue Warnbedingungen prüfen
+    $warnWind = $inSektor && ($windMS >= $thresholdWind);
+    $warnGust = $inSektor && ($gustMS >= $thresholdGust);
+
+    // Counter initialisieren & gegebenenfalls erhöhen
+    $counterWind = $countWindAlt;
+    $counterGust = $countGustAlt;
+
+    if ($warnWind && !$WarnWindAlt) {
+        $counterWind++;
+    }
+    if ($warnGust && !$WarnGustAlt) {
+        $counterGust++;
+    }
+
+    // Restzeit aus letztem Status parsen
+    $alteRestzeitSek = 0;
+    if (isset($status['restzeit'])) {
+        $zeitTeile = explode(':', $status['restzeit']);
+        if (count($zeitTeile) === 2) {
+            $alteRestzeitSek = intval($zeitTeile[0]) * 60 + intval($zeitTeile[1]);
+        }
+    }
+
+    // Letztes Aktualisierungs-Timestamp holen
+    $letzterRestzeitTS = IPS_GetVariable($idstatusStr)['VariableUpdated'] ?? $jetzt;
+    $vergangen = $jetzt - $letzterRestzeitTS;
+    $rest = max($alteRestzeitSek - $vergangen, 0);
+
+    // Warn- und Nachwirkungslogik
+    if ($warnWind || $warnGust) {
+        $rest = $nachwirkSekunden;
+        SetValueBoolean($idWarnWind, $warnWind);
+        SetValueBoolean($idWarnGust, $warnGust);
+    } elseif ($rest > 0) {
+        // Nachwirkzeit läuft: Warnungen bleiben unverändert
+    } else {
+        SetValueBoolean($idWarnWind, false);
+        SetValueBoolean($idWarnGust, false);
+    }
+
+    // Restzeit als String aufbereiten
+    $min = floor($rest / 60);
+    $sek = $rest % 60;
+    $restNachwirkText = sprintf('%02d:%02d', $min, $sek);
+
+    // Vorschau berechnen
+    $BoeGefahrVorschau = self::ermittleWindAufkommen($data, $thresholdGust, $zielHoehe);
+
+    // Statusdaten zusammenstellen
+    $StatusCheckValuesJson = [
+        'objekt'      => ($objektName === null || $objektName === '') ? '' : $objektName,
+        'hoehe'       => $zielHoehe,
+        'restzeit'    => $restNachwirkText,
+        'limitWind'   => round($thresholdWind, 1),
+        'wind'        => round($windMS, 1),            
+        'limitBoe'    => round($thresholdGust, 1),
+        'boe'         => round($gustMS, 1),            
+        'warnWind'    => GetValueBoolean($idWarnWind),
+        'warnGust'    => GetValueBoolean($idWarnGust),
+        'countWind'   => $counterWind,
+        'countGust'   => $counterGust,            
+        'nachwirk'    => $nachwirkMinuten,
+        'boeVorschau' => $BoeGefahrVorschau
+    ];
+
+    // JSON speichern
+    SetValueString($idstatusStr, json_encode($StatusCheckValuesJson));
+}
+
+
 
     public static function ermittleWindAufkommen(array $data, float $threshold, float $Objhoehe): string {
     /**

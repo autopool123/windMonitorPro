@@ -7,8 +7,7 @@ class windMonitorPro extends IPSModule {
     public function Create() {
         parent::Create(); // 🧬 Pflicht: Symcon-Basisklasse initialisieren
 
-       
-        // 🧾 Modul-Konfiguration (aus form.json)
+        // Properties aud form.json registrieren
         $this->RegisterPropertyString("PackageSuffix", "basic-1h_wind-15min,current");
         $this->RegisterPropertyString("APIKey", "");
         $this->RegisterPropertyFloat("Latitude", 49.9842);
@@ -17,37 +16,37 @@ class windMonitorPro extends IPSModule {
         $this->RegisterPropertyFloat("Zielhoehe", 8.0);
         $this->RegisterPropertyFloat("Referenzhoehe", 80);
         $this->RegisterPropertyFloat("GelaendeAlpha", 0.14);
-
         $this->RegisterPropertyBoolean("Aktiv", true);
         $this->RegisterPropertyString("Schutzobjekte", "[]"); // Leere Liste initial
 
-
+        // Einstellungen für das Abruf-/Auswerteverhalten
+        $this->RegisterPropertyString("Dateipfad", "/var/lib/symcon/user/winddata_15min.json");
         $this->RegisterPropertyInteger("FetchIntervall", 120);  // z. B. alle 2h
         $this->RegisterPropertyInteger("MaxDatenAlter", 4);  // z. B. max 4 Std
         $this->RegisterPropertyInteger("ReadIntervall", 15);    // alle 15min
         $this->RegisterPropertyInteger("NachwirkzeitMin", 10);  // Nachwirkzeit in Minuten
-
-        // 📦 Einstellungen für das Abruf-/Auswerteverhalten
-        $this->RegisterPropertyString("Dateipfad", "/var/lib/symcon/user/winddata_15min.json");
         $this->RegisterPropertyInteger("StringVarID", 0); // Optional: ~TextBox-ID
 
-        // Timer für API-Abruf (meteoblue) -- FetchTimer
+        // Timer registrieren, API-Abruf (meteoblue) FetchTimer
         $this->RegisterTimer("FetchTimer", 0, 'IPS_RequestAction($_IPS[\'TARGET\'], "UpdateMeteoBlue", "");');
-        // Timer für Datei-Auswertung
+        // Timer registrieren Datei-Auswertung
         $this->RegisterTimer("ReadTimer", 0, 'IPS_RequestAction($_IPS[\'TARGET\'], "UpdateWind", "");');
 
+        //Variablen registrieren
+        //TimeStamps
         $this->RegisterVariableString("FetchJSON", "Letzter JSON-Download");
-        $this->RegisterVariableString("SchutzStatusText", "🔍 Schutzstatus");
         $this->RegisterVariableString("CurrentTime", "Zeitstempel x-min Segment");//Startzeit 15 Minuten Slot
         $this->RegisterVariableString("UTC_ModelRun", "UTC-Zeit der Modellgenerierung");
+        //Melde&Infovariablen
+        $this->RegisterVariableString("SchutzStatusText", "🔍 Schutzstatus");
 
+        //Symbole vor Schutzvariablennamen stellen 
         $schutzArray = json_decode($this->ReadPropertyString("Schutzobjekte"), true);
-
         foreach ($schutzArray as $eintrag) {
             $name = $eintrag["Label"] ?? "Unbenannt";
             $ident = "Warnung_" . preg_replace('/\W+/', '_', $name);
             $txtIdent = "Status_" . preg_replace('/\W+/', '_', $name);
-
+            //Nur wenn die Variable auch existiert 
             if (@IPS_VariableExists($this->GetIDForIdent($ident))) {
                 IPS_SetIcon($this->GetIDForIdent($ident), "Shield");
             }
@@ -55,17 +54,21 @@ class windMonitorPro extends IPSModule {
                 IPS_SetIcon($this->GetIDForIdent($txtIdent), "Alert");
             }
         }
-
-
+        //HTML-Box-Schutzobjekte-Info registrieren
         $this->RegisterVariableString("SchutzDashboardHTML", "🧯 Schutzobjekt-Dashboard");
         IPS_SetVariableCustomProfile($this->GetIDForIdent("SchutzDashboardHTML"), "~HTMLBox");
-
-        //$this->RegisterVariableInteger("WarnCount_" . preg_replace('/\W+/', '_', $name), "⚠️ Warnzähler: $name");
-        //$this->RegisterVariableInteger($countIdent, "⚠️ Warnzähler: $name");
 
     }
     public function ApplyChanges() {
         parent::ApplyChanges();
+
+        // 1. Aktuelle Properties einmal lokal einlesen lesen
+                // Timerinterval aus Properties berechnen
+        $fetchMin = $this->ReadPropertyInteger("FetchIntervall");//Zyklus zum aktualisieren der Meteofaten und speichern in Datei
+        $readMin  = $this->ReadPropertyInteger("ReadIntervall");//Zyklus zum auswerten der Datei um neue 15 Minuten Prognosen zu erstellen
+        $maxDatenAlter = $this->ReadPropertyInteger("MaxDatenAlter");
+        $nachwirkzeitMin = $this->ReadPropertyInteger("NachwirkzeitMin");
+        $aktiv = $this->ReadPropertyBoolean("Aktiv");
 
         // 🔧 Profile erstellen
         if (!IPS_VariableProfileExists("WindPro.Speed.1")) {
@@ -120,13 +123,6 @@ class windMonitorPro extends IPSModule {
         IPS_SetIcon($vid, "Clock"); 
         $vid = $this->GetIDForIdent("UTC_ModelRun");
         IPS_SetIcon($vid, "Database");
-        //$vid = $this->GetIDForIdent($ident);
-        //IPS_SetIcon($vid, "Shield");
-        //$txtVid = $this->GetIDForIdent($txtIdent);
-        //IPS_SetIcon($txtVid, "Alert"); // oder "Information"
-
-
-
 
 
         // 🧾 Variablen registrieren
@@ -150,22 +146,19 @@ class windMonitorPro extends IPSModule {
         $this->RegisterVariableBoolean("FetchDatenVeraltet", "Daten zu alt", "~Alert");
         $this->RegisterVariableString("LetzteAktion", "Letzte Aktion");
 
-
-
         //Abrufintervalle und Nachwirkzeit
         $this->RegisterVariableString("FetchIntervalInfo", "Abrufintervall (Info)", "~TextBox");
         $this->RegisterVariableString("MaxDatenAlterInfo", "Max Alter MB-Daten", "~TextBox");
         $this->RegisterVariableString("ReadIntervalInfo", "Dateileseintervall (Info)", "~TextBox");
         $this->RegisterVariableString("NachwirkzeitInfo", "Nachwirkzeit (Info)", "~TextBox");
-        //$this->SetTimerInterval("WindUpdateTimer", 10 * 60 * 1000); // alle 10 Minuten
 
-        // Werte aktualisieren
-        SetValueString($this->GetIDForIdent("FetchIntervalInfo"), $this->ReadPropertyInteger("FetchIntervall") . " Minuten");
-        SetValueString($this->GetIDForIdent("MaxDatenAlterInfo"), $this->ReadPropertyInteger("MaxDatenAlter") . " Stunden");
-        SetValueString($this->GetIDForIdent("ReadIntervalInfo"), $this->ReadPropertyInteger("ReadIntervall") . " Minuten");
-        SetValueString($this->GetIDForIdent("NachwirkzeitInfo"), $this->ReadPropertyInteger("NachwirkzeitMin") . " Minuten");
-    
+        //Info-Variablen mit aktuellen Werten aktualisieren
+        SetValueString($this->GetIDForIdent("FetchIntervalInfo"), "$fetchMin Minuten");
+        SetValueString($this->GetIDForIdent("MaxDatenAlterInfo"), "$maxDatenAlter Stunden");
+        SetValueString($this->GetIDForIdent("ReadIntervalInfo"), "$readMin Minuten");
+        SetValueString($this->GetIDForIdent("NachwirkzeitInfo"), "$nachwirkzeitMin Minuten");
 
+        //Klasse der Hilfsfunktionen (WindToolsHelper) versorgen
         WindToolsHelper::setKonfiguration(
             $this->ReadPropertyFloat("GelaendeAlpha"),
             $this->ReadPropertyFloat("Referenzhoehe"),
@@ -173,17 +166,9 @@ class windMonitorPro extends IPSModule {
             "logarithmisch"
         );
 
-
-
-        // Timerinterval aus Properties berechnen
-        $fetchMin = $this->ReadPropertyInteger("FetchIntervall");
-        $readMin  = $this->ReadPropertyInteger("ReadIntervall");
-    
-
-        // Nur aktivieren, wenn Instanz "aktiv" ist
+        // Timer.Intervalle setzen, Timer aktivieren, wenn Instanzbutton "aktiv" true ist
         if ($this->ReadPropertyBoolean("Aktiv")) {
             $this->SetTimerInterval("FetchTimer", max(15,$fetchMin) * 60 * 1000);
-            //$this->SetTimerInterval("ReadTimer",  $readMin  * 60 * 1000);
             $this->SetTimerInterval("ReadTimer", max(15, $readMin) * 60 * 1000);
         } else {
             $this->SetTimerInterval("FetchTimer", 0); // deaktivieren
@@ -217,9 +202,11 @@ class windMonitorPro extends IPSModule {
         // 🔀 Verteile an Aktion basierend auf Ident
         switch ($Ident) {
             case "UpdateMeteoBlue":
+                IPS_LogMessage("WindMonitorPro", "⏱️ RequestAction erhalten: $Ident fuehrt jetzt UpdateFromMeteoblue() aus" );
                 return $this->UpdateFromMeteoblue();
 
             case "UpdateWind":
+                IPS_LogMessage("WindMonitorPro", "⏱️ RequestAction erhalten: $Ident fuehrt jetzt UpdateWin() aus" );
                 return $this->ReadFromFileAndUpdate();
 
             case "ReloadWerteDatei":
@@ -510,7 +497,7 @@ class windMonitorPro extends IPSModule {
             //Bilde ein array aus den in der form.json eingegebenen gefärdenden Windrichtungen
             $richtungsliste = $objekt["RichtungsKuerzelListe"] ?? "";
             $kuerzelArray = array_filter(array_map('trim', explode(',', $richtungsliste)));
-            $hoehe = $objekt["Hoehe"];
+            $hoehe = $objekt["Hoehe"] ?? 0;
             $windInObjHoehe = WindToolsHelper::windUmrechnungSmart($wind, WindToolsHelper::$referenzhoehe, $hoehe, WindToolsHelper::$gelaendeAlpha);
             $boeInObjHoehe = WindToolsHelper::windUmrechnungSmart($boe, WindToolsHelper::$referenzhoehe, $hoehe, WindToolsHelper::$gelaendeAlpha);
 
@@ -518,8 +505,8 @@ class windMonitorPro extends IPSModule {
             //$inSektor = WindToolsHelper::richtungPasst($richtung, $kuerzelArray);//wird jetzt in berechneSchutzstatusMitNachwirkung behandelt
             //Auf Warnstatus checken 
 
-            $NachwirkZeit = GetValueString($this->GetIDForIdent("NachwirkzeitInfo"));
-            $NachwirkZeit = intval($NachwirkZeit);
+            $NachwirkZeitString = GetValueString($this->GetIDForIdent("NachwirkzeitInfo"));
+            $NachwirkZeit = (preg_match('/\d+/', $NachwirkZeitString, $match)) ? intval($match[0]) : 10;
             WindToolsHelper::berechneSchutzstatusMitNachwirkung(
                 $windInObjHoehe,
                 $boeInObjHoehe,
@@ -535,14 +522,41 @@ class windMonitorPro extends IPSModule {
                 $hoehe,
                 $block
             );
-            if(GetValueBoolean($this->GetIDForIdent("Warnung_" . $ident)) || GetValueBoolean($this->GetIDForIdent("WarnungBoe_" . $ident))) {
+
+            // Status-JSON laden und dekodieren mit Fallback
+            $idstatusStr = $this->GetIDForIdent("Status_" . $ident);
+            $statusJson = ($idstatusStr !== false) ? GetValueString($idstatusStr) : '{}';
+            $status = json_decode($statusJson, true) ?: [];
+
+            // IDs der Zählervariablen holen
+            $idWarnCount = $this->GetIDForIdent("WarnCount_" . $ident);
+            $idWarnCountBoe = $this->GetIDForIdent("WarnCountBoe_" . $ident);
+
+            // Werte aus JsonStatus holen, mit Default 0 falls nicht gesetzt
+            $countWind = $status['countWind'] ?? 0;
+            $countGust = $status['countGust'] ?? 0;
+            $WarnWindNeu = $status['warnWind'] ?? false;
+            $WarnGustNeu = $status['warnGust'] ?? false;
+
+            // Werte schreiben, wenn Variablen existieren
+            if ($idWarnCount !== false) {
+                SetValue($idWarnCount, $countWind);
+            }
+            if ($idWarnCountBoe !== false) {
+                SetValue($idWarnCountBoe, $countGust);
+            }
+ 
+            //Sammelwarnung bei Wind oder Boe-Warnung
+            if($WarnWindNeu || $WarnGustNeu){
                 $SammelWarnung = true;
-                //SetValueBoolean($this->GetIDForIdent("WarnungAktiv"), true);
-            } 
+            }
 
         } 
-
-        SetValueBoolean($this->GetIDForIdent("WarnungAktiv"), $SammelWarnung);
+        $idSammelWarn = $this->GetIDForIdent("WarnungAktiv");
+        if ($idSammelWarn !== false) {
+            SetValueBoolean($idSammelWarn, $SammelWarnung);
+        }
+        //SetValueBoolean($this->GetIDForIdent("WarnungAktiv"), $SammelWarnung);
 
         // Dashboard aktualisieren
         $html = WindToolsHelper::erzeugeSchutzDashboard($schutzArray, $this->InstanceID);
