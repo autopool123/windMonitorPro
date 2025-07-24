@@ -401,9 +401,9 @@ class WindToolsHelper
     //$html = "<div>";
     $html = "<div id='neo-wrapper'>";
 
-    $html .= "<h2>🧯 Schutzobjekt-Übersicht 
+    $html .= "<h4>🧯 Schutzobjekt-Übersicht 
         <span>(MeteoBlue vom: $standMBText; Datei gelesen: $standText)</span>
-    </h2>";
+    </h4>";
 
     $html .= "<table border='1' cellspacing='0' cellpadding='3'>";
 
