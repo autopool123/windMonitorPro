@@ -429,17 +429,23 @@ class WindToolsHelper
 
 
     $html .= "<table border='1' cellspacing='0' cellpadding='3'>";
+    $html .= "<style>
+        th {
+        text-align: center;
+        vertical-align: middle;
+        }
+    </style>";
 
     // Tabellenkopf
     $html .= "<tr>
-        <th>📛 Name</th>
-        <th>📏 Höhe</th>
-        <th>🌬️ Wind</th>
-        <th>💥 Böe</th>
-        <th>🧭 Richtung</th>
-        <th>⚠️ Status</th>
-        <th>⏱️ Restzeit Warn</th>
-        <th>📊 Zähler</th>
+        <th>Name</th>
+        <th>Höhe</th>
+        <th>Wind</th>
+        <th>Böe</th>
+        <th>Richtung</th>
+        <th>Status</th>
+        <th>Restzeit Warn</th>
+        <th>Zähler</th>
     </tr>";
 
     foreach ($schutzArray as $objekt) {
