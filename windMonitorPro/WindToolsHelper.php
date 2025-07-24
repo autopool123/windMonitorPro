@@ -400,7 +400,10 @@ class WindToolsHelper
     // Nur minimale, neutrale Struktur:
     //$html = "<div>";
     $html = "<div id='neo-wrapper'>";
-    $html .= "<div id='dashboard-title'>🧯 Schutzobjekt-Übersicht</div>"; // falls die Ueberschrift komplett vom Webseitenelement formartiert wird
+        $html .= "<div id='dashboard-title'>
+            Schutzobjekt-Übersicht<br>
+            <span>(MeteoBlue-Update vom: $standMBText; Datei gelesen: $standText)</span>
+        </div>"; // falls die Ueberschrift komplett vom Webseitenelement formartiert wird
             /*
             // z.B. wie folgt im Webseitenelement des Neo im Beginn hinterlegen:
             // <style>
@@ -417,6 +420,11 @@ class WindToolsHelper
     $html .= "<h4>🧯 Schutzobjekt-Übersicht 
         <span>(MeteoBlue vom: $standMBText; Datei gelesen: $standText)</span>
     </h4>";
+
+    $html .= "<div id='dashboard-title'>
+    🧯 Schutzobjekt-Übersicht<br>
+        <span>(MeteoBlue vom: $standMBText; Datei gelesen: $standText)</span>
+    </div>";
 */
 
 
