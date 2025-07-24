@@ -398,7 +398,8 @@ class WindToolsHelper
     }
 
     // Nur minimale, neutrale Struktur:
-    $html = "<div>";
+    //$html = "<div>";
+    $html = "<div id='neo-wrapper'>";
 
     $html .= "<h3>🧯 Schutzobjekt-Übersicht 
         <span>(MeteoBlue vom: $standMBText; Datei gelesen: $standText)</span>
