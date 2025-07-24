@@ -400,10 +400,25 @@ class WindToolsHelper
     // Nur minimale, neutrale Struktur:
     //$html = "<div>";
     $html = "<div id='neo-wrapper'>";
-
+    $html .= "<div id='dashboard-title'>🧯 Schutzobjekt-Übersicht</div>"; // falls die Ueberschrift komplett vom Webseitenelement formartiert wird
+            /*
+            // z.B. wie folgt im Webseitenelement des Neo im Beginn hinterlegen:
+            // <style>
+            Styling für die Überschrift:
+            #dashboard-title {
+            font-size: 1.6em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #222;
+        }
+*/
+/*
+    //Ueberschrift mit Ueberschriftenstandarf: h4 formatieren
     $html .= "<h4>🧯 Schutzobjekt-Übersicht 
         <span>(MeteoBlue vom: $standMBText; Datei gelesen: $standText)</span>
     </h4>";
+*/
+
 
     $html .= "<table border='1' cellspacing='0' cellpadding='3'>";
 
