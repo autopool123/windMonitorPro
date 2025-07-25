@@ -209,17 +209,8 @@ class windMonitorPro extends IPSModule {
                 IPS_LogMessage("WindMonitorPro", "⏱️ RequestAction erhalten: $Ident fuehrt jetzt UpdateWin() aus" );
                 return $this->ReadFromFileAndUpdate();
 
-            case "ReloadWerteDatei":
-                return $this->ReloadWerteDatei();
-
             case "ResetStatus":
                 return $this->ResetSchutzStatus();
-
-            case "ClearWarnungen":
-                return $this->WarnungsVariablenLeeren();
-
-            case "SetGrenze":
-                return $this->SetzeGrenzwert(floatval($Value));
 
             default:
                 throw new Exception("⚠️ Ungültiger Aktion-Identifier: " . $Ident);
@@ -562,7 +553,8 @@ class windMonitorPro extends IPSModule {
         $html = WindToolsHelper::erzeugeSchutzDashboard($schutzArray, $this->InstanceID);
         SetValueString($this->GetIDForIdent("SchutzDashboardHTML"), $html);
 
-
+        //Rueckmeldung
+        IPS_LogMessage("WindMonitorPro", "📁 Datei-Daten gelesen");
     }
 
     public function UpdateFromMeteoblue() {
@@ -581,12 +573,6 @@ class windMonitorPro extends IPSModule {
         //}
     }
 
-    private function ReloadWerteDatei(): bool {
-        IPS_LogMessage("WindMonitorPro", "📁 Werte-Datei aktualisiert");
-        $this->ReadFromFileAndUpdate(); // oder andere Dateioperation
-        return true;
-    }
-
     private function ResetSchutzStatus(): void {
         $objekte = IPS_GetChildrenIDs($this->InstanceID);
         foreach ($objekte as $objID) {
@@ -594,28 +580,11 @@ class windMonitorPro extends IPSModule {
             if (strpos($ident, "Warnung_") === 0) {
                 SetValue($objID, false);
             }
+            if (strpos($ident, "WarnungBoe_") === 0) {
+                SetValue($objID, false);
+            }            
         }
         IPS_LogMessage("WindMonitorPro", "🧹 Schutzstatus zurückgesetzt");
-    }
-
-    private function WarnungsVariablenLeeren(): void {
-        $idHTML = @$this->GetIDForIdent("WindWarnHTML");
-        if ($idHTML) {
-            SetValue($idHTML, "<div style='color:gray'>Keine aktive Warnung</div>");
-        }
-        IPS_LogMessage("WindMonitorPro", "🧼 Warnanzeige geleert");
-    }
-
-    private float $Grenzwert = 12.0; // Standardwert
-    private function SetzeGrenzwert(float $wert): bool {
-        $this->Grenzwert = $wert;
-        // Rückmeldung schreiben
-        $text = "🎚️ Grenzwert gesetzt auf " . number_format($wert, 1) . " m/s am " . date("d.m.Y H:i:s");
-        $this->SetValue("LetzteAktion", $text);
-
-        // Optional: Logging
-        IPS_LogMessage("WindMonitorPro", "🔧 Grenzwert gesetzt auf $wert");
-        return true;
     }
 
     // Beispielmethode

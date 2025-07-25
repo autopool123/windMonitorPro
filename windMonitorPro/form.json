@@ -6,53 +6,26 @@
       "caption": "Modul aktivieren"
     },
     {
-      "name": "ExpertenModus",
-      "type": "CheckBox",
-      "caption": "🧪 Expertenfunktionen anzeigen"
-    },
-    {
       "type": "ExpansionPanel",
       "caption": "🔧 Expertenfunktionen",
-      "visible": "ExpertenModus",
       "items": [
         {
           "type": "Button",
-          "caption": "🧹 Schutzstatus zurücksetzen",
-          "onClick": "return IPS_RequestAction($id, 'ResetStatus', '');",
-          "confirmation": "Alle Schutzvariablen werden auf 'false' gesetzt. Fortfahren?"
-        },
-        {
-          "type": "Button",
-          "caption": "🧼 Warnanzeige leeren",
-          "onClick": "return IPS_RequestAction($id, 'ClearWarnungen', '');"
-        },
-        {
-          "type": "Button",
-          "caption": "📁 Werte-Datei aktualisieren",
-          "onClick": "return IPS_RequestAction($id, 'ReloadWerteDatei', '');"
-        },
-        {
-          "type": "NumberSpinner",
-          "name": "GrenzwertManuell",
-          "caption": "Manueller Wind-Grenzwert",
-          "minimum": 0,
-          "maximum": 50
-        },
-        {
-          "type": "Button",
-          "caption": "🎚️ Grenzwert setzen",
-          "onClick": "return IPS_RequestAction($id, 'SetGrenze', $GrenzwertManuell);"
-        },
-        {
-        "type": "Button",
-        "caption": "🛡️ Prüfung jetzt auslösen",
-        "confirmation": "Möchtest du die Schutzprüfung wirklich jetzt starten?",
-        "onClick": "return IPS_RequestAction($id, 'UpdateWind', '');"
-        },
-        {
-          "type": "Button",
-          "caption": "🔄 Winddaten auslesen",
+          "caption": "🔄 Update MeteoBlue Winddaten",
+          "confirmation": "Möchtest du die MeteoBlue-Daten jetzt neu einlesen?",
           "onClick": "return IPS_RequestAction($id, 'UpdateMeteoBlue', '');"
+        },
+        {
+          "type": "Button",
+          "caption": "📁 Lese Datei-Daten und prüfe Schutzstatus",
+          "confirmation": "Möchtest Du auslesen den Schutzstatus prüfen?",
+          "onClick": "return IPS_RequestAction($id, 'UpdateWind', '');"
+        },        
+        {
+          "type": "Button",
+          "caption": "🧹 Schutzstatus zurücksetzen",
+          "confirmation": "Alle Schutzvariablen werden auf 'false' gesetzt. Fortfahren?",
+          "onClick": "return IPS_RequestAction($id, 'ResetStatus', '');"
         }
         ]
     },
