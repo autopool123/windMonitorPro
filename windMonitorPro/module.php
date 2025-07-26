@@ -211,7 +211,7 @@ class windMonitorPro extends IPSModule {
                 IPS_LogMessage("WindMonitorPro", "⏱️ RequestAction erhalten: $Ident fuehrt jetzt UpdateWin() aus" );
                 return $this->ReadFromFileAndUpdate();
 
-            case "Eigene Wetterstation auswerten":
+            case "AuswertenEigeneStation":
                 IPS_LogMessage('WindMonitorPro', "RequestAction erhalten: $Ident fuehrt jetzt AuswertenEigeneStation() aus");
                 return $this->AuswertenEigeneStation();
 
