@@ -211,6 +211,9 @@ class windMonitorPro extends IPSModule {
                 IPS_LogMessage("WindMonitorPro", "⏱️ RequestAction erhalten: $Ident fuehrt jetzt UpdateWin() aus" );
                 return $this->ReadFromFileAndUpdate();
 
+            case "Eigene Wetterstation auswerten":
+                return $this->AuswertenEigeneStation();;
+
             case "ResetStatus":
                 return $this->ResetSchutzStatus();
 
@@ -218,6 +221,18 @@ class windMonitorPro extends IPSModule {
                 throw new Exception("⚠️ Ungültiger Aktion-Identifier: " . $Ident);
         }
     }
+    private function AuswertenEigeneStation()
+        {
+            /*
+            // Hier holst oder generierst du deinen JSON-String:
+            $json = $this->HoleEigeneStationsDaten(); // eigene Methode oder direktes Einfügen
+            
+            // Setze die String-Variable
+            $this->SetValue('EigeneStationJSON', $json);
+            */
+            // Optional: Log oder Info
+            IPS_LogMessage('WetterModul', 'Eigene Station ausgewertet');
+        }
 
     private function getLokaleModelzeit(array $data): string {
         $rawUTC = $data["metadata"]["modelrun_updatetime_utc"] ?? "";
