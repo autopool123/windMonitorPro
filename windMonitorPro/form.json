@@ -50,6 +50,17 @@
     ]
     },
     {
+      "type": "CheckBox",
+      "caption": "Auswertung eigene Wetterstation freigeben",
+      "name": "EnableCurrentData"
+    },
+    {
+      "type": "Button",
+      "caption": "Eigene Wetterstation auswerten",
+      "onClick": "return IPS_RequestAction($id, 'AuswertenEigeneStation', '');",
+      "enabled": "EnableCurrentData"
+    },
+    {
       "name": "Latitude",
       "type": "NumberSpinner",
       "caption": "Breitengrad (lat)",

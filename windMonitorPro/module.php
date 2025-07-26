@@ -126,6 +126,8 @@ class windMonitorPro extends IPSModule {
 
 
         // 🧾 Variablen registrieren
+        $this->RegisterVariableBoolean('FreigabeEigeneWetterstation', 'Eigene Auswertung freigeben', "");
+        $this->RegisterVariableString('AktuelleWetterdaten', 'Eigene Wetterdaten (JSON)', '');
         $this->RegisterVariableFloat("Wind80m", "Wind80m[MB_15Min_Date])", "WindPro.Speed.1");
         $this->RegisterVariableFloat("Gust80m", "Boe80m[MB_15Min_Date]", "WindPro.Speed.1");
         $this->RegisterVariableInteger("WindDirection80m", "Windrichtung (80 m)", "WindPro.Direction.Degree");
