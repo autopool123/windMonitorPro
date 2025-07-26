@@ -212,7 +212,8 @@ class windMonitorPro extends IPSModule {
                 return $this->ReadFromFileAndUpdate();
 
             case "Eigene Wetterstation auswerten":
-                return $this->AuswertenEigeneStation();;
+                IPS_LogMessage('WindMonitorPro', "RequestAction erhalten: $Ident fuehrt jetzt AuswertenEigeneStation() aus");
+                return $this->AuswertenEigeneStation();
 
             case "ResetStatus":
                 return $this->ResetSchutzStatus();
