@@ -210,12 +210,7 @@ class windMonitorPro extends IPSModule {
 
     }
 
-    protected function SetValue(int $varID, string $value): void
-    {
-        if ($varID !== false) {
-            SetValue($varID, $value);
-        }
-    }
+
 
     public function RequestAction($Ident, $Value) {
         // 🔍 Logging für Analysezwecke
