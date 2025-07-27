@@ -302,8 +302,9 @@ class windMonitorPro extends IPSModule {
 
             $NachwirkZeitString = GetValueString($this->GetIDForIdent("NachwirkzeitInfo"));
             $NachwirkZeit = (preg_match('/\d+/', $NachwirkZeitString, $match)) ? intval($match[0]) : $this->ReadPropertyInteger('ReadIntervall');
-
+            $warnsource = "Eigene Wetterstation";
             $NewStatusArray = WindToolsHelper::berechneSchutzstatusMitNachwirkung(
+                $warnsource,
                 $windInObjHoehe,
                 $boeInObjHoehe,
                 $minWind,
@@ -370,6 +371,7 @@ class windMonitorPro extends IPSModule {
             'wind'        => round($windInObjHoehe, 1),
             'limitBoe'    => round($minGust, 1),
             'boe'         => round($boeInObjHoehe, 1),
+            'warnsource'  => "",
             'warnWind'    => false,
             'warnGust'    => false,
             'countWind'   => 0,
@@ -675,7 +677,9 @@ class windMonitorPro extends IPSModule {
 
             $NachwirkZeitString = GetValueString($this->GetIDForIdent("NachwirkzeitInfo"));
             $NachwirkZeit = (preg_match('/\d+/', $NachwirkZeitString, $match)) ? intval($match[0]) : 10;
+            $warnsource = "MeteoBlue-Daten";
             $NewStatusArray = WindToolsHelper::berechneSchutzstatusMitNachwirkung(
+                $warnsource,
                 $windInObjHoehe,
                 $boeInObjHoehe,
                 $minWind,

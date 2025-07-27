@@ -229,7 +229,8 @@ class WindToolsHelper
         return round($windReferenz * pow($hoeheObjekt / $hoeheReferenz, $GelaendeAlpha), 2);
     }
 
-    public static function berechneSchutzstatusMitNachwirkung(
+public static function berechneSchutzstatusMitNachwirkung(
+    string $warnsource,    
     float $windMS,
     float $gustMS,
     float $thresholdWind,
@@ -241,7 +242,7 @@ class WindToolsHelper
     int $idWarnWind,
     int $idWarnGust,
     string $objektName = "",
-    float $zielHoehe,
+    float $zielHoehe
 ): array {
 
     $inSektor = self::richtungPasst($richtung, $kuerzelArray);
@@ -261,6 +262,7 @@ class WindToolsHelper
     $WarnGustAlt  = $status['warnGust'] ?? false;
     $countWindAlt = $status['countWind'] ?? 0;
     $countGustAlt = $status['countGust'] ?? 0;
+    $warnsourceNeu = $status['warnsource'] ?? ""; //Vorbesetzen falls nicht geaendert wird
 
     // Neue Warnbedingungen prüfen
     $warnWind = $inSektor && ($windMS >= $thresholdWind);
@@ -272,9 +274,11 @@ class WindToolsHelper
 
     if ($warnWind && !$WarnWindAlt) {
         $counterWind++;
+        $warnsourceNeu = $warnsource;
     }
     if ($warnGust && !$WarnGustAlt) {
         $counterGust++;
+        $warnsourceNeu = $warnsource;
     }
 
     // Restzeit aus letztem Status parsen
@@ -301,6 +305,7 @@ class WindToolsHelper
     } else {
         SetValueBoolean($idWarnWind, false);
         SetValueBoolean($idWarnGust, false);
+        $warnsourceNeu = "";
     }
 
     // Restzeit als String aufbereiten
@@ -314,13 +319,12 @@ class WindToolsHelper
         'warnWind'    => GetValueBoolean($idWarnWind),
         'warnGust'    => GetValueBoolean($idWarnGust),
         'countWind'   => $counterWind,
-        'countGust'   => $counterGust,            
+        'countGust'   => $counterGust,   
+        'warnsource'  => $warnsourceNeu         
     ];
 
     return $StatusCheckValuesJson;
 }
-
-
 
     public static function ermittleWindAufkommen(array $data, float $threshold, float $Objhoehe): string {
     /**
