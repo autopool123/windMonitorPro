@@ -79,7 +79,7 @@ class windMonitorPro extends IPSModule {
 
         //Neuladen falls Anpassung erfolgt ist
         //$nachwirkzeitMin = $this->ReadPropertyInteger("NachwirkzeitMin");
-        
+
         $aktiv = $this->ReadPropertyBoolean("Aktiv");
 
         // 🔧 Profile erstellen
@@ -230,7 +230,7 @@ class windMonitorPro extends IPSModule {
 
             case "AuswertenEigeneStation":
                 IPS_LogMessage('WindMonitorPro', "RequestAction erhalten: $Ident fuehrt jetzt AuswertenEigeneStation() aus");
-                return $this->AuswertenEigeneStation();
+                return $this->AuswertenEigeneStationinArbeit();
 
             case "ResetStatus":
                 return $this->ResetSchutzStatus();
