@@ -446,7 +446,7 @@ public static function getNetatmoCurrentValue(int $instanceID, string $parameter
      * @param int $maximalSekunden Maximale erlaubte Differenz in Sekunden
      * @return bool true, wenn Differenz >= Maximalzeit, sonst false
      */
-    function istMaximalzeitErreicht(string $letzterEintrag, int $maximalSekunden): bool
+    public static function istMaximalzeitErreicht(string $letzterEintrag, int $maximalSekunden): bool
     {
         $jetzt = new DateTime();
         $zeitLetzterEintrag = DateTime::createFromFormat('Y-m-d H:i', $letzterEintrag);
