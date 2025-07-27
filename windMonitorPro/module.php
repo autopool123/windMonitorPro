@@ -260,7 +260,7 @@ class windMonitorPro extends IPSModule {
         $messniveau = $werte["hoehestation"] ?? 6.0; 
 
         $maximalSekunden = 30 * 60; 
-        $maxWerteAlterSekErreicht = istMaximalzeitErreicht($zeit, $maximalSekunden);
+        $maxWerteAlterSekErreicht = WindToolsHelper::istMaximalzeitErreicht($zeit, $maximalSekunden);
 
         if ($maxWerteAlterSekErreicht) {
             SetValue("SchutzStatusText", "🛑 eigene Wetterdaten-Daten älter als 30 Minuten (Zeitstempel: $zeit)");
