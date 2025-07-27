@@ -263,13 +263,13 @@ class windMonitorPro extends IPSModule {
         $maxWerteAlterSekErreicht = WindToolsHelper::istMaximalzeitErreicht($zeit, $maximalSekunden);
 
         if ($maxWerteAlterSekErreicht) {
-            SetValue("SchutzStatusText", "🛑 eigene Wetterdaten-Daten älter als 30 Minuten (Zeitstempel: $zeit)");
+            $this->SetValue("SchutzStatusText", "🛑 eigene Wetterdaten-Daten älter als 30 Minuten (Zeitstempel: $zeit)");
             IPS_LogMessage($logtag, "🛑 eigene Wetterdaten-Daten älter als 30 Minuten (Zeitstempel: $zeit)");
             SetValueBoolean($this->GetIDForIdent("FetchDatenVeraltet"), true);
-            SetValue("LetzteAktion", "⏱️ Auswertung eigene Daten übersprungen: Daten von $zeit");
+            $this->SetValue("LetzteAktion", "⏱️ Auswertung eigene Daten übersprungen: Daten von $zeit");
             return;
         } else {
-            SetValue("SchutzStatusText", "✅ Eigene Wetterdaten erfolgreich eingelesen mit Timestamp: $zeit");
+            $this->SetValue("SchutzStatusText", "✅ Eigene Wetterdaten erfolgreich eingelesen mit Timestamp: $zeit");
             SetValueBoolean($this->GetIDForIdent("FetchDatenVeraltet"), false);
         }
 
