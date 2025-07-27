@@ -242,8 +242,7 @@ class WindToolsHelper
     int $idWarnGust,
     string $objektName = "",
     float $zielHoehe,
-    array $data
-): void {
+): array {
 
     $inSektor = self::richtungPasst($richtung, $kuerzelArray);
 
@@ -309,28 +308,16 @@ class WindToolsHelper
     $sek = $rest % 60;
     $restNachwirkText = sprintf('%02d:%02d', $min, $sek);
 
-    // Vorschau berechnen
-    $BoeGefahrVorschau = self::ermittleWindAufkommen($data, $thresholdGust, $zielHoehe);
-
-    // Statusdaten zusammenstellen
+    // geaenderte Statusdaten zurueckgeben
     $StatusCheckValuesJson = [
-        'objekt'      => ($objektName === null || $objektName === '') ? '' : $objektName,
-        'hoehe'       => $zielHoehe,
-        'restzeit'    => $restNachwirkText,
-        'limitWind'   => round($thresholdWind, 1),
-        'wind'        => round($windMS, 1),            
-        'limitBoe'    => round($thresholdGust, 1),
-        'boe'         => round($gustMS, 1),            
+        'restzeit'    => $restNachwirkText,           
         'warnWind'    => GetValueBoolean($idWarnWind),
         'warnGust'    => GetValueBoolean($idWarnGust),
         'countWind'   => $counterWind,
         'countGust'   => $counterGust,            
-        'nachwirk'    => $nachwirkMinuten,
-        'boeVorschau' => $BoeGefahrVorschau
     ];
 
-    // JSON speichern
-    SetValueString($idstatusStr, json_encode($StatusCheckValuesJson));
+    return $StatusCheckValuesJson;
 }
 
 
@@ -378,7 +365,101 @@ class WindToolsHelper
         return json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
-   
+
+
+    
+/**
+ * Aktualisiert selektiv Felder in einem JSON-String (IPS Statusvariable), 
+ * nicht geänderte Felder bleiben bestehen.
+ *
+ * @param int $varID       ID der IPS-String-Variable
+ * @param array $updates   Key=>Value-Array mit neuen/zu ändernden Einträgen
+ */
+public static function UpdateStatusJsonFields(int $varID, array $updates)
+{
+    // Status holen – ggf. leeres Array
+    $statusJson = @GetValueString($varID);
+    $statusArr = json_decode($statusJson, true);
+    if (!is_array($statusArr)) {
+        $statusArr = [];
+    }
+
+    // $updates einmischen (neue Werte überschreiben alte)
+    foreach ($updates as $key => $value) {
+        $statusArr[$key] = $value;
+    }
+
+    // In String zurückwandeln und speichern
+    SetValueString($varID, json_encode($statusArr));
+}
+
+
+public static function getNetatmoCurrentValue(int $instanceID, string $parameterName) {
+    $vid = @IPS_GetObjectIDByIdent("NetatmoJSON", $instanceID);
+    if ($vid === false || !IPS_VariableExists($vid)) {
+        IPS_LogMessage("WindMonitorPro", "❌ NetatmoJSON-Variable nicht gefunden");
+        return null;
+    }
+
+    $json = GetValueString($vid);
+    $data = json_decode($json, true);
+
+    if (!isset($data["data_current"][$parameterName])) {
+        IPS_LogMessage("WindMonitorPro", "⚠️ Parameter '$parameterName' nicht im Netatmo-JSON vorhanden");
+        return null;
+    }
+
+    return $data["data_current"][$parameterName];
+}
+
+
+    public static function getNetatmoCurrentArray(int $instanceID, string $json): array {
+        $data = json_decode($json, true);
+
+        if (!isset($data["data_current"]) || !is_array($data["data_current"])) {
+            IPS_LogMessage("WindMonitorPro", "⚠️ NetatmoJSON enthält keine gültige 'data_current'-Struktur");
+            return [];
+        }
+
+        $result = [];
+        foreach ($data["data_current"] as $key => $value) {
+            // Typprüfung & Konvertierung
+            if (is_numeric($value)) {
+                $result[$key] = (strpos((string)$value, '.') !== false) ? floatval($value) : intval($value);
+            } elseif (is_bool($value) || $value === 0 || $value === 1) {
+                $result[$key] = boolval($value);
+            } elseif (is_string($value)) {
+                $result[$key] = trim($value);
+            } else {
+                $result[$key] = $value; // Fallback
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Prüft, ob die Differenz zwischen jetzt und dem letzten Zeit-Eintrag 
+     * die vorgegebene Maximalzeit (in Sekunden) erreicht oder überschreitet.
+     *
+     * @param string $letzterEintrag Zeitstring im Format "YYYY-MM-DD HH:ii"
+     * @param int $maximalSekunden Maximale erlaubte Differenz in Sekunden
+     * @return bool true, wenn Differenz >= Maximalzeit, sonst false
+     */
+    function istMaximalzeitErreicht(string $letzterEintrag, int $maximalSekunden): bool
+    {
+        $jetzt = new DateTime();
+        $zeitLetzterEintrag = DateTime::createFromFormat('Y-m-d H:i', $letzterEintrag);
+        if ($zeitLetzterEintrag === false) {
+            // Ungültiges Datum
+            return false;
+        }
+
+        $diff = $jetzt->getTimestamp() - $zeitLetzterEintrag->getTimestamp();
+        return ($diff >= $maximalSekunden);
+    }
+    
+
     public static function erzeugeSchutzDashboard(array $schutzArray, int $instanceID): string {
 
     @$updateVarID = @IPS_GetObjectIDByIdent("UTC_ModelRun", $instanceID);
@@ -404,31 +485,9 @@ class WindToolsHelper
             Schutzobjekt-Übersicht<br>
             <span>(MeteoBlue-Update vom: $standMBText; Datei gelesen: $standText)</span>
         </div>"; // falls die Ueberschrift komplett vom Webseitenelement formartiert wird
-            /*
-            // z.B. wie folgt im Webseitenelement des Neo im Beginn hinterlegen:
-            // <style>
-            Styling für die Überschrift:
-            #dashboard-title {
-            font-size: 1.6em;
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: #222;
-        }
-*/
-/*
-    //Ueberschrift mit Ueberschriftenstandarf: h4 formatieren
-    $html .= "<h4>🧯 Schutzobjekt-Übersicht 
-        <span>(MeteoBlue vom: $standMBText; Datei gelesen: $standText)</span>
-    </h4>";
-
-    $html .= "<div id='dashboard-title'>
-    🧯 Schutzobjekt-Übersicht<br>
-        <span>(MeteoBlue vom: $standMBText; Datei gelesen: $standText)</span>
-    </div>";
-*/
-
 
     $html .= "<table border='1' cellspacing='0' cellpadding='3'>";
+
     $html .= "<style>
         th {
         text-align: center;
