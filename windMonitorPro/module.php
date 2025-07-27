@@ -71,14 +71,15 @@ class windMonitorPro extends IPSModule {
         $readIntervall  = $this->ReadPropertyInteger('ReadIntervall');
         $nachwirkzeitMin   = $this->ReadPropertyInteger('NachwirkzeitMin');
 
-        if ($nachwirkzeitMin < $readIntervall) {
+        //if ($nachwirkzeitMin < $readIntervall) {
             // Anpassen mit korrektem Log und evtl. Notifikation für den Benutzer
-            $this->WritePropertyInteger('NachwirkzeitMin', $readIntervall);
-            IPS_LogMessage('WindMonitorPro', 'Nachwirkzeit wurde auf ReadIntervall angehoben, um Überschreiben zu vermeiden.');
-        }
+        //    $this->WritePropertyInteger('NachwirkzeitMin', $readIntervall);
+        //    IPS_LogMessage('WindMonitorPro', 'Nachwirkzeit wurde auf ReadIntervall angehoben, um Überschreiben zu vermeiden.');
+        //}
 
         //Neuladen falls Anpassung erfolgt ist
-        $nachwirkzeitMin = $this->ReadPropertyInteger("NachwirkzeitMin");
+        //$nachwirkzeitMin = $this->ReadPropertyInteger("NachwirkzeitMin");
+        
         $aktiv = $this->ReadPropertyBoolean("Aktiv");
 
         // 🔧 Profile erstellen
