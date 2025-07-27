@@ -215,7 +215,7 @@ class windMonitorPro extends IPSModule {
     public function RequestAction($Ident, $Value) {
         // 🔍 Logging für Analysezwecke
         IPS_LogMessage("WindMonitorPro", "⏱️ RequestAction erhalten: $Ident mit Wert=" . print_r($Value, true));
-        SetValue("LetzteAktion","🔀 RequestAction: $Ident Wert=" . print_r($Value, true) . " (" . date("d-m-Y H:i:s") . ")"    );
+        $this->SetValue("LetzteAktion","🔀 RequestAction: $Ident Wert=" . print_r($Value, true) . " (" . date("d-m-Y H:i:s") . ")"    );
 
         // 🔀 Verteile an Aktion basierend auf Ident
         switch ($Ident) {
@@ -473,14 +473,14 @@ class windMonitorPro extends IPSModule {
         
         $maxDatenAlterSekunden = ($this->ReadPropertyInteger("MaxDatenAlter")) * 3600;
         if ($diff > $maxDatenAlterSekunden) {
-            SetValue("SchutzStatusText", "🛑 Meteoblue-Daten älter als 4 Stunden (UTC: $ModelZeit)");
+            $this->SetValue("SchutzStatusText", "🛑 Meteoblue-Daten älter als 4 Stunden (UTC: $ModelZeit)");
             IPS_LogMessage("WindMonitorPro", "🛑 Meteoblue-Daten älter als 4 Stunden (UTC: $ModelZeit)");
             //SetValueBoolean($this->GetIDForIdent("WarnungAktiv"), false);
             SetValueBoolean($this->GetIDForIdent("FetchDatenVeraltet"), true);
-            SetValue("LetzteAktion", "⏱️ ReadFromFile übersprungen: Daten von $ModelZeit");
+            $this->SetValueSetValue("LetzteAktion", "⏱️ ReadFromFile übersprungen: Daten von $ModelZeit");
         return;
         } else {
-            SetValue("SchutzStatusText", "✅ MeteoBluedaten erfolgreich eingelesen und gespeichert mit MB-Timestamp: $ModelZeit");
+            $this->SetValue("SchutzStatusText", "✅ MeteoBluedaten erfolgreich eingelesen und gespeichert mit MB-Timestamp: $ModelZeit");
             SetValueBoolean($this->GetIDForIdent("FetchDatenVeraltet"), false);
         }  
 
@@ -839,7 +839,7 @@ class windMonitorPro extends IPSModule {
 
 
         // String-Variable aktualisieren
-        SetValue("FetchJSON", $json);
+        $this->SetValue("FetchJSON", $json);
 
 
         IPS_LogMessage($logtag, "✅ Daten von meteoblue gespeichert unter: $file");
