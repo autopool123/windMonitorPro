@@ -256,7 +256,7 @@ public static function berechneSchutzstatusMitNachwirkung(
     if (!is_array($status)) {
         $status = [];
     }
-    
+
     //Name des Schutzobjektes
     $warnObjekt = $status['objekt'] ?? "";
 
@@ -334,7 +334,8 @@ public static function berechneSchutzstatusMitNachwirkung(
         'countWind'   => $counterWind,
         'countGust'   => $counterGust,   
         'warnsource'  => $warnsourceNeu,       
-        'warnungTS'  => $warnungTS
+        'warnungTS'  => $warnungTS,
+        'richtungsliste' => $kuerzelArray
     ];
 
 //IPS_LogMessage("SchutzStatus", "Objekt: $warnObjekt GustLimit: $thresholdGust Gust: $gustMS  warnsourceNeu: $warnsourceNeu  warnWind: $warnWind warnGust:  $warnGust  warnungTS: $warnungTS  jetzt: $jetzt");
@@ -481,7 +482,7 @@ public static function getNetatmoCurrentValue(int $instanceID, string $parameter
     
 
     public static function erzeugeSchutzDashboard(array $schutzArray, int $instanceID): string {
-
+     
     @$updateVarID = @IPS_GetObjectIDByIdent("UTC_ModelRun", $instanceID);
     $updateMBString = ($updateVarID && IPS_VariableExists($updateVarID)) ? GetValueString($updateVarID) : '';
     @$updateVarID = @IPS_GetObjectIDByIdent("LetzteAuswertungDaten", $instanceID);
@@ -526,13 +527,50 @@ public static function getNetatmoCurrentValue(int $instanceID, string $parameter
         <th>Restzeit Warn</th>
         <th>Zähler</th>
     </tr>";
+/*  Aufbau Statusarry fuer Shutzobjekte:
+            'objekt'      => ($name === null || $name === '') ? '' : $name,
+            'hoehe'       => $hoehe,
+            'restzeit'    => "",
+            'limitWind'   => round($minWind, 1),
+            'wind'        => round($windInObjHoehe, 1),
+            'limitBoe'    => round($minGust, 1),
+            'boe'         => round($boeInObjHoehe, 1),
+            'richtungsliste' => $kuerzelArray,
+            'warnsource'  => "",
+            'warnungTS'   => "",
+            'warnWind'    => false,
+            'warnGust'    => false,
+            'countWind'   => 0,
+            'countGust'   => 0,
+            'nachwirk'    => 0,
+            'boeVorschau' => $BoeGefahrVorschau
+*/
 
     foreach ($schutzArray as $objekt) {
         $label = $objekt["Label"] ?? "–";
-        $hoehe = $objekt["Hoehe"] ?? "–";
-        $minWind = $objekt["MinWind"] ?? "–";
-        $minGust = $objekt["MinGust"] ?? "–";
-        $richtung = $objekt["RichtungsKuerzelListe"] ?? "–";
+        $ident = preg_replace('/\W+/', '_', $label);
+        $idstatusStr = @IPS_GetObjectIDByIdent("Status_" . $ident, $instanceID);
+        if ($idstatusStr === false) {
+            IPS_LogMessage("WindMonitorPro", "Statusvariable für $ident nicht gefunden.");
+            continue;
+        }
+        $statusJson = GetValueString($idstatusStr);
+        $StatusValues = json_decode($statusJson, true);
+            if ($statusJson === '' || !is_array($StatusCheckValuesJson)) {
+                // Fehlerbehandlung: JSON ist ungültig oder ist kein Array
+                return "";
+            }
+
+
+        $hoehe = $StatusValues["hoehe"] ?? "–";
+        $minWind = $StatusValues["limitWind"] ?? "–";
+        $minGust = $StatusValues["limitBoe"] ?? "–";
+        $richtung = $StatusValues["richtungsliste"] ?? "–";
+        $zaehlerWind = $StatusValues["countWind"] ?? "–";
+        $zaehlerBoe = $StatusValues["countGust"] ?? "–";
+        $zaehler = $zaehlerWind + $zaehlerBoe;
+
+
 
         $vid = @IPS_GetObjectIDByIdent("Warnung_" . preg_replace('/\W+/', '_', $label), $instanceID);
         $vidBoe = @IPS_GetObjectIDByIdent("WarnungBoe_" . preg_replace('/\W+/', '_', $label), $instanceID);
@@ -542,7 +580,7 @@ public static function getNetatmoCurrentValue(int $instanceID, string $parameter
         $status = $warnung ? "⚠️ Aktiv" : "✅ Inaktiv";
 
         $countID = @IPS_GetObjectIDByIdent("WarnCount_" . preg_replace('/\W+/', '_', $label), $instanceID);
-        $zaehler = ($countID !== false && IPS_VariableExists($countID)) ? GetValueInteger($countID) : "–";
+        //$zaehler = ($countID !== false && IPS_VariableExists($countID)) ? GetValueInteger($countID) : "–";
 
         // Zeit letzte Warnung und Prognose 
         $tsID = @IPS_GetObjectIDByIdent("LetzteWarnungTS_" . preg_replace('/\W+/', '_', $label), $instanceID);

@@ -323,7 +323,7 @@ class windMonitorPro extends IPSModule {
             $StatusCheckValuesJson = json_decode($statusJson, true);
 
             if ($statusJson === '' || !is_array($StatusCheckValuesJson)) {
-                $StatusCheckValuesJson = $this->getStatusPresetArray($name, $hoehe, 0, 0, 0, 0, []);
+                $StatusCheckValuesJson = $this->getStatusPresetArray($name, $hoehe, 0, 0, 0, 0, $kuerzelArray, []);
                 SetValue($idstatusStr, json_encode($StatusCheckValuesJson));
             }
 
@@ -361,7 +361,7 @@ class windMonitorPro extends IPSModule {
     }
 
 
-    private function getStatusPresetArray($name="", $hoehe=0, $minWind=0, $minGust=0, $windInObjHoehe=0, $boeInObjHoehe=0, $BoeGefahrVorschau = [])
+    private function getStatusPresetArray($name="", $hoehe=0, $minWind=0, $minGust=0, $windInObjHoehe=0, $boeInObjHoehe=0, $kuerzelArray ="", $BoeGefahrVorschau = [])
     {
         return [
             'objekt'      => ($name === null || $name === '') ? '' : $name,
@@ -371,6 +371,7 @@ class windMonitorPro extends IPSModule {
             'wind'        => round($windInObjHoehe, 1),
             'limitBoe'    => round($minGust, 1),
             'boe'         => round($boeInObjHoehe, 1),
+            'richtungsliste' => $kuerzelArray,
             'warnsource'  => "",
             'warnungTS'   => "",
             'warnWind'    => false,
@@ -640,8 +641,8 @@ class windMonitorPro extends IPSModule {
             }  
 
             //Pruefen ob Status_Name(Warnobjekt-Name) Variable existiert sonst erstellen
-            if (!array_key_exists($identWCBoe, $alleVariablen)) {
-                $vid = $this->RegisterVariableString($identWCBoe, "Status: " . $name);
+            if (!array_key_exists($identStatus, $alleVariablen)) {
+                $vid = $this->RegisterVariableString($identStatus, "Status: " . $name);
                 IPS_SetHidden($vid, false); // oder true, je nach Wunsch
                 $alleVariablen[$identWCBoe] = $vid;
             }             
@@ -700,19 +701,19 @@ class windMonitorPro extends IPSModule {
             $BoeGefahrVorschau = WindToolsHelper::ermittleWindAufkommen($block, $minGust, $hoehe);
             //Array um BoeVorschau erweitern
             $NewStatusArray['boeVorschau'] = $BoeGefahrVorschau;
-
+            //pruefe ob gueltige Json-Eintraege in Status-Variable vorhanden, sonst Preset und später beschreiben...
             $statusJson = GetValueString($idstatusStr);
             $StatusCheckValuesJson = json_decode($statusJson, true);
             if ($statusJson === '' || !is_array($StatusCheckValuesJson)) {
                 // Fehlerbehandlung: JSON ist ungültig oder ist kein Array
                 // Preset array Statusdaten
-                $this->getStatusPresetArray($name, $hoehe, 0, 0, 0, 0, []);
+                $this->getStatusPresetArray($name, $hoehe, 0, 0, 0, 0,$kuerzelArray, []);
                 SetValue($idstatusStr, json_encode($StatusCheckValuesJson));
             }
 
             // Status-JSON aktualisieren und auf Statusvariable schreiben mit eventuellem Fallback
             WindToolsHelper::UpdateStatusJsonFields($idstatusStr, $NewStatusArray);
-
+            
             //Statusvariablen aktualisieren
             // IDs der Zählervariablen holen
             $idWarnCount = $this->GetIDForIdent("WarnCount_" . $ident);
