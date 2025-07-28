@@ -535,7 +535,7 @@ public static function getNetatmoCurrentValue(int $instanceID, string $parameter
             'wind'        => round($windInObjHoehe, 1),
             'limitBoe'    => round($minGust, 1),
             'boe'         => round($boeInObjHoehe, 1),
-            'richtungsliste' => $kuerzelArray,
+            'richtungsliste' => $kuerzelArray
             'warnsource'  => "",
             'warnungTS'   => "",
             'warnWind'    => false,
@@ -565,8 +565,7 @@ public static function getNetatmoCurrentValue(int $instanceID, string $parameter
         $hoehe = $StatusValues["hoehe"] ?? "–";
         $minWind = $StatusValues["limitWind"] ?? "–";
         $minGust = $StatusValues["limitBoe"] ?? "–";
-        //$richtung = $StatusValues["richtungsliste"] ?? "–";
-        $richtung = $objekt["RichtungsKuerzelListe"] ?? "–"; 
+        $richtung = $objekt["RichtungsKuerzelListe"] ?? "–"; //Hole aus Schutzobjekt da hier als String abgelegt und so fuer HTML Ausgabe benoetigt wird
         $zaehlerWind = $StatusValues["countWind"] ?? "–";
         $zaehlerBoe = $StatusValues["countGust"] ?? "–";
         $zaehler = $zaehlerWind + $zaehlerBoe;
