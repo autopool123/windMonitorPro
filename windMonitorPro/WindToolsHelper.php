@@ -264,6 +264,8 @@ public static function berechneSchutzstatusMitNachwirkung(
     $countGustAlt = $status['countGust'] ?? 0;
     $warnsourceNeu = $status['warnsource'] ?? ""; //Vorbesetzen falls nicht geaendert wird
     $warnungTS = $status['warnungTS'] ?? ""; //Vorbesetzen falls nicht geaendert wird
+    $NeueWindWarn = false;
+    $NeueGustWarn = false;
     
 
     // Neue Warnbedingungen prüfen
