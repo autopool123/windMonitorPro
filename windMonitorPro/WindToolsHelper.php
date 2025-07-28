@@ -565,7 +565,8 @@ public static function getNetatmoCurrentValue(int $instanceID, string $parameter
         $hoehe = $StatusValues["hoehe"] ?? "–";
         $minWind = $StatusValues["limitWind"] ?? "–";
         $minGust = $StatusValues["limitBoe"] ?? "–";
-        $richtung = $StatusValues["richtungsliste"] ?? "–";
+        //$richtung = $StatusValues["richtungsliste"] ?? "–";
+        $richtung = $objekt["RichtungsKuerzelListe"] ?? "–"; 
         $zaehlerWind = $StatusValues["countWind"] ?? "–";
         $zaehlerBoe = $StatusValues["countGust"] ?? "–";
         $zaehler = $zaehlerWind + $zaehlerBoe;
