@@ -372,6 +372,7 @@ class windMonitorPro extends IPSModule {
             'limitBoe'    => round($minGust, 1),
             'boe'         => round($boeInObjHoehe, 1),
             'warnsource'  => "",
+            'warnungTS'   => "",
             'warnWind'    => false,
             'warnGust'    => false,
             'countWind'   => 0,
@@ -702,14 +703,14 @@ class windMonitorPro extends IPSModule {
 
             $statusJson = GetValueString($idstatusStr);
             $StatusCheckValuesJson = json_decode($statusJson, true);
-            if ($statusJson == '') {
+            if ($statusJson === '' || !is_array($StatusCheckValuesJson)) {
                 // Fehlerbehandlung: JSON ist ungültig oder ist kein Array
                 // Preset array Statusdaten
                 $this->getStatusPresetArray($name, $hoehe, 0, 0, 0, 0, []);
                 SetValue($idstatusStr, json_encode($StatusCheckValuesJson));
             }
 
-            // Status-JSON aktualisieren und auf Statusvariable schreieben mit eventuellem Fallback
+            // Status-JSON aktualisieren und auf Statusvariable schreiben mit eventuellem Fallback
             WindToolsHelper::UpdateStatusJsonFields($idstatusStr, $NewStatusArray);
 
             //Statusvariablen aktualisieren

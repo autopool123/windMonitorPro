@@ -263,6 +263,8 @@ public static function berechneSchutzstatusMitNachwirkung(
     $countWindAlt = $status['countWind'] ?? 0;
     $countGustAlt = $status['countGust'] ?? 0;
     $warnsourceNeu = $status['warnsource'] ?? ""; //Vorbesetzen falls nicht geaendert wird
+    $warnungTS = $status['warnungTS'] ?? ""; //Vorbesetzen falls nicht geaendert wird
+    
 
     // Neue Warnbedingungen prüfen
     $warnWind = $inSektor && ($windMS >= $thresholdWind);
@@ -275,10 +277,12 @@ public static function berechneSchutzstatusMitNachwirkung(
     if ($warnWind && !$WarnWindAlt) {
         $counterWind++;
         $warnsourceNeu = $warnsource;
+        $NeueWindWarn = true;
     }
     if ($warnGust && !$WarnGustAlt) {
         $counterGust++;
         $warnsourceNeu = $warnsource;
+        $NeueGustWarn = true;
     }
 
     // Restzeit aus letztem Status parsen
@@ -313,15 +317,22 @@ public static function berechneSchutzstatusMitNachwirkung(
     $sek = $rest % 60;
     $restNachwirkText = sprintf('%02d:%02d', $min, $sek);
 
+    if ($NeueWindWarn || $NeueGustWarn) {
+        $warnungTS = $jetzt;
+    }
+
     // geaenderte Statusdaten zurueckgeben
     $StatusCheckValuesJson = [
         'restzeit'    => $restNachwirkText,           
-        'warnWind'    => GetValueBoolean($idWarnWind),
-        'warnGust'    => GetValueBoolean($idWarnGust),
+        'warnWind'    => $warnWind,
+        'warnGust'    => $warnGust,
         'countWind'   => $counterWind,
         'countGust'   => $counterGust,   
-        'warnsource'  => $warnsourceNeu         
+        'warnsource'  => $warnsourceNeu,       
+        'warnungTS'  => $warnungTS
     ];
+
+IPS_LogMessage("SchutzStatus", "warnsourceNeu: $warnsourceNeu  warnWind: $warnWind warnGust:  $warnGust  warnungTS: $warnungTS  jetzt: $jetzt");
 
     return $StatusCheckValuesJson;
 }
