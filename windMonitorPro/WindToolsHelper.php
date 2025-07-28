@@ -256,7 +256,9 @@ public static function berechneSchutzstatusMitNachwirkung(
     if (!is_array($status)) {
         $status = [];
     }
-$warnObjekt = $status['objekt'] ?? "";
+    
+    //Name des Schutzobjektes
+    $warnObjekt = $status['objekt'] ?? "";
 
     // Alte Warn- und Zählerwerte sicher auslesen
     $WarnWindAlt  = $status['warnWind'] ?? false;
@@ -335,7 +337,7 @@ $warnObjekt = $status['objekt'] ?? "";
         'warnungTS'  => $warnungTS
     ];
 
-IPS_LogMessage("SchutzStatus", "Objekt: $warnObjekt GustLimit: $thresholdGust Gust: $gustMS  warnsourceNeu: $warnsourceNeu  warnWind: $warnWind warnGust:  $warnGust  warnungTS: $warnungTS  jetzt: $jetzt");
+//IPS_LogMessage("SchutzStatus", "Objekt: $warnObjekt GustLimit: $thresholdGust Gust: $gustMS  warnsourceNeu: $warnsourceNeu  warnWind: $warnWind warnGust:  $warnGust  warnungTS: $warnungTS  jetzt: $jetzt");
 
     return $StatusCheckValuesJson;
 }
