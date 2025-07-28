@@ -556,7 +556,7 @@ public static function getNetatmoCurrentValue(int $instanceID, string $parameter
         }
         $statusJson = GetValueString($idstatusStr);
         $StatusValues = json_decode($statusJson, true);
-            if ($statusJson === '' || !is_array($StatusCheckValuesJson)) {
+            if ($statusJson === '' || !is_array($StatusValues)) {
                 // Fehlerbehandlung: JSON ist ungültig oder ist kein Array
                 return "";
             }
