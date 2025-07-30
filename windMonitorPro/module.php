@@ -41,8 +41,8 @@ class windMonitorPro extends IPSModule {
         $this->RegisterVariableString("SchutzStatusText", "🔍 Schutzstatus");
 
         //Symbole vor Schutzvariablennamen stellen 
-        $schutzArray = json_decode($this->ReadPropertyString("Schutzobjekte"), true);
-        foreach ($schutzArray as $eintrag) {
+        $schutzArrayForm = json_decode($this->ReadPropertyString("Schutzobjekte"), true);
+        foreach ($schutzArrayForm as $eintrag) {
             $name = $eintrag["Label"] ?? "Unbenannt";
             $ident = "Warnung_" . preg_replace('/\W+/', '_', $name);
             $txtIdent = "Status_" . preg_replace('/\W+/', '_', $name);
@@ -213,6 +213,7 @@ class windMonitorPro extends IPSModule {
 
 
 
+
     public function RequestAction($Ident, $Value) {
         // 🔍 Logging für Analysezwecke
         IPS_LogMessage("WindMonitorPro", "⏱️ RequestAction erhalten: $Ident mit Wert=" . print_r($Value, true));
@@ -231,6 +232,9 @@ class windMonitorPro extends IPSModule {
             case "AuswertenEigeneStation":
                 IPS_LogMessage('WindMonitorPro', "RequestAction erhalten: $Ident fuehrt jetzt AuswertenEigeneStation() aus");
                 return $this->AuswertenEigeneStationinArbeit();
+
+            case "ResetCounter"://Aufruf ueber RequestAction setzt die Zaehler auf 0 da 0 fest als value eingetragen
+                return $this->PresetCounter($Value,0);
 
             case "ResetStatus":
                 return $this->ResetSchutzStatus();
@@ -277,14 +281,14 @@ class windMonitorPro extends IPSModule {
         $windInObjHoehe = WindToolsHelper::windUmrechnungSmart($wind, $messniveau, WindToolsHelper::$zielHoeheStandard, WindToolsHelper::$gelaendeAlpha);
         $boeInObjHoehe  = WindToolsHelper::windUmrechnungSmart($gust, $messniveau, WindToolsHelper::$zielHoeheStandard, WindToolsHelper::$gelaendeAlpha);
 
-        $schutzArray = json_decode($this->ReadPropertyString("Schutzobjekte"), true);
-        if (!is_array($schutzArray)) {
+        $schutzArrayForm = json_decode($this->ReadPropertyString("Schutzobjekte"), true);
+        if (!is_array($schutzArrayForm)) {
             IPS_LogMessage($logtag, "❌ Schutzobjekte Property enthält kein gültiges JSON.");
             return;
         }
 
         $SammelWarnung = false;
-        foreach ($schutzArray as $objekt) {
+        foreach ($schutzArrayForm as $objekt) {
             $name = $objekt["Label"] ?? "Unbenannt";
             $ident = preg_replace('/\W+/', '_', $name);
             $minWind = $objekt["MinWind"] ?? 10.0;
@@ -354,7 +358,7 @@ class windMonitorPro extends IPSModule {
             SetValueBoolean($idSammelWarn, $SammelWarnung);
         }
 
-        $html = WindToolsHelper::erzeugeSchutzDashboard($schutzArray, $this->InstanceID);
+        $html = $this->erzeugeSchutzDashboard($schutzArrayForm, $this->InstanceID);
         SetValue($this->GetIDForIdent("SchutzDashboardHTML"), $html);
 
         IPS_LogMessage($logtag, "Eigene Wetterdaten ausgewertet");
@@ -384,18 +388,7 @@ class windMonitorPro extends IPSModule {
     }
 
 
-    private function AuswertenEigeneStation()
-        {
-            /*
-            // Hier holst oder generierst du deinen JSON-String:
-            $json = $this->HoleEigeneStationsDaten(); // eigene Methode oder direktes Einfügen
-            
-            // Setze die String-Variable
-            SetValue('EigeneStationJSON', $json);
-            */
-            // Optional: Log oder Info
-            IPS_LogMessage('WetterModul', 'Eigene Station ausgewertet');
-        }
+
 
     private function getLokaleModelzeit(array $data): string {
         $rawUTC = $data["metadata"]["modelrun_updatetime_utc"] ?? "";
@@ -567,8 +560,8 @@ class windMonitorPro extends IPSModule {
 
 
         //Erzeuge das Schutzobjekt-Array welches alle ueber die form.json erstellten Schutzobjekte samt Inhalt enthaelt 
-        $schutzArray = json_decode($this->ReadPropertyString("Schutzobjekte"), true);
-        //IPS_LogMessage("Debug", print_r($schutzArray, true));
+        $schutzArrayForm = json_decode($this->ReadPropertyString("Schutzobjekte"), true);
+        //IPS_LogMessage("Debug", print_r($schutzArrayForm, true));
         // Schritt 1: Alle vorhandenen Schutz-Variablen der Instanz in ein Array (alleVariablen) schreiben
         // Also ein Array mit allen bereits vorhandenen Schutzvariablen erstellen um spaeter zu pruefen ob eine Variable bereits vorhanden
         // oder neu erstellt werden muss
@@ -597,7 +590,7 @@ class windMonitorPro extends IPSModule {
         //generiere die Identtexte und schreibe diese in das Array. Aus diesem werden spaeter die Idents gholt m ein Statusvariable
         //zu lesen oder zu shreiben 
         $genutzteIdents = [];//erzeuge das array
-        foreach ($schutzArray as $eintrag) {
+        foreach ($schutzArrayForm as $eintrag) {
             //generiere die Idents nach dem Schema: "Inhaltsbescheibung_Schutzobjektname"
             $name = $eintrag["Label"] ?? "Unbenannt";
             $ident = "Warnung_" . preg_replace('/\W+/', '_', $name);
@@ -660,7 +653,7 @@ class windMonitorPro extends IPSModule {
         }
         
         $SammelWarnung = false;
-        foreach ($schutzArray as $objekt) {
+        foreach ($schutzArrayForm as $objekt) {
             $name = $objekt["Label"] ?? "Unbenannt";
             $ident = preg_replace('/\W+/', '_', $name);
             $minWind = $objekt["MinWind"] ?? 10.0;
@@ -746,7 +739,7 @@ class windMonitorPro extends IPSModule {
         //SetValueBoolean($this->GetIDForIdent("WarnungAktiv"), $SammelWarnung);
 
         // Dashboard aktualisieren
-        $html = WindToolsHelper::erzeugeSchutzDashboard($schutzArray, $this->InstanceID);
+        $html = $this->erzeugeSchutzDashboard($schutzArrayForm, $this->InstanceID);
         SetValue($this->GetIDForIdent("SchutzDashboardHTML"), $html);
 
         //Rueckmeldung
@@ -770,6 +763,57 @@ class windMonitorPro extends IPSModule {
             //IPS_LogMessage($logtag, "❌ Unbekannter Modus: '$modus'");
         //}
     }
+
+public function PresetCounter(string $objekt, int $value)
+{
+    $logtag = 'WindMonitorPro'; // oder passender Logtag
+    $schutzArrayForm = json_decode($this->ReadPropertyString("Schutzobjekte"), true);
+
+    if (!is_array($schutzArrayForm)) {
+        IPS_LogMessage($logtag, "❌ Schutzobjekte Property enthält kein gültiges JSON.");
+        return;
+    }
+
+    foreach ($schutzArrayForm as $eintrag) {
+        // Prüfe ob "Label" im Array existiert!
+        if (!isset($eintrag["Label"]) || trim($eintrag["Label"]) === "") {
+            IPS_LogMessage($logtag, "Warnung: Schutzobjekt ohne Label gefunden und übersprungen.");
+            continue;
+        }
+
+        $name = $eintrag["Label"];
+        $ident1 = "WarnCount_" . preg_replace('/\W+/', '_', $name);
+        $ident2 = "WarnCountBoe_" . preg_replace('/\W+/', '_', $name);
+        $statusIdent = "Status_" . preg_replace('/\W+/', '_', $name);
+
+        // Zähler Wind
+        $varID1 = @$this->GetIDForIdent($ident1);
+        if ($varID1 !== false && IPS_VariableExists($varID1)) {
+            SetValueInteger($varID1, 0);
+
+            // Status-Variable nur dann verändern, wenn sie existiert
+            $statusID = @$this->GetIDForIdent($statusIdent);
+            if ($statusID !== false && IPS_VariableExists($statusID)) {
+                $NewStatusArray['countWind'] = $value;
+                WindToolsHelper::UpdateStatusJsonFields($statusID, $NewStatusArray);
+            }
+        }
+
+        // Zähler Böe
+        $varID2 = @$this->GetIDForIdent($ident2);
+        if ($varID2 !== false && IPS_VariableExists($varID2)) {
+            SetValueInteger($varID2, 0);
+
+            $statusID = @$this->GetIDForIdent($statusIdent);
+            if ($statusID !== false && IPS_VariableExists($statusID)) {
+                $NewStatusArray['countGust'] = $value;
+                WindToolsHelper::UpdateStatusJsonFields($statusID, $NewStatusArray);
+            }
+        }
+    }
+
+    IPS_LogMessage($logtag, "Counter: $objekt auf $value gesetzt");
+}
 
     private function ResetSchutzStatus(): void {
         $objekte = IPS_GetChildrenIDs($this->InstanceID);
@@ -854,6 +898,165 @@ class windMonitorPro extends IPSModule {
         SetValue($this->GetIDForIdent("LetzterFetch"), $now);
 
     }
+
+    public static function erzeugeSchutzDashboard(array $schutzArray, int $instanceID): string {
+     
+        @$updateVarID = @IPS_GetObjectIDByIdent("UTC_ModelRun", $instanceID);
+        $updateMBString = ($updateVarID && IPS_VariableExists($updateVarID)) ? GetValueString($updateVarID) : '';
+        @$updateVarID = @IPS_GetObjectIDByIdent("LetzteAuswertungDaten", $instanceID);
+        $updateString = ($updateVarID && IPS_VariableExists($updateVarID)) ? GetValueString($updateVarID) : '';
+
+        if ($updateMBString !== '' && preg_match('/^(\d{2}\.\d{2}\.\d{4})\s+(\d{2}:\d{2}):\d{2}$/', $updateMBString, $m)) {
+            $standMBText = $m[1] . ' ' . $m[2] . ' Uhr';
+        } else {
+            $standMBText = $updateMBString !== '' ? $updateMBString : '–';
+        }
+        if ($updateString !== '' && preg_match('/^(\d{2}\.\d{2}\.\d{4})\s+(\d{2}:\d{2}):\d{2}$/', $updateString, $m)) {
+            $standText = $m[1] . ' ' . $m[2] . ' Uhr';
+        } else {
+            $standText = $updateString !== '' ? $updateString : '–';
+        }
+
+        // Nur minimale, neutrale Struktur:
+        //$html = "<div>";
+        $html = "<div id='neo-wrapper'>";
+            $html .= "<div id='dashboard-title'>
+                Schutzobjekt-Übersicht<br>
+                <span>(MeteoBlue-Update vom: $standMBText; Datei gelesen: $standText)</span>
+            </div>"; // falls die Ueberschrift komplett vom Webseitenelement formartiert wird
+
+        $html .= "<table border='1' cellspacing='0' cellpadding='3'>";
+
+        $html .= "<style>
+            th {
+            text-align: center;
+            vertical-align: middle;
+            }
+        </style>";
+
+        // Tabellenkopf
+        $html .= "<tr>
+            <th>Name</th>
+            <th>Höhe</th>
+            <th>Wind</th>
+            <th>Böe</th>
+            <th>Richtung</th>
+            <th>Status</th>
+            <th>Restzeit Warn</th>
+            <th>Zähler</th>
+        </tr>";
+    /*  Aufbau Statusarry fuer Shutzobjekte:
+                'objekt'      => ($name === null || $name === '') ? '' : $name,
+                'hoehe'       => $hoehe,
+                'restzeit'    => "",
+                'limitWind'   => round($minWind, 1),
+                'wind'        => round($windInObjHoehe, 1),
+                'limitBoe'    => round($minGust, 1),
+                'boe'         => round($boeInObjHoehe, 1),
+                'richtungsliste' => $kuerzelArray
+                'warnsource'  => "",
+                'warnungTS'   => "",
+                'warnWind'    => false,
+                'warnGust'    => false,
+                'countWind'   => 0,
+                'countGust'   => 0,
+                'nachwirk'    => 0,
+                'boeVorschau' => $BoeGefahrVorschau
+    */
+
+        foreach ($schutzArray as $objekt) {
+            $label = $objekt["Label"] ?? "–";
+            $ident = preg_replace('/\W+/', '_', $label);
+            $idstatusStr = @IPS_GetObjectIDByIdent("Status_" . $ident, $instanceID);
+            if ($idstatusStr === false) {
+                IPS_LogMessage("WindMonitorPro", "Statusvariable für $ident nicht gefunden.");
+                continue;
+            }
+            $statusJson = GetValueString($idstatusStr);
+            $StatusValues = json_decode($statusJson, true);
+                if ($statusJson === '' || !is_array($StatusValues)) {
+                    // Fehlerbehandlung: JSON ist ungültig oder ist kein Array
+                    return "";
+                }
+
+
+            $hoehe = $StatusValues["hoehe"] ?? "–";
+            $minWind = $StatusValues["limitWind"] ?? "–";
+            $minGust = $StatusValues["limitBoe"] ?? "–";
+            $richtung = $objekt["RichtungsKuerzelListe"] ?? "–"; //Hole aus Schutzobjekt da hier als String abgelegt und so fuer HTML Ausgabe benoetigt wird
+            $zaehlerWind = $StatusValues["countWind"] ?? "–";
+            $zaehlerBoe = $StatusValues["countGust"] ?? "–";
+            $zaehler = $zaehlerWind + $zaehlerBoe;
+
+
+
+            $vid = @IPS_GetObjectIDByIdent("Warnung_" . preg_replace('/\W+/', '_', $label), $instanceID);
+            $vidBoe = @IPS_GetObjectIDByIdent("WarnungBoe_" . preg_replace('/\W+/', '_', $label), $instanceID);
+            $wind = ($vid !== false && IPS_VariableExists($vid)) ? GetValueBoolean($vid) : false;
+            $Boe = ($vidBoe !== false && IPS_VariableExists($vidBoe)) ? GetValueBoolean($vidBoe) : false;
+            $warnung = $wind || $Boe;
+            $status = $warnung ? "⚠️ Aktiv" : "✅ Inaktiv";
+
+            $countID = @IPS_GetObjectIDByIdent("WarnCount_" . preg_replace('/\W+/', '_', $label), $instanceID);
+            //$zaehler = ($countID !== false && IPS_VariableExists($countID)) ? GetValueInteger($countID) : "–";
+
+            // Zeit letzte Warnung und Prognose 
+            $tsID = @IPS_GetObjectIDByIdent("LetzteWarnungTS_" . preg_replace('/\W+/', '_', $label), $instanceID);
+            $tsText = ($tsID !== false && IPS_VariableExists($tsID)) ? date("H:i", GetValueInteger($tsID)) . " Uhr" : "–";
+
+            // Json-Status
+            $vid = @IPS_GetObjectIDByIdent("Status_" . preg_replace('/\W+/', '_', $label), $instanceID);
+            $JsonProperties = $vid ? GetValueString($vid) : "";
+            $properties = json_decode($JsonProperties, true) ?: [];
+            $JsonWindPrognose = $properties['boeVorschau'] ?? "null";
+            $prognose = json_decode($JsonWindPrognose, true) ?: [];
+            $DatumPrognose = $prognose['datum'] ?? '–';
+            $TimePrognose  = $prognose['uhrzeit'] ?? '–';
+            $WindPrognose  = isset($prognose['wert']) && $prognose['wert'] !== null ? number_format($prognose['wert'], 2, ',', '') : '–';
+            $WindDirection = $prognose['richtung'] ?? '–';
+            $RestZeitWarnung = $properties['restzeit'] ?? '–';
+
+            // Wochentag einfügen
+            $dt = DateTime::createFromFormat('d.m.Y', $DatumPrognose);
+            $wochentage = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+            if ($dt) {
+                $dayShort = $wochentage[$dt->format('w')];
+                $datumMitTag = "$dayShort, $DatumPrognose";
+            } else {
+                $datumMitTag = $DatumPrognose;
+            }
+            $DatumPrognose = $datumMitTag;
+
+            // Hauptzeile
+            $html .= "<tr>
+                <td>$label</td>
+                <td>{$hoehe} m</td>
+                <td>{$minWind} m/s</td>
+                <td>{$minGust} m/s</td>
+                <td>$richtung</td>
+                <td>$status</td>
+                <td>$RestZeitWarnung</td>
+                <td>$zaehler</td>
+            </tr>";
+
+            // Prognosezeile
+            $html .= "<tr>
+                <td colspan='8'>
+                    🌬️ Prognose für Limitüberschreitung:
+                    am Datum: <b>$DatumPrognose</b>
+                    um Uhrzeit: <b>$TimePrognose</b>,
+                    mit Wert: <b>$WindPrognose m/s</b>,
+                    Dir: <b>$WindDirection</b>
+                </td>
+            </tr>";
+
+            // Leerzeile
+            $html .= "<tr><td colspan='8'>&nbsp;</td></tr>";
+        }
+        $html .= "</table></div>";
+        return $html;
+    }
+
 
 }
 
