@@ -1020,27 +1020,43 @@ class windMonitorPro extends IPSModule {
 
     }
 
-    private function getStatusPresetArray($name="", $hoehe=0, $minWind=0, $minGust=0, $windInObjHoehe=0, $boeInObjHoehe=0, $kuerzelArray, $BoeGefahrVorschau = [])
+    private function getStatusPresetArray(
+    string $name = "",
+    float $hoehe = 0,
+    float $minWind = 0,
+    float $minGust = 0,
+    float $windInObjHoehe = 0,
+    float $boeInObjHoehe = 0,
+    array $kuerzelArray = [],
+    string $boeVorschauJson = "{}"   // Default: leerer JSON-String fuer boeVorschau
+    ): array
     {
+        // Validierung, dass $boeVorschauJson ein gultiger JSON-String ist
+        if (!is_string($boeVorschauJson) || trim($boeVorschauJson) === '') {
+            $boeVorschauJson = "{}";
+        }
+
         return [
-            'objekt'      => ($name === null || $name === '') ? '' : $name,
-            'hoehe'       => $hoehe,
-            'restzeit'    => "",
-            'limitWind'   => round($minWind, 1),
-            'wind'        => round($windInObjHoehe, 1),
-            'limitBoe'    => round($minGust, 1),
-            'boe'         => round($boeInObjHoehe, 1),
+            'objekt'         => ($name === null || $name === '') ? '' : $name,
+            'hoehe'          => $hoehe,
+            'restzeit'       => "",
+            'limitWind'      => round($minWind, 1),
+            'wind'           => round($windInObjHoehe, 1),
+            'limitBoe'       => round($minGust, 1),
+            'boe'            => round($boeInObjHoehe, 1),
             'richtungsliste' => $kuerzelArray,
-            'warnsource'  => "",
-            'warnungTS'   => "",
-            'warnWind'    => false,
-            'warnGust'    => false,
-            'countWind'   => 0,
-            'countGust'   => 0,
-            'nachwirk'    => 0,
-            'boeVorschau' => $BoeGefahrVorschau
+            'warnsource'     => "",
+            'warnungTS'      => "",
+            'warnWind'       => false,
+            'warnGust'       => false,
+            'countWind'      => 0,
+            'countGust'      => 0,
+            'nachwirk'       => 0,
+            // boeVorschau ist hier ein reiner JSON-String (roher Text)
+            'boeVorschau'    => $boeVorschauJson
         ];
     }
+
 
 
 
