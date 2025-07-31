@@ -613,7 +613,8 @@ class windMonitorPro extends IPSModule {
             if ($statusJson === '' || !is_array($StatusCheckValuesJson)) {
                 // Fehlerbehandlung: JSON ist ungültig oder ist kein Array
                 // Preset array Statusdaten
-                $StatusCheckValuesJson = $this->getStatusPresetArray($name, $hoehe, 0, 0, 0, 0,$kuerzelArray, []);
+                $boeVorschauPreset = "{}";
+                $StatusCheckValuesJson = $this->getStatusPresetArray($name, $hoehe, 0, 0, 0, 0,$kuerzelArray, $boeVorschauPreset);
                 SetValue($idstatusStr, json_encode($StatusCheckValuesJson));
             }
 
@@ -743,7 +744,8 @@ class windMonitorPro extends IPSModule {
             $StatusCheckValuesJson = json_decode($statusJson, true);
 
             if ($statusJson === '' || !is_array($StatusCheckValuesJson)) {
-                $StatusCheckValuesJson = $this->getStatusPresetArray($name, $hoehe, 0, 0, 0, 0, $kuerzelArray, []);
+                $boeVorschauPreset = "{}";
+                $StatusCheckValuesJson = $this->getStatusPresetArray($name, $hoehe, 0, 0, 0, 0, $kuerzelArray, $boeVorschauPreset);
                 SetValue($idstatusStr, json_encode($StatusCheckValuesJson));
             }
 
@@ -923,7 +925,7 @@ class windMonitorPro extends IPSModule {
                 IPS_SetHidden($vid, false);
                 $alleVariablen[$idents[4]] = $vid;
 
-
+                $boeVorschauPreset = "{}";
                 $statusPreset = $this->getStatusPresetArray(
                 $name,
                 $eintrag["Hoehe"] ?? 0,
@@ -934,7 +936,7 @@ class windMonitorPro extends IPSModule {
                 isset($eintrag["RichtungsKuerzelListe"]) 
                     ? array_filter(array_map('trim', explode(',', $eintrag["RichtungsKuerzelListe"] )) ) 
                     : [],
-                []
+                $boeVorschauPreset
                 );
 
                 SetValueString($vid, json_encode($statusPreset));
