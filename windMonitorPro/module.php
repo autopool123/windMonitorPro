@@ -238,11 +238,21 @@ class windMonitorPro extends IPSModule {
             if ($vid === false) {
                 $vid = $this->RegisterVariableString($ident,"Status: ".$objekt["Label"]);
                 IPS_SetHidden($vid, false); // Variable ist sichtbar
+                $statusJson = GetValueString($vid);
+                $StatusCheckValuesJson = json_decode($statusJson, true);
+                if ($statusJson === '' || !is_array($StatusCheckValuesJson)) {
+                    // Fehlerbehandlung: JSON ist ungültig oder ist kein Array
+                    // Preset array Statusdaten
+                    $richtungsliste = $objekt["RichtungsKuerzelListe"] ?? "";
+                    $kuerzelArray = array_filter(array_map('trim', explode(',', $richtungsliste)));
+                    $StatusCheckValuesJson = $this->getStatusPresetArray($objekt["Label"], $objekt["Hoehe"], $objekt["MinWind"], $objekt["MinGust"], 0, 0,$kuerzelArray, []);
+                    SetValue($vid, json_encode($StatusCheckValuesJson));
+                }
                 IPS_LogMessage("WMP-ApplyChanges", "erzeugter Ident: $ident zu Var-ID: $vid");
-            }                          
+            }   
+            
         }
     }
-
 
 
 
@@ -587,7 +597,7 @@ class windMonitorPro extends IPSModule {
             if ($statusJson === '' || !is_array($StatusCheckValuesJson)) {
                 // Fehlerbehandlung: JSON ist ungültig oder ist kein Array
                 // Preset array Statusdaten
-                $this->getStatusPresetArray($name, $hoehe, 0, 0, 0, 0,$kuerzelArray, []);
+                $StatusCheckValuesJson = $this->getStatusPresetArray($name, $hoehe, 0, 0, 0, 0,$kuerzelArray, []);
                 SetValue($idstatusStr, json_encode($StatusCheckValuesJson));
             }
 
