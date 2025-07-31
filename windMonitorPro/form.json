@@ -26,6 +26,12 @@
           "caption": "🧹 Schutzstatus zurücksetzen",
           "confirmation": "Alle Schutzvariablen werden auf 'false' gesetzt. Fortfahren?",
           "onClick": "return IPS_RequestAction($id, 'ResetStatus', '');"
+        },
+        {
+          "type": "Button",
+          "caption": "🧹 Warnungs-Zähler zurücksetzen",
+          "confirmation": "Alle Zähler der Schutzvariablen werden auf 0 gesetzt. Fortfahren?",
+          "onClick": "return IPS_RequestAction($id, 'ResetCounter', '');"
         }
         ]
     },
