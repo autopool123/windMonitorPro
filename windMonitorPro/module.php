@@ -764,9 +764,9 @@ class windMonitorPro extends IPSModule {
         //}
     }
 
-public function PresetCounter(string $objekt, int $value)
+public function PresetCounter(?string $objekt)
 {
-    $logtag = 'WindMonitorPro'; // oder passender Logtag
+    $logtag = 'WindMonitorPro';
     $schutzArrayForm = json_decode($this->ReadPropertyString("Schutzobjekte"), true);
 
     if (!is_array($schutzArrayForm)) {
@@ -774,46 +774,61 @@ public function PresetCounter(string $objekt, int $value)
         return;
     }
 
+    $objektGefunden = false;
     foreach ($schutzArrayForm as $eintrag) {
-        // Prüfe ob "Label" im Array existiert!
+        // Prüfung, ob "Label" existiert und ist nicht leer
         if (!isset($eintrag["Label"]) || trim($eintrag["Label"]) === "") {
-            IPS_LogMessage($logtag, "Warnung: Schutzobjekt ohne Label gefunden und übersprungen.");
+            IPS_LogMessage($logtag, "Warnung: Schutzobjekt ohne Label übersprungen.");
             continue;
         }
-
         $name = $eintrag["Label"];
-        $ident1 = "WarnCount_" . preg_replace('/\W+/', '_', $name);
-        $ident2 = "WarnCountBoe_" . preg_replace('/\W+/', '_', $name);
+
+        // Prüfe, ob selektiert werden soll (wenn $objekt leer/null, immer true)
+        if (is_string($objekt) && $objekt !== '' && $name !== $objekt) {
+            continue; // <--- Nicht das gewünschte, überspringen
+        }
+
+        $objektGefunden = true; // Mindestens ein Objekt selektiert
+
+        $ident1     = "WarnCount_" . preg_replace('/\W+/', '_', $name);
+        $ident2     = "WarnCountBoe_" . preg_replace('/\W+/', '_', $name);
         $statusIdent = "Status_" . preg_replace('/\W+/', '_', $name);
 
-        // Zähler Wind
+        // Wind-Counter 
         $varID1 = @$this->GetIDForIdent($ident1);
         if ($varID1 !== false && IPS_VariableExists($varID1)) {
             SetValueInteger($varID1, 0);
 
-            // Status-Variable nur dann verändern, wenn sie existiert
             $statusID = @$this->GetIDForIdent($statusIdent);
             if ($statusID !== false && IPS_VariableExists($statusID)) {
-                $NewStatusArray['countWind'] = $value;
+                $NewStatusArray = ['countWind' => 0];
                 WindToolsHelper::UpdateStatusJsonFields($statusID, $NewStatusArray);
             }
         }
 
-        // Zähler Böe
+        // Boen-Counter
         $varID2 = @$this->GetIDForIdent($ident2);
         if ($varID2 !== false && IPS_VariableExists($varID2)) {
             SetValueInteger($varID2, 0);
 
             $statusID = @$this->GetIDForIdent($statusIdent);
             if ($statusID !== false && IPS_VariableExists($statusID)) {
-                $NewStatusArray['countGust'] = $value;
+                $NewStatusArray = ['countGust' => 0];
                 WindToolsHelper::UpdateStatusJsonFields($statusID, $NewStatusArray);
             }
         }
+        // Wenn nur ein bestimmtes Objekt bearbeitet werden soll:
+        if (is_string($objekt) && $objekt !== '') break;
     }
 
-    IPS_LogMessage($logtag, "Counter: $objekt auf $value gesetzt");
+    if (is_string($objekt) && $objekt !== '' && !$objektGefunden) {
+        IPS_LogMessage($logtag, "Schutzobjekt '$objekt' wurde nicht gefunden!");
+    } else {
+        $msg = (is_string($objekt) && $objekt !== '') ? $objekt : 'alle';
+        IPS_LogMessage($logtag, "Counter: $msg auf 0 gesetzt");
+    }
 }
+
 
     private function ResetSchutzStatus(): void {
         $objekte = IPS_GetChildrenIDs($this->InstanceID);
