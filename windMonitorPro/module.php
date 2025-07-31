@@ -44,12 +44,16 @@ class windMonitorPro extends IPSModule {
         $schutzArrayForm = json_decode($this->ReadPropertyString("Schutzobjekte"), true);
         foreach ($schutzArrayForm as $eintrag) {
             $name = $eintrag["Label"] ?? "Unbenannt";
-            $ident = "Warnung_" . preg_replace('/\W+/', '_', $name);
+            $ident1 = "Warnung_" . preg_replace('/\W+/', '_', $name);
+            $ident2 = "WarnungBoe_" . preg_replace('/\W+/', '_', $name);            
             $txtIdent = "Status_" . preg_replace('/\W+/', '_', $name);
             //Nur wenn die Variable auch existiert 
-            if (@IPS_VariableExists($this->GetIDForIdent($ident))) {
-                IPS_SetIcon($this->GetIDForIdent($ident), "Shield");
+            if (@IPS_VariableExists($this->GetIDForIdent($ident1))) {
+                IPS_SetIcon($this->GetIDForIdent($ident1), "Shield");
             }
+            if (@IPS_VariableExists($this->GetIDForIdent($ident2))) {
+                IPS_SetIcon($this->GetIDForIdent($ident2), "Shield");
+            }            
             if (@IPS_VariableExists($this->GetIDForIdent($txtIdent))) {
                 IPS_SetIcon($this->GetIDForIdent($txtIdent), "Alert");
             }
@@ -202,13 +206,41 @@ class windMonitorPro extends IPSModule {
         foreach (json_decode($this->ReadPropertyString("Schutzobjekte"), true) as $objekt) {
             $ident = "Warnung_" . preg_replace('/\W+/', '_', $objekt["Label"]);//generiere aus json Textobjekt den zugehörigen ident
             $vid = @IPS_GetObjectIDByIdent($ident, $this->InstanceID);
-            if ($vid !== false) {
-                IPS_SetIcon($vid, "Shield");
-                IPS_SetVariableCustomProfile($vid, "~Alert"); // optionales Profil
-                IPS_LogMessage("WindMonitorPro", "erzeugter Ident: $ident zu Var-ID: $vid");
+            if ($vid === false) {
+                $vid = $this->RegisterVariableBoolean($ident,"Warnung: ".$objekt["Label"],"~Alert");
+                IPS_SetHidden($vid, false); // Variable ist sichtbar
+                IPS_LogMessage("WMP-ApplyChanges", "erzeugter Ident: $ident zu Var-ID: $vid");
             }
+            $ident = "WarnungBoe_" . preg_replace('/\W+/', '_', $objekt["Label"]);//generiere aus json Textobjekt den zugehörigen ident
+            $vid = @IPS_GetObjectIDByIdent($ident, $this->InstanceID);
+            if ($vid === false) {
+                $vid = $this->RegisterVariableBoolean($ident,"WarnungBoe: ".$objekt["Label"],"~Alert");
+                IPS_SetHidden($vid, false); // Variable ist sichtbar
+                IPS_LogMessage("WMP-ApplyChanges", "erzeugter Ident: $ident zu Var-ID: $vid");
+            }   
+ 
+            $ident = "WarnCount_" . preg_replace('/\W+/', '_', $objekt["Label"]);//generiere aus json Textobjekt den zugehörigen ident              
+            $vid = @IPS_GetObjectIDByIdent($ident, $this->InstanceID);
+            if ($vid === false) {
+                $vid = $this->RegisterVariableInteger($ident,"WarnCount: ".$objekt["Label"]);
+                IPS_SetHidden($vid, false); // Variable ist sichtbar
+                IPS_LogMessage("WMP-ApplyChanges", "erzeugter Ident: $ident zu Var-ID: $vid");
+            }             
+            $ident = "WarnCountBoe_" . preg_replace('/\W+/', '_', $objekt["Label"]);//generiere aus json Textobjekt den zugehörigen ident              
+            $vid = @IPS_GetObjectIDByIdent($ident, $this->InstanceID);
+            if ($vid === false) {
+                $vid = $this->RegisterVariableInteger($ident,"WarnCountBoe: ".$objekt["Label"]);
+                IPS_SetHidden($vid, false); // Variable ist sichtbar
+                IPS_LogMessage("WMP-ApplyChanges", "erzeugter Ident: $ident zu Var-ID: $vid");
+            }  
+            $ident = "Status_" . preg_replace('/\W+/', '_', $objekt["Label"]);//generiere aus json Textobjekt den zugehörigen ident              
+            $vid = @IPS_GetObjectIDByIdent($ident, $this->InstanceID);
+            if ($vid === false) {
+                $vid = $this->RegisterVariableString($ident,"Status: ".$objekt["Label"]);
+                IPS_SetHidden($vid, false); // Variable ist sichtbar
+                IPS_LogMessage("WMP-ApplyChanges", "erzeugter Ident: $ident zu Var-ID: $vid");
+            }                          
         }
-
     }
 
 
@@ -457,6 +489,7 @@ class windMonitorPro extends IPSModule {
             $genutzteIdents[] = $identWCBoe;
             $genutzteIdents[] = $identStatus;
 
+           /* Variablen werden im ApplyChange angelegt
             //Pruefen ob Warnung_Name(Warnobjekt-Name) Variable existiert sonst erstellen
             if (!array_key_exists($ident, $alleVariablen)) {
                 $vid = $this->RegisterVariableBoolean($ident, "Warnung: " . $name,"~Alert");
@@ -490,7 +523,9 @@ class windMonitorPro extends IPSModule {
                 $vid = $this->RegisterVariableString($identStatus, "Status: " . $name);
                 IPS_SetHidden($vid, false); // oder true, je nach Wunsch
                 $alleVariablen[$identWCBoe] = $vid;
-            }             
+            } 
+            
+            */
             
         }   
 
