@@ -170,6 +170,17 @@ class windMonitorPro extends IPSModule {
         $this->RegisterVariableString("ReadIntervalInfo", "Dateileseintervall (Info)", "~TextBox");
         $this->RegisterVariableString("NachwirkzeitInfo", "Nachwirkzeit (Info)", "~TextBox");
 
+        //Welche Variablen werden entsprechend den Schutzobjekten benoetigt und sind noch nicht existent?    
+        $schutzArrayForm = json_decode($this->ReadPropertyString("Schutzobjekte"), true);
+        if (!is_array($schutzArrayForm)) {
+            IPS_LogMessage("WindMonitorPro", "❌ Schutzobjekte Property enthält kein gültiges JSON.");
+            return;
+        }
+        //Zuweisung der Funktionsrueckgabe alle "gefundenenen Variablen" und "benoetigte Variablen". In der Funktion werden die nicht vorhandenen Variablen angelegt
+        [$alleVariablen, $genutzteIdents] = $this->EnsureRequiredVariables($schutzArrayForm);
+        //Loeschen der vorhandenen aber nicht benoetigten Variablen
+        $this->CleanupUnusedVariables($alleVariablen, $genutzteIdents);    
+
 
 
         //Info-Variablen mit aktuellen Werten aktualisieren
@@ -196,12 +207,7 @@ class windMonitorPro extends IPSModule {
             $this->SetTimerInterval("ReadTimer",  0); // deaktivieren
         }
 
-    //---------------------------------------------------------------------------
-    //ZUM TEST DIE DATEN AUSWERTEN AUCH WENN INAKTIV    
-    //$this->SetTimerInterval("ReadTimer", max(1, $readMin) * 60 * 1000);
-    IPS_LogMessage("WindMonitorPro", "ReadTimer gestartet: $readMin in Minuten");
-    //---------------------------------------------------------------------------
-
+/*
 
         foreach (json_decode($this->ReadPropertyString("Schutzobjekte"), true) as $objekt) {
             $ident = "Warnung_" . preg_replace('/\W+/', '_', $objekt["Label"]);//generiere aus json Textobjekt den zugehörigen ident
@@ -252,9 +258,8 @@ class windMonitorPro extends IPSModule {
             }   
             
         }
+*/            
     }
-
-
 
     public function RequestAction($Ident, $Value) {
         // 🔍 Logging für Analysezwecke
@@ -451,8 +456,18 @@ class windMonitorPro extends IPSModule {
         SetValueInteger($this->GetIDForIdent("DirGrad"), $DirGrad);
         */
 
+        //Statusvariablen anlegen oder loeschen entsprechend Schutzarray
+        $schutzArrayForm = json_decode($this->ReadPropertyString("Schutzobjekte"), true);
+        if (!is_array($schutzArrayForm)) {
+            IPS_LogMessage("WindMonitorPro", "❌ Schutzobjekte Property enthält kein gültiges JSON.");
+            return;
+        }
+        //Zuweisung der Funktionsrueckgabe alle gefundenenen Variablen und benoetigte Variablen. In der Funktion werden die nicht vorhandenen Variablen angelegt
+        [$alleVariablen, $genutzteIdents] = $this->EnsureRequiredVariables($schutzArrayForm);
+        //Loeschen der vorhandenen aber nicht benoetigten Variablen
+        $this->CleanupUnusedVariables($alleVariablen, $genutzteIdents);
 
-
+/*      Alt: Hier wurden vorher die Statusvariablen angelegt oder geloescht wenn sich das Schutzarray geaendert hat
         //Erzeuge das Schutzobjekt-Array welches alle ueber die form.json erstellten Schutzobjekte samt Inhalt enthaelt 
         $schutzArrayForm = json_decode($this->ReadPropertyString("Schutzobjekte"), true);
         //IPS_LogMessage("Debug", print_r($schutzArrayForm, true));
@@ -499,7 +514,7 @@ class windMonitorPro extends IPSModule {
             $genutzteIdents[] = $identWCBoe;
             $genutzteIdents[] = $identStatus;
 
-           /* Variablen werden im ApplyChange angelegt
+            // Variablen werden bereits im ApplyChange angelegt, hier nochmal zur Sicherheit falls dennoch nicht existent...
             //Pruefen ob Warnung_Name(Warnobjekt-Name) Variable existiert sonst erstellen
             if (!array_key_exists($ident, $alleVariablen)) {
                 $vid = $this->RegisterVariableBoolean($ident, "Warnung: " . $name,"~Alert");
@@ -532,10 +547,10 @@ class windMonitorPro extends IPSModule {
             if (!array_key_exists($identStatus, $alleVariablen)) {
                 $vid = $this->RegisterVariableString($identStatus, "Status: " . $name);
                 IPS_SetHidden($vid, false); // oder true, je nach Wunsch
-                $alleVariablen[$identWCBoe] = $vid;
+                $alleVariablen[$identStatus] = $vid;
             } 
             
-            */
+        
             
         }   
 
@@ -548,6 +563,7 @@ class windMonitorPro extends IPSModule {
                 IPS_DeleteVariable($objID);
             }
         }
+*/
         
         $SammelWarnung = false;
         foreach ($schutzArrayForm as $objekt) {
@@ -847,10 +863,97 @@ class windMonitorPro extends IPSModule {
         IPS_LogMessage("WindMonitorPro", "🧹 Schutzstatus zurückgesetzt");
     }
 
-    // Beispielmethode
-    public function UpdateWindSpeed(float $value) {
-        SetValue($this->GetIDForIdent("Wind80m"), $value);
+    private function EnsureRequiredVariables(array $schutzArrayForm): array
+    {
+        $genutzteIdents = [];
+        $alleVariablen = [];
+
+        // Bestehende Schutzvariablen laden
+        $instanzObjekte = IPS_GetChildrenIDs($this->InstanceID);
+        foreach ($instanzObjekte as $objID) {
+            $ident = IPS_GetObject($objID)["ObjectIdent"];
+            if (strpos($ident, "Warnung_") === 0 ||
+                strpos($ident, "WarnungBoe_") === 0 ||
+                strpos($ident, "WarnCount_") === 0 ||
+                strpos($ident, "WarnCountBoe_") === 0 ||
+                strpos($ident, "Status_") === 0) {
+                $alleVariablen[$ident] = $objID;
+            }
+        }
+
+        foreach ($schutzArrayForm as $eintrag) {
+            $name = $eintrag["Label"] ?? "Unbenannt";
+
+            $idents = [
+                "Warnung_" . preg_replace('/\W+/', '_', $name),
+                "WarnungBoe_" . preg_replace('/\W+/', '_', $name),
+                "WarnCount_" . preg_replace('/\W+/', '_', $name),
+                "WarnCountBoe_" . preg_replace('/\W+/', '_', $name),
+                "Status_" . preg_replace('/\W+/', '_', $name),
+            ];
+
+            // Alle gesammelten Idents merken
+            foreach ($idents as $ident) {
+                $genutzteIdents[] = $ident;
+            }
+
+            // Pruefe und ggf. Variablen erstellen
+            if (!array_key_exists($idents[0], $alleVariablen)) { // Warnung_...
+                $vid = $this->RegisterVariableBoolean($idents[0], "Warnung: " . $name,"~Alert");
+                IPS_SetHidden($vid, false);
+                $alleVariablen[$idents[0]] = $vid;
+            }
+            if (!array_key_exists($idents[1], $alleVariablen)) { // WarnungBoe_...
+                $vid = $this->RegisterVariableBoolean($idents[1], "WarnungBoe: " . $name,"~Alert");
+                IPS_SetHidden($vid, false);
+                $alleVariablen[$idents[1]] = $vid;
+            }
+            if (!array_key_exists($idents[2], $alleVariablen)) { // WarnCount_...
+                $vid = $this->RegisterVariableInteger($idents[2], "WarnCount: " . $name);
+                IPS_SetHidden($vid, false);
+                $alleVariablen[$idents[2]] = $vid;
+            }
+            if (!array_key_exists($idents[3], $alleVariablen)) { // WarnCountBoe_...
+                $vid = $this->RegisterVariableInteger($idents[3], "WarnCountBoe: " . $name);
+                IPS_SetHidden($vid, false);
+                $alleVariablen[$idents[3]] = $vid;
+            }
+            if (!array_key_exists($idents[4], $alleVariablen)) { // Status_...
+                $vid = $this->RegisterVariableString($idents[4], "Status: " . $name);
+                IPS_SetHidden($vid, false);
+                $alleVariablen[$idents[4]] = $vid;
+
+
+                $statusPreset = $this->getStatusPresetArray(
+                $name,
+                $eintrag["Hoehe"] ?? 0,
+                $eintrag["MinWind"] ?? 0,
+                $eintrag["MinGust"] ?? 0,
+                0,
+                0,
+                isset($eintrag["RichtungsKuerzelListe"]) 
+                    ? array_filter(array_map('trim', explode(',', $eintrag["RichtungsKuerzelListe"] )) ) 
+                    : [],
+                []
+                );
+
+                SetValueString($vid, json_encode($statusPreset));
+                IPS_LogMessage("WMP-ApplyChanges", "Status-Variable mit Preset initialisiert: $idents[4] (VarID $vid)");
+
+            }
+        }
+        return [$alleVariablen, $genutzteIdents];
     }
+
+    private function CleanupUnusedVariables(array $alleVariablen, array $genutzteIdents): void
+    {
+        foreach ($alleVariablen as $ident => $objID) {
+            if (!in_array($ident, $genutzteIdents)) {
+                IPS_LogMessage("WindMonitorPro", "ℹ️ Entferne überflüssige Statusvariable '$ident'");
+                IPS_DeleteVariable($objID);
+            }
+        }
+}
 
     public function FetchAndStoreMeteoblueData(): void {
         $logtag = "WindFetcher";
