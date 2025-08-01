@@ -123,8 +123,8 @@ public static function berechneSchutzstatusMitNachwirkung(
 
     // Restzeit aus letztem Status parsen
     $alteRestzeitSek = 0;
-    if (isset($status['restzeit'])) {
-        $zeitTeile = explode(':', $status['restzeit']);
+    if (isset($status['nachwirk'])) {
+        $zeitTeile = explode(':', $status['nachwirk']);
         if (count($zeitTeile) === 2) {
             $alteRestzeitSek = intval($zeitTeile[0]) * 60 + intval($zeitTeile[1]);
         }
