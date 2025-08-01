@@ -417,9 +417,7 @@ class windMonitorPro extends IPSModule {
         $this->CleanupUnusedVariables($alleVariablen, $genutzteIdents);
         
         $SammelWarnung = false;
-        $SchutzObjektDaten =[];
         foreach ($schutzArrayForm as $objekt) {
-            $SchutzObjektBasics[] = $objekt;
             $name = $objekt["Label"] ?? "Unbenannt";
             $modus =$objekt["Warnmodus"]; 
             $ident = preg_replace('/\W+/', '_', $name);
@@ -441,7 +439,7 @@ class windMonitorPro extends IPSModule {
             $NachwirkZeit = (preg_match('/\d+/', $NachwirkZeitString, $match)) ? intval($match[0]) : 10;
             $warnsource = "MeteoBlue-Daten";
             $NewStatusArray = WindToolsHelper::berechneSchutzstatusMitNachwirkung(
-                $SchutzObjektBasics,
+                $objekt,
                 $warnsource,
                 $windInObjHoehe,
                 $boeInObjHoehe,
@@ -599,9 +597,7 @@ public static function berechneSchutzstatusMitNachwirkung(
         }
 
         $SammelWarnung = false;
-        $SchutzObjektBasics = []; 
         foreach ($schutzArrayForm as $objekt) {
-            $SchutzObjektBasics[] = $objekt;
             $name = $objekt["Label"] ?? "Unbenannt";
             $modus =$objekt["Warnmodus"]; 
             $ident = preg_replace('/\W+/', '_', $name);
@@ -622,7 +618,7 @@ public static function berechneSchutzstatusMitNachwirkung(
             $NachwirkZeit = (preg_match('/\d+/', $NachwirkZeitString, $match)) ? intval($match[0]) : $this->ReadPropertyInteger('ReadIntervall');
             $warnsource = "Eigene Wetterstation";
             $NewStatusArray = WindToolsHelper::berechneSchutzstatusMitNachwirkung(
-                $SchutzObjektBasics,
+                $objekt,
                 $warnsource,
                 $windInObjHoehe,
                 $boeInObjHoehe,
