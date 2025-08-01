@@ -170,8 +170,9 @@ public static function berechneSchutzstatusMitNachwirkung(
     $StatusCheckValuesJson['countWind']          = $counterWind;
     $StatusCheckValuesJson['countGust']          = $counterGust;
     $StatusCheckValuesJson['nachwirk']           = $restNachwirkText;
-        
-
+    
+    $name = $StatusCheckValuesJson['Label'];
+    IPS_LogMessage("CheckSchutzstatus", "Objekt: $name, Wind: $warnWind Boe: $warnWind im Sektor: $inSektor  ");
     return $StatusCheckValuesJson;
 }  
 
