@@ -59,7 +59,7 @@ class WindToolsHelper
     }  
     
 public static function berechneSchutzstatusMitNachwirkung(
-    int $modus,
+    array $schutzObjektBasicData,
     string $warnsource,    
     float $windMS,
     float $gustMS,
@@ -71,8 +71,6 @@ public static function berechneSchutzstatusMitNachwirkung(
     int $idstatusStr,
     int $idWarnWind,
     int $idWarnGust,
-    string $objektName = "",
-    float $zielHoehe
 ): array {
 
 
@@ -89,7 +87,7 @@ public static function berechneSchutzstatusMitNachwirkung(
     }
 
     //Name des Schutzobjektes
-    $warnObjekt = $status['objekt'] ?? "";
+    $warnObjekt = $status['Label'] ?? "";
 
     // Alte Warn- und Zählerwerte sicher auslesen
     $WarnWindAlt  = $status['warnWind'] ?? false;
@@ -159,26 +157,20 @@ public static function berechneSchutzstatusMitNachwirkung(
         $warnungTS = $jetzt;
     }
 
-    // geaenderte und Basic-Statusdaten zurueckgeben
-    $StatusCheckValuesJson = [
-        'objekt'      => $objektName,
-        'limitWind'   => $thresholdWind,
-        'wind'        => $windMS,
-        'limitBoe'    => $thresholdGust,
-        'boe'         => $gustMS,        
-        'hoehe'       => $zielHoehe,                
-        'restzeit'    => $restNachwirkText,           
-        'warnWind'    => $warnWind,
-        'warnGust'    => $warnGust,
-        'modus'       => $modus,
-        'countWind'   => $counterWind,
-        'countGust'   => $counterGust,   
-        'warnsource'  => $warnsourceNeu,       
-        'warnungTS'  => $warnungTS,
-        'richtungsliste' => $kuerzelArray
-    ];
-
-//IPS_LogMessage("SchutzStatus", "Objekt: $warnObjekt GustLimit: $thresholdGust Gust: $gustMS  warnsourceNeu: $warnsourceNeu  warnWind: $warnWind warnGust:  $warnGust  warnungTS: $warnungTS  jetzt: $jetzt");
+    //Basiswwerte aus Schutzarray der Formeingaben kopieren:
+    $StatusCheckValuesJson = $schutzObjektBasicData;
+    // dazu die geaenderten Parameter ins Array schreiben
+    $StatusCheckValuesJson['wind']               = round($windMS, 1);
+    $StatusCheckValuesJson['boe']                = round($gustMS, 1);
+    $StatusCheckValuesJson['richtungsliste']     = $kuerzelArray;
+    $StatusCheckValuesJson['warnsource']         = $warnsourceNeu;
+    $StatusCheckValuesJson['warnungTS']          = $warnungTS;
+    $StatusCheckValuesJson['warnWind']           = $warnWind;
+    $StatusCheckValuesJson['warnGust']           = $warnGust;
+    $StatusCheckValuesJson['countWind']          = $counterWind;
+    $StatusCheckValuesJson['countGust']          = $counterGust;
+    $StatusCheckValuesJson['nachwirk']           = $restNachwirkText;
+        
 
     return $StatusCheckValuesJson;
 }  

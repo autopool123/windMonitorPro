@@ -207,58 +207,7 @@ class windMonitorPro extends IPSModule {
             $this->SetTimerInterval("ReadTimer",  0); // deaktivieren
         }
 
-/*
-
-        foreach (json_decode($this->ReadPropertyString("Schutzobjekte"), true) as $objekt) {
-            $ident = "Warnung_" . preg_replace('/\W+/', '_', $objekt["Label"]);//generiere aus json Textobjekt den zugehörigen ident
-            $vid = @IPS_GetObjectIDByIdent($ident, $this->InstanceID);
-            if ($vid === false) {
-                $vid = $this->RegisterVariableBoolean($ident,"Warnung: ".$objekt["Label"],"~Alert");
-                IPS_SetHidden($vid, false); // Variable ist sichtbar
-                IPS_LogMessage("WMP-ApplyChanges", "erzeugter Ident: $ident zu Var-ID: $vid");
-            }
-            $ident = "WarnungBoe_" . preg_replace('/\W+/', '_', $objekt["Label"]);//generiere aus json Textobjekt den zugehörigen ident
-            $vid = @IPS_GetObjectIDByIdent($ident, $this->InstanceID);
-            if ($vid === false) {
-                $vid = $this->RegisterVariableBoolean($ident,"WarnungBoe: ".$objekt["Label"],"~Alert");
-                IPS_SetHidden($vid, false); // Variable ist sichtbar
-                IPS_LogMessage("WMP-ApplyChanges", "erzeugter Ident: $ident zu Var-ID: $vid");
-            }   
- 
-            $ident = "WarnCount_" . preg_replace('/\W+/', '_', $objekt["Label"]);//generiere aus json Textobjekt den zugehörigen ident              
-            $vid = @IPS_GetObjectIDByIdent($ident, $this->InstanceID);
-            if ($vid === false) {
-                $vid = $this->RegisterVariableInteger($ident,"WarnCount: ".$objekt["Label"]);
-                IPS_SetHidden($vid, false); // Variable ist sichtbar
-                IPS_LogMessage("WMP-ApplyChanges", "erzeugter Ident: $ident zu Var-ID: $vid");
-            }             
-            $ident = "WarnCountBoe_" . preg_replace('/\W+/', '_', $objekt["Label"]);//generiere aus json Textobjekt den zugehörigen ident              
-            $vid = @IPS_GetObjectIDByIdent($ident, $this->InstanceID);
-            if ($vid === false) {
-                $vid = $this->RegisterVariableInteger($ident,"WarnCountBoe: ".$objekt["Label"]);
-                IPS_SetHidden($vid, false); // Variable ist sichtbar
-                IPS_LogMessage("WMP-ApplyChanges", "erzeugter Ident: $ident zu Var-ID: $vid");
-            }  
-            $ident = "Status_" . preg_replace('/\W+/', '_', $objekt["Label"]);//generiere aus json Textobjekt den zugehörigen ident              
-            $vid = @IPS_GetObjectIDByIdent($ident, $this->InstanceID);
-            if ($vid === false) {
-                $vid = $this->RegisterVariableString($ident,"Status: ".$objekt["Label"]);
-                IPS_SetHidden($vid, false); // Variable ist sichtbar
-                $statusJson = GetValueString($vid);
-                $StatusCheckValuesJson = json_decode($statusJson, true);
-                if ($statusJson === '' || !is_array($StatusCheckValuesJson)) {
-                    // Fehlerbehandlung: JSON ist ungültig oder ist kein Array
-                    // Preset array Statusdaten
-                    $richtungsliste = $objekt["RichtungsKuerzelListe"] ?? "";
-                    $kuerzelArray = array_filter(array_map('trim', explode(',', $richtungsliste)));
-                    $StatusCheckValuesJson = $this->getStatusPresetArray($objekt["Label"], $objekt["Hoehe"], $objekt["MinWind"], $objekt["MinGust"], 0, 0,$kuerzelArray, []);
-                    SetValue($vid, json_encode($StatusCheckValuesJson));
-                }
-                IPS_LogMessage("WMP-ApplyChanges", "erzeugter Ident: $ident zu Var-ID: $vid");
-            }   
             
-        }
-*/            
     }
 
     public function RequestAction($Ident, $Value) {
@@ -466,107 +415,11 @@ class windMonitorPro extends IPSModule {
         [$alleVariablen, $genutzteIdents] = $this->EnsureRequiredVariables($schutzArrayForm);
         //Loeschen der vorhandenen aber nicht benoetigten Variablen
         $this->CleanupUnusedVariables($alleVariablen, $genutzteIdents);
-
-/*      Alt: Hier wurden vorher die Statusvariablen angelegt oder geloescht wenn sich das Schutzarray geaendert hat
-        //Erzeuge das Schutzobjekt-Array welches alle ueber die form.json erstellten Schutzobjekte samt Inhalt enthaelt 
-        $schutzArrayForm = json_decode($this->ReadPropertyString("Schutzobjekte"), true);
-        //IPS_LogMessage("Debug", print_r($schutzArrayForm, true));
-        // Schritt 1: Alle vorhandenen Schutz-Variablen der Instanz in ein Array (alleVariablen) schreiben
-        // Also ein Array mit allen bereits vorhandenen Schutzvariablen erstellen um spaeter zu pruefen ob eine Variable bereits vorhanden
-        // oder neu erstellt werden muss
-        $alleVariablen = [];
-        $instanzObjekte = IPS_GetChildrenIDs($this->InstanceID);
-        foreach ($instanzObjekte as $objID) {
-            $ident = IPS_GetObject($objID)["ObjectIdent"];
-            if (strpos($ident, "Warnung_") === 0) {
-                $alleVariablen[$ident] = $objID;
-            }
-            if (strpos($ident, "WarnungBoe_") === 0) {
-                $alleVariablen[$ident] = $objID;
-            }
-            if (strpos($ident, "WarnCount_") === 0) {
-                $alleVariablen[$ident] = $objID;
-            }
-            if (strpos($ident, "Status_") === 0) {
-                $alleVariablen[$ident] = $objID;
-            }
-        }
-
-        // Schritt 2: Mittels Eintraegen im Schutzobjekt prüfen ob alle Variable vorhanden
-        // und ggf, falls Neueintrag Variable anlegen
-
-        //Lege ein Array $genutzteIdents[] an, welches sämtliche Identtexte fasst die fuer ein Schutzobjekt benoetigt werden 
-        //generiere die Identtexte und schreibe diese in das Array. Aus diesem werden spaeter die Idents gholt m ein Statusvariable
-        //zu lesen oder zu shreiben 
-        $genutzteIdents = [];//erzeuge das array
-        foreach ($schutzArrayForm as $eintrag) {
-            //generiere die Idents nach dem Schema: "Inhaltsbescheibung_Schutzobjektname"
-            $name = $eintrag["Label"] ?? "Unbenannt";
-            $ident = "Warnung_" . preg_replace('/\W+/', '_', $name);
-            $identBoe = "WarnungBoe_" . preg_replace('/\W+/', '_', $name);
-            $identWC = "WarnCount_" . preg_replace('/\W+/', '_', $name);
-            $identWCBoe = "WarnCountBoe_" . preg_replace('/\W+/', '_', $name);
-            $identStatus = "Status_" . preg_replace('/\W+/', '_', $name);
-            //Beschreibe die Arrayfelder mit den erzeugten Idents
-            $genutzteIdents[] = $ident;
-            $genutzteIdents[] = $identBoe;
-            $genutzteIdents[] = $identWC;
-            $genutzteIdents[] = $identWCBoe;
-            $genutzteIdents[] = $identStatus;
-
-            // Variablen werden bereits im ApplyChange angelegt, hier nochmal zur Sicherheit falls dennoch nicht existent...
-            //Pruefen ob Warnung_Name(Warnobjekt-Name) Variable existiert sonst erstellen
-            if (!array_key_exists($ident, $alleVariablen)) {
-                $vid = $this->RegisterVariableBoolean($ident, "Warnung: " . $name,"~Alert");
-                IPS_SetHidden($vid, false); // oder true, je nach Wunsch
-                $alleVariablen[$ident] = $vid;
-            }
-
-            //Pruefen ob WarnungBoe_Name(Warnobjekt-Name) Variable existiert sonst erstellen
-            if (!array_key_exists($identBoe, $alleVariablen)) {
-                $vid = $this->RegisterVariableBoolean($identBoe, "WarnungBoe: " . $name,"~Alert");
-                IPS_SetHidden($vid, false); // oder true, je nach Wunsch
-                $alleVariablen[$identBoe] = $vid;
-            }
-
-            //Pruefen ob WarnungCount_Name(Warnobjekt-Name) Variable existiert sonst erstellen
-            if (!array_key_exists($identWC, $alleVariablen)) {
-                $vid = $this->RegisterVariableInteger($identWC, "WarnCount: " . $name);
-                IPS_SetHidden($vid, false); // oder true, je nach Wunsch
-                $alleVariablen[$identWC] = $vid;
-            }
-
-            //Pruefen ob WarnungCountBoe_Name(Warnobjekt-Name) Variable existiert sonst erstellen
-            if (!array_key_exists($identWCBoe, $alleVariablen)) {
-                $vid = $this->RegisterVariableInteger($identWCBoe, "WarnCountBoe: " . $name);
-                IPS_SetHidden($vid, false); // oder true, je nach Wunsch
-                $alleVariablen[$identWCBoe] = $vid;
-            }  
-
-            //Pruefen ob Status_Name(Warnobjekt-Name) Variable existiert sonst erstellen
-            if (!array_key_exists($identStatus, $alleVariablen)) {
-                $vid = $this->RegisterVariableString($identStatus, "Status: " . $name);
-                IPS_SetHidden($vid, false); // oder true, je nach Wunsch
-                $alleVariablen[$identStatus] = $vid;
-            } 
-            
-        
-            
-        }   
-
-        // Schritt 3: Variablen löschen, die zu entfernten Objekten gehören
-        //also Objekt die nicht mehr im Array $genutzteIdents zu finden sind
-        foreach ($alleVariablen as $ident => $objID) {
-            if (!in_array($ident, $genutzteIdents)) {
-            //if (!in_array($ident, $genutzteIdents)&& !in_array($ident, $genutzteBoeIdents)) {
-                IPS_LogMessage("WindMonitorPro", "ℹ️ Entferne überflüssige Statusvariable '$ident'");
-                IPS_DeleteVariable($objID);
-            }
-        }
-*/
         
         $SammelWarnung = false;
+        $SchutzObjektDaten =[];
         foreach ($schutzArrayForm as $objekt) {
+            $SchutzObjektBasics[] = $objekt;
             $name = $objekt["Label"] ?? "Unbenannt";
             $modus =$objekt["Warnmodus"]; 
             $ident = preg_replace('/\W+/', '_', $name);
@@ -588,6 +441,43 @@ class windMonitorPro extends IPSModule {
             $NachwirkZeit = (preg_match('/\d+/', $NachwirkZeitString, $match)) ? intval($match[0]) : 10;
             $warnsource = "MeteoBlue-Daten";
             $NewStatusArray = WindToolsHelper::berechneSchutzstatusMitNachwirkung(
+                $SchutzObjektBasics,
+                $warnsource,
+                $windInObjHoehe,
+                $boeInObjHoehe,
+                $minWind,
+                $minGust,
+                $richtung,
+                $kuerzelArray,
+                $NachwirkZeit,
+                $this->GetIDForIdent("Status_" . $ident), 
+                $this->GetIDForIdent("Warnung_" . $ident),
+                $this->GetIDForIdent("WarnungBoe_" . $ident),
+                
+            );
+            
+
+/*
+public static function berechneSchutzstatusMitNachwirkung(
+    array $schutzObjektBasicData,
+    int $modus,
+    string $warnsource,    
+    float $windMS,
+    float $gustMS,
+    float $thresholdWind,
+    float $thresholdGust,
+    float $richtung,
+    array $kuerzelArray,
+    int $nachwirkMinuten,
+    int $idstatusStr,
+    int $idWarnWind,
+    int $idWarnGust,
+    string $objektName = "",
+    float $zielHoehe
+): array {
+
+            $NewStatusArray = WindToolsHelper::berechneSchutzstatusMitNachwirkung(
+                $SchutzObjektBasics,
                 $modus,
                 $warnsource,
                 $windInObjHoehe,
@@ -603,7 +493,7 @@ class windMonitorPro extends IPSModule {
                 $objekt["Label"] ?? "Unbenannt",
                 $hoehe
             );
-
+*/
 
             // Vorschau berechnen
             $BoeGefahrVorschau = WindToolsHelper::ermittleWindAufkommen($block, $minGust, $hoehe);
@@ -617,7 +507,8 @@ class windMonitorPro extends IPSModule {
                 // Fehlerbehandlung: JSON ist ungültig oder ist kein Array
                 // Preset array Statusdaten
                 $boeVorschauPreset = "{}";
-                $StatusCheckValuesJson = $this->getStatusPresetArray($name, $modus,$hoehe, 0, 0, 0, 0,$kuerzelArray, $boeVorschauPreset);
+                //$StatusCheckValuesJson = $this->getStatusPresetArray($objekt, $windInObjHoehe $windInObjHoehe,$kuerzelArray, $boeVorschauPreset$BoeGefahrVorschau);
+                $StatusCheckValuesJson = $this->getStatusPresetArray($objekt,$windInObjHoehe,$boeInObjHoehe,$kuerzelArray,$boeVorschauPreset);
                 SetValue($idstatusStr, json_encode($StatusCheckValuesJson));
             }
 
@@ -708,7 +599,9 @@ class windMonitorPro extends IPSModule {
         }
 
         $SammelWarnung = false;
+        $SchutzObjektBasics = []; 
         foreach ($schutzArrayForm as $objekt) {
+            $SchutzObjektBasics[] = $objekt;
             $name = $objekt["Label"] ?? "Unbenannt";
             $modus =$objekt["Warnmodus"]; 
             $ident = preg_replace('/\W+/', '_', $name);
@@ -729,7 +622,7 @@ class windMonitorPro extends IPSModule {
             $NachwirkZeit = (preg_match('/\d+/', $NachwirkZeitString, $match)) ? intval($match[0]) : $this->ReadPropertyInteger('ReadIntervall');
             $warnsource = "Eigene Wetterstation";
             $NewStatusArray = WindToolsHelper::berechneSchutzstatusMitNachwirkung(
-                $modus,
+                $SchutzObjektBasics,
                 $warnsource,
                 $windInObjHoehe,
                 $boeInObjHoehe,
@@ -741,8 +634,6 @@ class windMonitorPro extends IPSModule {
                 $idstatusStr, 
                 $this->GetIDForIdent("Warnung_" . $ident),
                 $this->GetIDForIdent("WarnungBoe_" . $ident),
-                $name,
-                $hoehe
             );
 
             $statusJson = GetValueString($idstatusStr);
@@ -750,7 +641,8 @@ class windMonitorPro extends IPSModule {
 
             if ($statusJson === '' || !is_array($StatusCheckValuesJson)) {
                 $boeVorschauPreset = "{}";
-                $StatusCheckValuesJson = $this->getStatusPresetArray($name, $modus,$hoehe, 0, 0, 0, 0, $kuerzelArray, $boeVorschauPreset);
+                //$StatusCheckValuesJson = $this->getStatusPresetArray($name, $modus,$hoehe, 0, 0, 0, 0, $kuerzelArray, $boeVorschauPreset);
+                $StatusCheckValuesJson = $this->getStatusPresetArray($objekt,$windInObjHoehe,$boeInObjHoehe,$kuerzelArray,$boeVorschauPreset);
                 SetValue($idstatusStr, json_encode($StatusCheckValuesJson));
             }
 
@@ -937,22 +829,11 @@ class windMonitorPro extends IPSModule {
                 IPS_SetHidden($vid, false);
                 $alleVariablen[$idents[5]] = $vid;
   
-
                 $boeVorschauPreset = "{}";
                 $modus = 0;
-                $statusPreset = $this->getStatusPresetArray(
-                $name,
-                $modus,
-                $eintrag["Hoehe"] ?? 0,
-                $eintrag["MinWind"] ?? 0,
-                $eintrag["MinGust"] ?? 0,
-                0,
-                0,
-                isset($eintrag["RichtungsKuerzelListe"]) 
+                $statusPreset = $this->getStatusPresetArray($eintrag,0,0,isset($eintrag["RichtungsKuerzelListe"]) 
                     ? array_filter(array_map('trim', explode(',', $eintrag["RichtungsKuerzelListe"] )) ) 
-                    : [],
-                $boeVorschauPreset
-                );
+                    : [],$boeVorschauPreset);
 
                 SetValueString($vid, json_encode($statusPreset));
                 IPS_LogMessage("WMP-ApplyChanges", "Status-Variable mit Preset initialisiert: $idents[4] (VarID $vid)");
@@ -1038,11 +919,12 @@ class windMonitorPro extends IPSModule {
     }
 
     private function getStatusPresetArray(
-    string $name = "",
-    int $modus,
-    float $hoehe = 0,
-    float $minWind = 0,
-    float $minGust = 0,
+    array  $schutzObjektBasicData,    
+    //string $name = "",
+    //int $modus,
+    //float $hoehe = 0,
+    //float $minWind = 0,
+    //float $minGust = 0,
     float $windInObjHoehe = 0,
     float $boeInObjHoehe = 0,
     array $kuerzelArray = [],
@@ -1054,6 +936,28 @@ class windMonitorPro extends IPSModule {
             $boeVorschauJson = "{}";
         }
 
+        //Basiswerte aus Schutzarray der Formeingaben kopieren:
+        $schutzObjektData = $schutzObjektBasicData; 
+        //und zum kompletten Datenarry erweitern
+        $schutzObjektData['wind']               = round($windInObjHoehe, 1);
+        $schutzObjektData['boe']                = round($boeInObjHoehe, 1);
+        $schutzObjektData['richtungsliste']     = $kuerzelArray;
+        $schutzObjektData['warnsource']         = "";
+        $schutzObjektData['warnungTS']          = "";
+        $schutzObjektData['warnWind']           = false;
+        $schutzObjektData['warnGust']           = false;
+        $schutzObjektData['countWind']          = 0;
+        $schutzObjektData['countGust']          = 0;
+        $schutzObjektData['nachwirk']           = 0;
+        // boeVorschau ist hier ein reiner JSON-String (roher Text)
+        $schutzObjektData['boeVorschau']        = $boeVorschauJson;
+        return $schutzObjektData;
+
+    
+    
+
+
+/*
         return [
             'objekt'         => ($name === null || $name === '') ? '' : $name,
             'hoehe'          => $hoehe,
@@ -1074,6 +978,9 @@ class windMonitorPro extends IPSModule {
             // boeVorschau ist hier ein reiner JSON-String (roher Text)
             'boeVorschau'    => $boeVorschauJson
         ];
+
+*/
+
     }
 
 
@@ -1181,9 +1088,9 @@ class windMonitorPro extends IPSModule {
                 }
 
 
-            $hoehe = $StatusValues["hoehe"] ?? "–";
-            $minWind = $StatusValues["limitWind"] ?? "–";
-            $minGust = $StatusValues["limitBoe"] ?? "–";
+            $hoehe = $StatusValues["Hoehe"] ?? "–";
+            $minWind = $StatusValues["MinWind"] ?? "–";
+            $minGust = $StatusValues["MinGust"] ?? "–";
             $richtung = $objekt["RichtungsKuerzelListe"] ?? "–"; //Hole aus Schutzobjekt da hier als String abgelegt und so fuer HTML Ausgabe benoetigt wird
             $zaehlerWind = $StatusValues["countWind"] ?? "–";
             $zaehlerBoe = $StatusValues["countGust"] ?? "–";
