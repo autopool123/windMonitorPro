@@ -323,7 +323,7 @@ class windMonitorPro extends IPSModule {
             IPS_LogMessage("WindMonitorPro", "🛑 Meteoblue-Daten älter als 4 Stunden (UTC: $ModelZeit)");
             //SetValueBoolean($this->GetIDForIdent("WarnungAktiv"), false);
             SetValueBoolean($this->GetIDForIdent("FetchDatenVeraltet"), true);
-            $this->SetValueSetValue("LetzteAktion", "⏱️ ReadFromFile übersprungen: Daten von $ModelZeit");
+            $this->SetValue("LetzteAktion", "⏱️ ReadFromFile übersprungen: Daten von $ModelZeit");
         return;
         } else {
             $this->SetValue("SchutzStatusText", "✅ MeteoBluedaten erfolgreich eingelesen und gespeichert mit MB-Timestamp: $ModelZeit");
