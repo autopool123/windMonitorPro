@@ -59,6 +59,7 @@ class WindToolsHelper
     }  
     
 public static function berechneSchutzstatusMitNachwirkung(
+    int $modus,
     string $warnsource,    
     float $windMS,
     float $gustMS,
@@ -169,6 +170,7 @@ public static function berechneSchutzstatusMitNachwirkung(
         'restzeit'    => $restNachwirkText,           
         'warnWind'    => $warnWind,
         'warnGust'    => $warnGust,
+        'modus'       => $modus,
         'countWind'   => $counterWind,
         'countGust'   => $counterGust,   
         'warnsource'  => $warnsourceNeu,       

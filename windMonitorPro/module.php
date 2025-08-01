@@ -568,6 +568,7 @@ class windMonitorPro extends IPSModule {
         $SammelWarnung = false;
         foreach ($schutzArrayForm as $objekt) {
             $name = $objekt["Label"] ?? "Unbenannt";
+            $modus =$objekt["Warnmodus"]; 
             $ident = preg_replace('/\W+/', '_', $name);
             $minWind = $objekt["MinWind"] ?? 10.0;
             $minGust = $objekt["MinGust"] ?? 14.0;
@@ -587,6 +588,7 @@ class windMonitorPro extends IPSModule {
             $NachwirkZeit = (preg_match('/\d+/', $NachwirkZeitString, $match)) ? intval($match[0]) : 10;
             $warnsource = "MeteoBlue-Daten";
             $NewStatusArray = WindToolsHelper::berechneSchutzstatusMitNachwirkung(
+                $modus,
                 $warnsource,
                 $windInObjHoehe,
                 $boeInObjHoehe,
@@ -615,7 +617,6 @@ class windMonitorPro extends IPSModule {
                 // Fehlerbehandlung: JSON ist ungültig oder ist kein Array
                 // Preset array Statusdaten
                 $boeVorschauPreset = "{}";
-                $modus = 0;
                 $StatusCheckValuesJson = $this->getStatusPresetArray($name, $modus,$hoehe, 0, 0, 0, 0,$kuerzelArray, $boeVorschauPreset);
                 SetValue($idstatusStr, json_encode($StatusCheckValuesJson));
             }
@@ -709,6 +710,7 @@ class windMonitorPro extends IPSModule {
         $SammelWarnung = false;
         foreach ($schutzArrayForm as $objekt) {
             $name = $objekt["Label"] ?? "Unbenannt";
+            $modus =$objekt["Warnmodus"]; 
             $ident = preg_replace('/\W+/', '_', $name);
             $minWind = $objekt["MinWind"] ?? 10.0;
             $minGust = $objekt["MinGust"] ?? 14.0;
@@ -727,6 +729,7 @@ class windMonitorPro extends IPSModule {
             $NachwirkZeit = (preg_match('/\d+/', $NachwirkZeitString, $match)) ? intval($match[0]) : $this->ReadPropertyInteger('ReadIntervall');
             $warnsource = "Eigene Wetterstation";
             $NewStatusArray = WindToolsHelper::berechneSchutzstatusMitNachwirkung(
+                $modus,
                 $warnsource,
                 $windInObjHoehe,
                 $boeInObjHoehe,
@@ -747,7 +750,6 @@ class windMonitorPro extends IPSModule {
 
             if ($statusJson === '' || !is_array($StatusCheckValuesJson)) {
                 $boeVorschauPreset = "{}";
-                $modus = 0;
                 $StatusCheckValuesJson = $this->getStatusPresetArray($name, $modus,$hoehe, 0, 0, 0, 0, $kuerzelArray, $boeVorschauPreset);
                 SetValue($idstatusStr, json_encode($StatusCheckValuesJson));
             }
