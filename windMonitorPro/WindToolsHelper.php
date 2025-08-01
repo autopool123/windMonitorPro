@@ -160,9 +160,10 @@ public static function berechneSchutzstatusMitNachwirkung(
 
     // geaenderte und Basic-Statusdaten zurueckgeben
     $StatusCheckValuesJson = [
-        'MinWind'     => $thresholdWind,
-        'MinGust'     => $thresholdGust,
-        'Hoehe'       => $zielHoehe,                
+        'objekt'      => $objektName,
+        'limitWind'   => $thresholdWind,
+        'limitBoe'    => $thresholdGust,
+        'hoehe'       => $zielHoehe,                
         'restzeit'    => $restNachwirkText,           
         'warnWind'    => $warnWind,
         'warnGust'    => $warnGust,
