@@ -200,6 +200,21 @@
             "digits": 1, 
             "step": 0.5
           }
+        },
+        {
+          "caption": "Warnungsbasis",
+          "name": "Warnmodus",
+          "width": "150px",
+          "add": 2,
+          "edit": {
+            "type": "Select",
+            "options": [
+              { "label": "Keine Warnung ausgeben", "value": 0 },
+              { "label": "Nur eigene Wetterdaten", "value": 1 },
+              { "label": "Nur Prognose", "value": 2 },
+              { "label": "Eigene und Prognose", "value": 3 }
+            ]
+          }
         }
       ]
     } 

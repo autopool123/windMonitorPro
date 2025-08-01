@@ -607,6 +607,7 @@ class windMonitorPro extends IPSModule {
             $BoeGefahrVorschau = WindToolsHelper::ermittleWindAufkommen($block, $minGust, $hoehe);
             //Array um BoeVorschau erweitern
             $NewStatusArray['boeVorschau'] = $BoeGefahrVorschau;
+
             //pruefe ob gueltige Json-Eintraege in Status-Variable vorhanden, sonst Preset und später beschreiben...
             $statusJson = GetValueString($idstatusStr);
             $StatusCheckValuesJson = json_decode($statusJson, true);
@@ -614,7 +615,8 @@ class windMonitorPro extends IPSModule {
                 // Fehlerbehandlung: JSON ist ungültig oder ist kein Array
                 // Preset array Statusdaten
                 $boeVorschauPreset = "{}";
-                $StatusCheckValuesJson = $this->getStatusPresetArray($name, $hoehe, 0, 0, 0, 0,$kuerzelArray, $boeVorschauPreset);
+                $modus = 0;
+                $StatusCheckValuesJson = $this->getStatusPresetArray($name, $modus,$hoehe, 0, 0, 0, 0,$kuerzelArray, $boeVorschauPreset);
                 SetValue($idstatusStr, json_encode($StatusCheckValuesJson));
             }
 
@@ -745,7 +747,8 @@ class windMonitorPro extends IPSModule {
 
             if ($statusJson === '' || !is_array($StatusCheckValuesJson)) {
                 $boeVorschauPreset = "{}";
-                $StatusCheckValuesJson = $this->getStatusPresetArray($name, $hoehe, 0, 0, 0, 0, $kuerzelArray, $boeVorschauPreset);
+                $modus = 0;
+                $StatusCheckValuesJson = $this->getStatusPresetArray($name, $modus,$hoehe, 0, 0, 0, 0, $kuerzelArray, $boeVorschauPreset);
                 SetValue($idstatusStr, json_encode($StatusCheckValuesJson));
             }
 
@@ -878,6 +881,7 @@ class windMonitorPro extends IPSModule {
                 strpos($ident, "WarnungBoe_") === 0 ||
                 strpos($ident, "WarnCount_") === 0 ||
                 strpos($ident, "WarnCountBoe_") === 0 ||
+                strpos($ident, "WarnModus_") === 0 ||
                 strpos($ident, "Status_") === 0) {
                 $alleVariablen[$ident] = $objID;
             }
@@ -891,6 +895,7 @@ class windMonitorPro extends IPSModule {
                 "WarnungBoe_" . preg_replace('/\W+/', '_', $name),
                 "WarnCount_" . preg_replace('/\W+/', '_', $name),
                 "WarnCountBoe_" . preg_replace('/\W+/', '_', $name),
+                "WarnModus_" . preg_replace('/\W+/', '_', $name),
                 "Status_" . preg_replace('/\W+/', '_', $name),
             ];
 
@@ -920,14 +925,22 @@ class windMonitorPro extends IPSModule {
                 IPS_SetHidden($vid, false);
                 $alleVariablen[$idents[3]] = $vid;
             }
-            if (!array_key_exists($idents[4], $alleVariablen)) { // Status_...
-                $vid = $this->RegisterVariableString($idents[4], "Status: " . $name);
+            if (!array_key_exists($idents[4], $alleVariablen)) { // WarnCountBoe_...
+                $vid = $this->RegisterVariableInteger($idents[4], "Warnmodus: " . $name);
                 IPS_SetHidden($vid, false);
                 $alleVariablen[$idents[4]] = $vid;
+            }            
+            if (!array_key_exists($idents[5], $alleVariablen)) { // Status_...
+                $vid = $this->RegisterVariableString($idents[5], "Status: " . $name);
+                IPS_SetHidden($vid, false);
+                $alleVariablen[$idents[5]] = $vid;
+  
 
                 $boeVorschauPreset = "{}";
+                $modus = 0;
                 $statusPreset = $this->getStatusPresetArray(
                 $name,
+                $modus,
                 $eintrag["Hoehe"] ?? 0,
                 $eintrag["MinWind"] ?? 0,
                 $eintrag["MinGust"] ?? 0,
@@ -1024,6 +1037,7 @@ class windMonitorPro extends IPSModule {
 
     private function getStatusPresetArray(
     string $name = "",
+    int $modus,
     float $hoehe = 0,
     float $minWind = 0,
     float $minGust = 0,
@@ -1051,6 +1065,7 @@ class windMonitorPro extends IPSModule {
             'warnungTS'      => "",
             'warnWind'       => false,
             'warnGust'       => false,
+            'modus'          => $modus,
             'countWind'      => 0,
             'countGust'      => 0,
             'nachwirk'       => 0,
