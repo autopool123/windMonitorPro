@@ -87,6 +87,17 @@ class windMonitorPro extends IPSModule {
         $aktiv = $this->ReadPropertyBoolean("Aktiv");
 
         // 🔧 Profile erstellen
+        // Schutzmodus-Profil erstellen
+        if (!IPS_VariableProfileExists("WindPro.Schutzmodus")) {
+            IPS_CreateVariableProfile("WindPro.Schutzmodus", VARIABLETYPE_INTEGER);
+            IPS_SetVariableProfileIcon("WindPro.Schutzmodus", "Shield");
+
+            IPS_SetVariableProfileAssociation("WindPro.Schutzmodus", 0, "Keine Warnung ausgeben", "", -1);
+            IPS_SetVariableProfileAssociation("WindPro.Schutzmodus", 1, "Nur eigene Wetterdaten", "", -1);
+            IPS_SetVariableProfileAssociation("WindPro.Schutzmodus", 2, "Nur Prognose", "", -1);
+            IPS_SetVariableProfileAssociation("WindPro.Schutzmodus", 3, "Eigene und Prognose", "", -1);
+        }
+
         if (!IPS_VariableProfileExists("WindPro.Speed.1")) {
             IPS_CreateVariableProfile("WindPro.Speed.1", VARIABLETYPE_FLOAT);
             IPS_SetVariableProfileDigits("WindPro.Speed.1", 1);
@@ -878,7 +889,7 @@ private function EnsureRequiredVariables(array $schutzArrayForm): array
 
         // WarnModus
         if (!array_key_exists($idents[4], $alleVariablen)) {
-            $vid = $this->RegisterVariableInteger($idents[4], "Warnmodus: " . $name);
+            $vid = $this->RegisterVariableInteger($idents[4], "Warnmodus: " . $name, "WindPro.Schutzmodus");
             IPS_SetHidden($vid, false);
             $alleVariablen[$idents[4]] = $vid;
         } else {
