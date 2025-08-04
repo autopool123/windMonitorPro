@@ -60,6 +60,7 @@ class WindToolsHelper
     
 public static function berechneSchutzstatusMitNachwirkung(
     array $schutzObjektBasicData,
+    int $idwarnmodus,
     string $warnsource,    
     float $windMS,
     float $gustMS,
@@ -102,8 +103,9 @@ public static function berechneSchutzstatusMitNachwirkung(
     $NeueGustWarn = false;
 
     // Neue Warnbedingungen prüfen
-    $warnWind = $inSektor && ($windMS >= $thresholdWind);
-    $warnGust = $inSektor && ($gustMS >= $thresholdGust);
+    $warnmodus = GetValueInteger($idwarnmodus);
+    $warnWind = ($warnmodus == 1 || warnmodus == 3) && $inSektor && ($windMS >= $thresholdWind);
+    $warnGust = ($warnmodus == 1 || warnmodus == 3) && $inSektor && ($gustMS >= $thresholdGust);
     
     // Counter initialisieren & gegebenenfalls erhöhen
 
@@ -114,11 +116,19 @@ public static function berechneSchutzstatusMitNachwirkung(
         $counterWind++;
         $warnsourceNeu = $warnsource;
         $NeueWindWarn = true;
+        //Beim eintreffen einer neuen Windwarnung darf die Nachwirkzeit einmalig auf 0 gesetzt werden. Grund ist die Aenderung des Warnmodus (Abwahl) soll sofort wirken...
+        if (isset($status['nachwirk'])) {
+            $status['nachwirk'] = "00:00";
+        }
     }
     if ($warnGust && !$WarnGustAlt) {
         $counterGust++;
         $warnsourceNeu = $warnsource;
         $NeueGustWarn = true;
+        //Beim eintreffen einer neuen Windwarnung darf die Nachwirkzeit einmalig auf 0 gesetzt werden. Grund ist die Aenderung des Warnmodus (Abwahl) soll sofort wirken...
+        if (isset($status['nachwirk'])) {
+            $status['nachwirk'] = "00:00";
+        }
     }
 
     // Restzeit aus letztem Status parsen
@@ -160,6 +170,7 @@ public static function berechneSchutzstatusMitNachwirkung(
     //Basiswwerte aus Schutzarray der Formeingaben kopieren:
     $StatusCheckValuesJson = $schutzObjektBasicData;
     // dazu die geaenderten Parameter ins Array schreiben
+    $StatusCheckValuesJson['nachwirk']           = $restNachwirkText;    
     $StatusCheckValuesJson['wind']               = round($windMS, 1);
     $StatusCheckValuesJson['boe']                = round($gustMS, 1);
     $StatusCheckValuesJson['richtungsliste']     = $kuerzelArray;
@@ -169,10 +180,10 @@ public static function berechneSchutzstatusMitNachwirkung(
     $StatusCheckValuesJson['warnGust']           = $warnGust;
     $StatusCheckValuesJson['countWind']          = $counterWind;
     $StatusCheckValuesJson['countGust']          = $counterGust;
-    $StatusCheckValuesJson['nachwirk']           = $restNachwirkText;
+
     
     $name = $StatusCheckValuesJson['Label'];
-    IPS_LogMessage("CheckSchutzstatus", "Objekt: $name, Wind: $warnWind Boe: $warnWind im Sektor: $inSektor  ");
+    //IPS_LogMessage("CheckSchutzstatus", "Objekt: $name, Wind: $warnWind Boe: $warnGust im Sektor: $inSektor  ");
     return $StatusCheckValuesJson;
 }  
 

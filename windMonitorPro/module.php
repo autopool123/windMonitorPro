@@ -78,7 +78,7 @@ class windMonitorPro extends IPSModule {
         //if ($nachwirkzeitMin < $readIntervall) {
             // Anpassen mit korrektem Log und evtl. Notifikation für den Benutzer
         //    $this->WritePropertyInteger('NachwirkzeitMin', $readIntervall);
-        //    IPS_LogMessage('WindMonitorPro', 'Nachwirkzeit wurde auf ReadIntervall angehoben, um Überschreiben zu vermeiden.');
+        //    IPS_LogMessage('WindMonitorPro', 'Nachwirkzeit wurde auf ReadIntervall angehoben, um ueberschreiben zu vermeiden.');
         //}
 
         //Neuladen falls Anpassung erfolgt ist
@@ -164,6 +164,17 @@ class windMonitorPro extends IPSModule {
         $this->RegisterVariableBoolean("FetchDatenVeraltet", "Daten zu alt", "~Alert");
         $this->RegisterVariableString("LetzteAktion", "Letzte Aktion");
 
+        /*
+        //Im Moment nicht realisiert koennte aber noch sinnvoll sein. Arbeiten mit der Systemfunktion MessageSink($TimeStamp, $SenderID, $Message, $Data) (s. unter nach RequestAction)
+        //bedeutet, es aendert sich eine Variable die hier in VM_UPDATE registriert wurde woraufhin MessageSink aufgerufen wird und auf ein Ereignis reagiert wird.  
+        // Nachricht für automatische Reaktion registrieren
+        $vid = @$this->GetIDForIdent("WindSpeed");
+        if ($vid > 0) {
+            $this->RegisterMessage($vid, VM_UPDATE); // Reagiere auf Wertaenderung
+        }
+        */
+
+
         //Abrufintervalle und Nachwirkzeit
         $this->RegisterVariableString("FetchIntervalInfo", "Abrufintervall (Info)", "~TextBox");
         $this->RegisterVariableString("MaxDatenAlterInfo", "Max Alter MB-Daten", "~TextBox");
@@ -240,6 +251,24 @@ class windMonitorPro extends IPSModule {
         }
     }
 
+
+    //Funktion MessageSink wird derzeit nicht verwendet. Ist gedacht um auf Aenderungen von Statusvariablen zu reagieren welche aber vorher registriert werden müssen
+    public function MessageSink($TimeStamp, $SenderID, $Message, $Data)
+        {
+            if ($Message == VM_UPDATE) {
+                $newValue = $Data[0];
+                $oldValue = $Data[2];
+
+                IPS_LogMessage("WindMonitor", "Windgeschwindigkeit geaendert: Alt=$oldValue, Neu=$newValue");
+
+                // Beispiel: Wenn Wind > 50 km/h, Alarm auslösen
+            if ($SenderID == $this->GetIDForIdent("WindSpeed")) {
+                IPS_LogMessage("WindMonitor", "🌬️ Windgeschwindigkeit geaendert: $oldValue → $newValue");
+            } elseif ($SenderID == $this->GetIDForIdent("WindDirection")) {
+                IPS_LogMessage("WindMonitor", "🧭 Windrichtung geaendert: $oldValue $newValue");
+            }
+        }   
+    } 
     public function UpdateFromMeteoblue() {
         //$modus = $this->ReadPropertyString("Modus");Relikt aus erster Version
         $logtag = "WMP_UpdateFromMeteoblue";
@@ -375,11 +404,7 @@ class windMonitorPro extends IPSModule {
 // Hier gehts weiter----- Statusvariablen schreiben 
 
 
-        $durchschnitt = WindToolsHelper::berechneDurchschnittswerte($block, $index, 4);
-        $SpeedMS = $durchschnitt['avgWind'] ?? 0;
-        $SpeedMaxMS = $durchschnitt['maxWind'] ?? 0;
-        $GustMaxM = $durchschnitt['maxGust'] ?? 0;
-        $DirGrad = $durchschnitt['avgDir'] ?? 0;
+
         
         //💾 Beschreiben der Status-Variablen 
         $windInObjHoehe = WindToolsHelper::windUmrechnungSmart($wind, WindToolsHelper::$referenzhoehe, WindToolsHelper::$zielHoeheStandard, WindToolsHelper::$gelaendeAlpha);
@@ -399,6 +424,11 @@ class windMonitorPro extends IPSModule {
         IPS_LogMessage($logtag, "🔍 Std-Werte: UV: $uv, Temperature: $temp, tag: $isDay, Regen: $rain");
         //Falls Durchschnittwerte in Statusvariablen gespeichert werden sollen:
         /*
+        $durchschnitt = WindToolsHelper::berechneDurchschnittswerte($block, $index, 4);
+        $SpeedMS = $durchschnitt['avgWind'] ?? 0;
+        $SpeedMaxMS = $durchschnitt['maxWind'] ?? 0;
+        $GustMaxM = $durchschnitt['maxGust'] ?? 0;
+        $DirGrad = $durchschnitt['avgDir'] ?? 0;
         SetValueFloat($this->GetIDForIdent("SpeedMS"), $SpeedMS);
         SetValueFloat($this->GetIDForIdent("SpeedMaxMS"), $SpeedMaxMS);
         SetValueFloat($this->GetIDForIdent("GustMaxMS"), $GustMaxM);
@@ -430,6 +460,7 @@ class windMonitorPro extends IPSModule {
             $windInObjHoehe = WindToolsHelper::windUmrechnungSmart($wind, WindToolsHelper::$referenzhoehe, $hoehe, WindToolsHelper::$gelaendeAlpha);
             $boeInObjHoehe = WindToolsHelper::windUmrechnungSmart($boe, WindToolsHelper::$referenzhoehe, $hoehe, WindToolsHelper::$gelaendeAlpha);
             $idstatusStr = $this->GetIDForIdent("Status_" . $ident);
+            $idwarnModus = $this->GetIDForIdent("WarnModus_" . $ident);
 
             //Check ob Windrichtung die Warnung fuer Schutzobjekt betrifft
             //$inSektor = WindToolsHelper::richtungPasst($richtung, $kuerzelArray);//wird jetzt in berechneSchutzstatusMitNachwirkung behandelt
@@ -440,6 +471,7 @@ class windMonitorPro extends IPSModule {
             $warnsource = "MeteoBlue-Daten";
             $NewStatusArray = WindToolsHelper::berechneSchutzstatusMitNachwirkung(
                 $objekt,
+                $idwarnModus,
                 $warnsource,
                 $windInObjHoehe,
                 $boeInObjHoehe,
@@ -455,43 +487,6 @@ class windMonitorPro extends IPSModule {
             );
             
 
-/*
-public static function berechneSchutzstatusMitNachwirkung(
-    array $schutzObjektBasicData,
-    int $modus,
-    string $warnsource,    
-    float $windMS,
-    float $gustMS,
-    float $thresholdWind,
-    float $thresholdGust,
-    float $richtung,
-    array $kuerzelArray,
-    int $nachwirkMinuten,
-    int $idstatusStr,
-    int $idWarnWind,
-    int $idWarnGust,
-    string $objektName = "",
-    float $zielHoehe
-): array {
-
-            $NewStatusArray = WindToolsHelper::berechneSchutzstatusMitNachwirkung(
-                $SchutzObjektBasics,
-                $modus,
-                $warnsource,
-                $windInObjHoehe,
-                $boeInObjHoehe,
-                $minWind,
-                $minGust,
-                $richtung,
-                $kuerzelArray,
-                $NachwirkZeit,
-                $this->GetIDForIdent("Status_" . $ident), 
-                $this->GetIDForIdent("Warnung_" . $ident),
-                $this->GetIDForIdent("WarnungBoe_" . $ident),
-                $objekt["Label"] ?? "Unbenannt",
-                $hoehe
-            );
-*/
 
             // Vorschau berechnen
             $BoeGefahrVorschau = WindToolsHelper::ermittleWindAufkommen($block, $minGust, $hoehe);
@@ -609,6 +604,7 @@ public static function berechneSchutzstatusMitNachwirkung(
             $windInObjHoehe = WindToolsHelper::windUmrechnungSmart($wind, $messniveau, $hoehe, WindToolsHelper::$gelaendeAlpha);
             $boeInObjHoehe = WindToolsHelper::windUmrechnungSmart($gust, $messniveau, $hoehe, WindToolsHelper::$gelaendeAlpha);
             $idstatusStr = $this->GetIDForIdent("Status_" . $ident);
+            $idwarnModus = $this->GetIDForIdent("WarnModus_" . $ident);
             if ($idstatusStr === false) {
                 IPS_LogMessage($logtag, "Statusvariable für $ident nicht gefunden.");
                 continue;
@@ -619,6 +615,7 @@ public static function berechneSchutzstatusMitNachwirkung(
             $warnsource = "Eigene Wetterstation";
             $NewStatusArray = WindToolsHelper::berechneSchutzstatusMitNachwirkung(
                 $objekt,
+                $idwarnModus,
                 $warnsource,
                 $windInObjHoehe,
                 $boeInObjHoehe,
