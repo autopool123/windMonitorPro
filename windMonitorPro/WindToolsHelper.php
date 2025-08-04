@@ -104,8 +104,8 @@ public static function berechneSchutzstatusMitNachwirkung(
 
     // Neue Warnbedingungen prüfen
     $warnmodus = GetValueInteger($idwarnmodus);
-    $warnWind = ($warnmodus == 1 || warnmodus == 3) && $inSektor && ($windMS >= $thresholdWind);
-    $warnGust = ($warnmodus == 1 || warnmodus == 3) && $inSektor && ($gustMS >= $thresholdGust);
+    $warnWind = ($warnmodus == 1 || $warnmodus == 3) && $inSektor && ($windMS >= $thresholdWind);
+    $warnGust = ($warnmodus == 1 || $warnmodus == 3) && $inSektor && ($gustMS >= $thresholdGust);
     
     // Counter initialisieren & gegebenenfalls erhöhen
 
