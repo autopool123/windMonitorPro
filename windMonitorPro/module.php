@@ -825,7 +825,38 @@ public function RequestAction($Ident, $Value) {
         }
         IPS_LogMessage("WindMonitorPro", "🧹 Schutzstatus zurückgesetzt");
     }
+    private function CreateActionScriptForIdent(string $ident, int $variableID): void
+    {
+        $scriptIdent = "Action_Warnmodus";
 
+        // Prüfen, ob zentrales Skript bereits existiert
+        $scriptID = @IPS_GetObjectIDByIdent($scriptIdent, $this->InstanceID);
+        if ($scriptID === false) {
+            $scriptID = IPS_CreateScript(0); // PHP-Skript
+            IPS_SetName($scriptID, "WarnmodusAktion");
+            IPS_SetIdent($scriptID, $scriptIdent);
+            IPS_SetParent($scriptID, $this->InstanceID);
+
+            // Zentrales Skript für alle Warnmodus-Variablen
+            $scriptCode = <<<EOD
+    <?php
+    \$variableID = \$_IPS['VARIABLE'];
+    \$value = \$_IPS['VALUE'];
+    \$ident = IPS_GetObject(\$variableID)['ObjectIdent'];
+    \$instanceID = IPS_GetParent(\$variableID);
+    IPS_RequestAction(\$instanceID, \$ident, \$value);
+    IPS_LogMessage("Warnmodus", "[\$ident] wurde auf [\$value] gesetzt");
+    EOD;
+
+            IPS_SetScriptContent($scriptID, $scriptCode);
+        }
+
+        // Aktionsskript zuweisen
+        IPS_SetVariableCustomAction($variableID, $scriptID);
+    }
+
+
+/*
     private function CreateActionScriptForIdent(string $ident, int $variableID): void
     {
         $scriptIdent = "Action_" . $ident;
@@ -838,14 +869,15 @@ public function RequestAction($Ident, $Value) {
             IPS_SetIdent($scriptID, $scriptIdent);
             IPS_SetParent($scriptID, $this->InstanceID);
 
-            $scriptCode = "<?php\nIPS_RequestAction(" . $this->InstanceID . ", \"" . $ident . "\", \$IPS_VALUE);";
+            $scriptCode = "<?php\nIPS_RequestAction(" . $this->InstanceID . ", \"" . $ident . "\", \$_IPS['VALUE']);";
+
             IPS_SetScriptContent($scriptID, $scriptCode);
         }
 
         // Aktionsskript zuweisen
         IPS_SetVariableCustomAction($variableID, $scriptID);
     }
-
+*/
     private function EnsureRequiredVariables(array $schutzArrayForm): array
 {
     $genutzteIdents = [];
