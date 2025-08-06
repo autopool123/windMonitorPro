@@ -20,7 +20,13 @@
           "caption": "📁 Lese Datei-Daten und prüfe Schutzstatus",
           "confirmation": "Möchtest Du auslesen den Schutzstatus prüfen?",
           "onClick": "return IPS_RequestAction($id, 'UpdateWind', '');"
-        },        
+        },   
+        {
+          "type": "Button",
+          "caption": "Eigene Wetterstation auswerten",
+          "confirmation": "Möchtest Du auslesen den Schutzstatus prüfen?",
+          "onClick": "return IPS_RequestAction($id, 'AuswertenEigeneStation', '');"
+        },     
         {
           "type": "Button",
           "caption": "🧹 Schutzstatus zurücksetzen",
@@ -54,12 +60,6 @@
         "value": "basic-1h_wind-15min"
       }
     ]
-    },
-    {
-      "type": "Button",
-      "caption": "Eigene Wetterstation auswerten",
-      "onClick": "return IPS_RequestAction($id, 'AuswertenEigeneStation', '');",
-      "enabled": true
     },
     {
       "name": "Latitude",
