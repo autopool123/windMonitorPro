@@ -251,7 +251,7 @@ public function RequestAction($Ident, $Value) {
             IPS_LogMessage("WindMonitorPro", "⏱️ RequestAction: $Ident führt jetzt AuswertenEigeneStationinArbeit() aus");
             return $this->AuswertenEigeneStationinArbeit();
 
-        case "ResetCounter":
+        case 3:
             return $this->PresetCounter(null, 0);
 
         case "ResetStatus":
@@ -264,20 +264,24 @@ public function RequestAction($Ident, $Value) {
                 if ($vid > 0) {
                     SetValueInteger($vid, $Value);
 
+/* Solange die Form mit form.json angelegt wird funktioniert das aktualisieren der Form-Konfiguration nicht.. 
+    UpdateFormField() ist ein Werkzeug fuer dynamische Module, aber nur in Kombination mit GetConfigurationForm()                    
                     // 🛠️ Konfiguration aktualisieren
                     $label = substr($Ident, strlen("WarnModus_"));
-                    $schutzobjekte = json_decode($this->ReadPropertyString("Schutzobjekte"), true);
-
+                    $schutzobjekte = json_decode($this->ReadPropertyString("Schutzobjekte"), true); 
                     foreach ($schutzobjekte as &$eintrag) {
-                        if ($eintrag["Label"] === $label) {
-                            $eintrag["Modus"] = $Value;
-                            IPS_LogMessage("WindMonitorPro", "🔄 Konfiguration aktualisiert: $label => Modus = $Value");
+                        $cleanLabel = preg_replace('/\W+/', '_', $eintrag["Label"]);
+                        if ($cleanLabel === $label) {
+                            $eintrag["Warnmodus"] = $Value;
+                            IPS_LogMessage("WindMonitorPro", "🔄 Konfiguration aktualisiert: {$eintrag["Label"]} => Warnmodus = $Value");
                             break;
                         }
                     }
 
                     // 📝 Konfiguration zurückschreiben
                     $this->UpdateFormField("Schutzobjekte", "value", json_encode($schutzobjekte));
+*/
+
                     return;
                 }
             }
@@ -822,7 +826,27 @@ public function RequestAction($Ident, $Value) {
         IPS_LogMessage("WindMonitorPro", "🧹 Schutzstatus zurückgesetzt");
     }
 
-private function EnsureRequiredVariables(array $schutzArrayForm): array
+    private function CreateActionScriptForIdent(string $ident, int $variableID): void
+    {
+        $scriptIdent = "Action_" . $ident;
+
+        // Prüfen, ob Skript bereits existiert
+        $scriptID = @IPS_GetObjectIDByIdent($scriptIdent, $this->InstanceID);
+        if ($scriptID === false) {
+            $scriptID = IPS_CreateScript(0); // PHP-Skript
+            IPS_SetName($scriptID, $scriptIdent);
+            IPS_SetIdent($scriptID, $scriptIdent);
+            IPS_SetParent($scriptID, $this->InstanceID);
+
+            $scriptCode = "<?php\nIPS_RequestAction(" . $this->InstanceID . ", \"" . $ident . "\", \$IPS_VALUE);";
+            IPS_SetScriptContent($scriptID, $scriptCode);
+        }
+
+        // Aktionsskript zuweisen
+        IPS_SetVariableCustomAction($variableID, $scriptID);
+    }
+
+    private function EnsureRequiredVariables(array $schutzArrayForm): array
 {
     $genutzteIdents = [];
     $alleVariablen = [];
@@ -892,9 +916,14 @@ private function EnsureRequiredVariables(array $schutzArrayForm): array
             $vid = $this->RegisterVariableInteger($idents[4], "Warnmodus: " . $name, "WindPro.Schutzmodus");
             IPS_SetHidden($vid, false);
             $alleVariablen[$idents[4]] = $vid;
+
+            // 🧰 Aktionsskript erzeugen und zuweisen
+            $this->CreateActionScriptForIdent($idents[4], $vid);
         } else {
             $vid = $alleVariablen[$idents[4]];
         }
+
+
 
         // 🔄 Wert aus Form setzen
         $modus = isset($eintrag["Warnmodus"]) ? (int)$eintrag["Warnmodus"] : 0;
