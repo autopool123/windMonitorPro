@@ -199,7 +199,7 @@ class windMonitorPro extends IPSModule {
             return;
         }
         //Zuweisung der Funktionsrueckgabe alle "gefundenenen Variablen" und "benoetigte Variablen". In der Funktion werden die nicht vorhandenen Variablen angelegt
-        [$alleVariablen, $genutzteIdents] = $this->EnsureRequiredVariables($schutzArrayForm);
+        [$alleVariablen, $genutzteIdents] = $this->EnsureRequiredVariables($schutzArrayForm,$formSetup = true);
         //Loeschen der vorhandenen aber nicht benoetigten Variablen
         $this->CleanupUnusedVariables($alleVariablen, $genutzteIdents);    
 
@@ -513,7 +513,7 @@ public function RequestAction($Ident, $Value) {
             return;
         }
         //Zuweisung der Funktionsrueckgabe alle gefundenenen Variablen und benoetigte Variablen. In der Funktion werden die nicht vorhandenen Variablen angelegt
-        [$alleVariablen, $genutzteIdents] = $this->EnsureRequiredVariables($schutzArrayForm);
+        [$alleVariablen, $genutzteIdents] = $this->EnsureRequiredVariables($schutzArrayForm,$formSetup = false);
         //Loeschen der vorhandenen aber nicht benoetigten Variablen
         $this->CleanupUnusedVariables($alleVariablen, $genutzteIdents);
         
@@ -878,7 +878,7 @@ public function RequestAction($Ident, $Value) {
         IPS_SetVariableCustomAction($variableID, $scriptID);
     }
 */
-    private function EnsureRequiredVariables(array $schutzArrayForm): array
+    private function EnsureRequiredVariables(array $schutzArrayForm,$formSetup = false): array
 {
     $genutzteIdents = [];
     $alleVariablen = [];
@@ -955,12 +955,14 @@ public function RequestAction($Ident, $Value) {
             $vid = $alleVariablen[$idents[4]];
         }
 
+        if($formSetup) {
+            // 🔄 Wert aus Form setzen
+            $modus = isset($eintrag["Warnmodus"]) ? (int)$eintrag["Warnmodus"] : 0;
+            SetValueInteger($vid, $modus);
+            IPS_LogMessage("WMP-ApplyChanges", "Warnmodus gesetzt: $idents[4] = $modus (VarID $vid)");
+        }
 
 
-        // 🔄 Wert aus Form setzen
-        $modus = isset($eintrag["Warnmodus"]) ? (int)$eintrag["Warnmodus"] : 0;
-        SetValueInteger($vid, $modus);
-        IPS_LogMessage("WMP-ApplyChanges", "Warnmodus gesetzt: $idents[4] = $modus (VarID $vid)");
 
         // Status
         if (!array_key_exists($idents[5], $alleVariablen)) {
@@ -987,88 +989,6 @@ public function RequestAction($Ident, $Value) {
     return [$alleVariablen, $genutzteIdents];
 }
 
-/*
-    private function EnsureRequiredVariables(array $schutzArrayForm): array
-    {
-        $genutzteIdents = [];
-        $alleVariablen = [];
-
-        // Bestehende Schutzvariablen laden
-        $instanzObjekte = IPS_GetChildrenIDs($this->InstanceID);
-        foreach ($instanzObjekte as $objID) {
-            $ident = IPS_GetObject($objID)["ObjectIdent"];
-            if (strpos($ident, "Warnung_") === 0 ||
-                strpos($ident, "WarnungBoe_") === 0 ||
-                strpos($ident, "WarnCount_") === 0 ||
-                strpos($ident, "WarnCountBoe_") === 0 ||
-                strpos($ident, "WarnModus_") === 0 ||
-                strpos($ident, "Status_") === 0) {
-                $alleVariablen[$ident] = $objID;
-            }
-        }
-
-        foreach ($schutzArrayForm as $eintrag) {
-            $name = $eintrag["Label"] ?? "Unbenannt";
-
-            $idents = [
-                "Warnung_" . preg_replace('/\W+/', '_', $name),
-                "WarnungBoe_" . preg_replace('/\W+/', '_', $name),
-                "WarnCount_" . preg_replace('/\W+/', '_', $name),
-                "WarnCountBoe_" . preg_replace('/\W+/', '_', $name),
-                "WarnModus_" . preg_replace('/\W+/', '_', $name),
-                "Status_" . preg_replace('/\W+/', '_', $name),
-            ];
-
-            // Alle gesammelten Idents merken
-            foreach ($idents as $ident) {
-                $genutzteIdents[] = $ident;
-            }
-
-            // Pruefe und ggf. Variablen erstellen
-            if (!array_key_exists($idents[0], $alleVariablen)) { // Warnung_...
-                $vid = $this->RegisterVariableBoolean($idents[0], "Warnung: " . $name,"~Alert");
-                IPS_SetHidden($vid, false);
-                $alleVariablen[$idents[0]] = $vid;
-            }
-            if (!array_key_exists($idents[1], $alleVariablen)) { // WarnungBoe_...
-                $vid = $this->RegisterVariableBoolean($idents[1], "WarnungBoe: " . $name,"~Alert");
-                IPS_SetHidden($vid, false);
-                $alleVariablen[$idents[1]] = $vid;
-            }
-            if (!array_key_exists($idents[2], $alleVariablen)) { // WarnCount_...
-                $vid = $this->RegisterVariableInteger($idents[2], "WarnCount: " . $name);
-                IPS_SetHidden($vid, false);
-                $alleVariablen[$idents[2]] = $vid;
-            }
-            if (!array_key_exists($idents[3], $alleVariablen)) { // WarnCountBoe_...
-                $vid = $this->RegisterVariableInteger($idents[3], "WarnCountBoe: " . $name);
-                IPS_SetHidden($vid, false);
-                $alleVariablen[$idents[3]] = $vid;
-            }
-            if (!array_key_exists($idents[4], $alleVariablen)) { // WarnModus_...
-                $vid = $this->RegisterVariableInteger($idents[4], "Warnmodus: " . $name);
-                IPS_SetHidden($vid, false);
-                $alleVariablen[$idents[4]] = $vid;
-            }            
-            if (!array_key_exists($idents[5], $alleVariablen)) { // Status_...
-                $vid = $this->RegisterVariableString($idents[5], "Status: " . $name);
-                IPS_SetHidden($vid, false);
-                $alleVariablen[$idents[5]] = $vid;
-  
-                $boeVorschauPreset = "{}";
-                $modus = 0;
-                $statusPreset = $this->getStatusPresetArray($eintrag,0,0,isset($eintrag["RichtungsKuerzelListe"]) 
-                    ? array_filter(array_map('trim', explode(',', $eintrag["RichtungsKuerzelListe"] )) ) 
-                    : [],$boeVorschauPreset);
-
-                SetValueString($vid, json_encode($statusPreset));
-                IPS_LogMessage("WMP-ApplyChanges", "Status-Variable mit Preset initialisiert: $idents[4] (VarID $vid)");
-
-            }
-        }
-        return [$alleVariablen, $genutzteIdents];
-    }
-*/
     private function CleanupUnusedVariables(array $alleVariablen, array $genutzteIdents): void
     {
         foreach ($alleVariablen as $ident => $objID) {
