@@ -257,6 +257,43 @@ public function RequestAction($Ident, $Value) {
         case "ResetStatus":
             return $this->ResetSchutzStatus();
 
+        case "ShowDashboard":
+            // Uebergabe: $Value = Name/Label des Schutzobjekts (String), ggf. leer/null/false = zeige alle
+            // Schutzobjekte laden
+            $schutzobjekte = json_decode($this->ReadPropertyString("Schutzobjekte"), true);
+
+            // Filter fuer bestimmte Schutzobjekte vorbereiten
+            $selectedObjects = [];
+
+            if (!empty($Value)) {
+                // $Value kann String oder Array sein
+                $labelsToFind = is_array($Value) ? $Value : [$Value];
+
+                foreach ($schutzobjekte as $objekt) {
+                    foreach ($labelsToFind as $label) {
+                        $cleanLabel = preg_replace('/\W+/', '_', $objekt['Label']);
+                        if ($cleanLabel === $label || $objekt['Label'] === $label) {
+                            $selectedObjects[] = $objekt;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Falls keine Filterobjekte gefunden oder Wert leer, alle anzeigen
+            if (empty($selectedObjects)) {
+                $selectedObjects = $schutzobjekte;
+            }
+
+            // Dashboard generieren und speichern
+            $dashboardHtml = $this->erzeugeSchutzDashboard($selectedObjects, $this->InstanceID);
+            SetValue($this->GetIDForIdent("SchutzDashboardHTML"), $dashboardHtml);
+            // Gib das HTML aus, z.B. als Rueckgabe, Variablenwert, Webfront, etc.
+            //Dashboard aktualisieren
+            SetValue($this->GetIDForIdent("SchutzDashboardHTML"), $dashboardHtml);
+            return ; 
+
+
         default:
             // 🧠 Dynamische Behandlung für WarnModus_<Label>
             if (strpos($Ident, "WarnModus_") === 0) {
