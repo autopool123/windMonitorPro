@@ -66,36 +66,6 @@ class windMonitorPro extends IPSModule {
     public function ApplyChanges() {
         parent::ApplyChanges();
 
-        //ident der Modulinstanz setzen  
-            
-        $baseIdent = "WetterPrognose";
-        $finalIdent = $baseIdent;
-        $suffix = 1;
-
-        // Alle Instanzen dieses Moduls durchgehen
-        $instances = IPS_GetInstanceListByModuleID($this->GetModuleID());
-
-        foreach ($instances as $id) {
-            if ($id == $this->InstanceID) {
-                continue; // Eigene Instanz überspringen
-            }
-
-            $ident = IPS_GetObject($id)['ObjectIdent'];
-            if ($ident == $finalIdent) {
-                // Ident ist schon vergeben → neuen mit Suffix suchen
-                do {
-                    $finalIdent = $baseIdent . "_" . $suffix;
-                    $suffix++;
-                } while (self::IdentExists($finalIdent, $instances));
-                break;
-            }
-        }
-
-        // Ident setzen
-        IPS_SetIdent($this->InstanceID, $finalIdent);
-
-        
-
         // 1. Aktuelle Properties einmal lokal einlesen lesen
                 // Timerinterval aus Properties berechnen
         $fetchMin = $this->ReadPropertyInteger("FetchIntervall");//Zyklus zum aktualisieren der Meteofaten und speichern in Datei
@@ -122,10 +92,10 @@ class windMonitorPro extends IPSModule {
             IPS_CreateVariableProfile("WindPro.Schutzmodus", VARIABLETYPE_INTEGER);
             IPS_SetVariableProfileIcon("WindPro.Schutzmodus", "Shield");
 
-            IPS_SetVariableProfileAssociation("WindPro.Schutzmodus", 0, "nicht warnen", "", -1);
-            IPS_SetVariableProfileAssociation("WindPro.Schutzmodus", 1, "Station", "", -1);
-            IPS_SetVariableProfileAssociation("WindPro.Schutzmodus", 2, "Prognose", "", -1);
-            IPS_SetVariableProfileAssociation("WindPro.Schutzmodus", 3, "Station & Prognose", "", -1);
+            IPS_SetVariableProfileAssociation("WindPro.Schutzmodus", 0, "Keine Warnung ausgeben", "", -1);
+            IPS_SetVariableProfileAssociation("WindPro.Schutzmodus", 1, "Nur eigene Wetterdaten", "", -1);
+            IPS_SetVariableProfileAssociation("WindPro.Schutzmodus", 2, "Nur Prognose", "", -1);
+            IPS_SetVariableProfileAssociation("WindPro.Schutzmodus", 3, "Eigene und Prognose", "", -1);
         }
 
         if (!IPS_VariableProfileExists("WindPro.Speed.1")) {
@@ -201,6 +171,7 @@ class windMonitorPro extends IPSModule {
         $this->RegisterVariableString("SchutzHTML", "Schutzstatus (HTML)", "~HTMLBox");
         $this->RegisterVariableString("LetzterFetch", "Letzter API-Abruf", "~TextBox");
         $this->RegisterVariableString("LetzteAuswertungDaten", "Letzte Dateiverarbeitung", "~TextBox");
+        $this->RegisterVariableString("NachwirkEnde", "Nachwirkzeit endet um", "~TextBox");
         $this->RegisterVariableBoolean("FetchDatenVeraltet", "Daten zu alt", "~Alert");
         $this->RegisterVariableString("LetzteAktion", "Letzte Aktion");
 
@@ -261,101 +232,64 @@ class windMonitorPro extends IPSModule {
             
     }
 
-    public function RequestAction($Ident, $Value) {
-        // 🔍 Logging für Analysezwecke
-        IPS_LogMessage("WindMonitorPro", "⏱️ RequestAction erhalten: $Ident mit Wert=" . print_r($Value, true));
-        $this->SetValue("LetzteAktion", "🔀 RequestAction: $Ident Wert=" . print_r($Value, true) . " (" . date("d-m-Y H:i:s") . ")");
+public function RequestAction($Ident, $Value) {
+    // 🔍 Logging für Analysezwecke
+    IPS_LogMessage("WindMonitorPro", "⏱️ RequestAction erhalten: $Ident mit Wert=" . print_r($Value, true));
+    $this->SetValue("LetzteAktion", "🔀 RequestAction: $Ident Wert=" . print_r($Value, true) . " (" . date("d-m-Y H:i:s") . ")");
 
-        // 🔀 Verteile an Aktion basierend auf Ident
-        switch ($Ident) {
-            case "UpdateMeteoBlue":
-                IPS_LogMessage("WindMonitorPro", "⏱️ RequestAction: $Ident führt jetzt UpdateFromMeteoblue() aus");
-                return $this->UpdateFromMeteoblue();
+    // 🔀 Verteile an Aktion basierend auf Ident
+    switch ($Ident) {
+        case "UpdateMeteoBlue":
+            IPS_LogMessage("WindMonitorPro", "⏱️ RequestAction: $Ident führt jetzt UpdateFromMeteoblue() aus");
+            return $this->UpdateFromMeteoblue();
 
-            case "UpdateWind":
-                IPS_LogMessage("WindMonitorPro", "⏱️ RequestAction: $Ident führt jetzt UpdateWind() aus");
-                return $this->ReadFromFileAndUpdate();
+        case "UpdateWind":
+            IPS_LogMessage("WindMonitorPro", "⏱️ RequestAction: $Ident führt jetzt UpdateWind() aus");
+            return $this->ReadFromFileAndUpdate();
 
-            case "AuswertenEigeneStation":
-                IPS_LogMessage("WindMonitorPro", "⏱️ RequestAction: $Ident führt jetzt AuswertenEigeneStationinArbeit() aus");
-                return $this->AuswertenEigeneStationinArbeit();
+        case "AuswertenEigeneStation":
+            IPS_LogMessage("WindMonitorPro", "⏱️ RequestAction: $Ident führt jetzt AuswertenEigeneStationinArbeit() aus");
+            return $this->AuswertenEigeneStationinArbeit();
 
-            case 3:
-                return $this->PresetCounter(null, 0);
+        case 3:
+            return $this->PresetCounter(null, 0);
 
-            case "ResetStatus":
-                return $this->ResetSchutzStatus();
-            
+        case "ResetStatus":
+            return $this->ResetSchutzStatus();
 
-            case "ShowDashboard":
-                // Uebergabe: $Value = Name/Label des Schutzobjekts (String), ggf. leer/null/false = zeige alle
-                // Schutzobjekte laden
-                $schutzobjekte = json_decode($this->ReadPropertyString("Schutzobjekte"), true);
-
-                // Filter fuer bestimmte Schutzobjekte vorbereiten
-                $selectedObjects = [];
-
-                if (!empty($Value)) {
-                    // $Value kann String oder Array sein
-                    $labelsToFind = is_array($Value) ? $Value : [$Value];
-
-                    foreach ($schutzobjekte as $objekt) {
-                        foreach ($labelsToFind as $label) {
-                            $cleanLabel = preg_replace('/\W+/', '_', $objekt['Label']);
-                            if ($cleanLabel === $label || $objekt['Label'] === $label) {
-                                $selectedObjects[] = $objekt;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                // Falls keine Filterobjekte gefunden oder Wert leer, alle anzeigen
-                if (empty($selectedObjects)) {
-                    $selectedObjects = $schutzobjekte;
-                }
-
-                // Dashboard generieren und speichern
-                $dashboardHtml = $this->erzeugeSchutzDashboard($selectedObjects, $this->InstanceID);
-                SetValue($this->GetIDForIdent("SchutzDashboardHTML"), $dashboardHtml);
-                // Gib das HTML aus, z.B. als Rueckgabe, Variablenwert, Webfront, etc.
-                //Dashboard aktualisieren
-                SetValue($this->GetIDForIdent("SchutzDashboardHTML"), $dashboardHtml);
-                return ; 
-
-            default:
-                // 🧠 Dynamische Behandlung für WarnModus_<Label>
-                if (strpos($Ident, "WarnModus_") === 0) {
-                    $vid = $this->GetIDForIdent($Ident);
-                    if ($vid > 0) {
+        default:
+            // 🧠 Dynamische Behandlung für WarnModus_<Label>
+            if (strpos($Ident, "WarnModus_") === 0) {
+                $vid = $this->GetIDForIdent($Ident);
+                if ($vid > 0) {
                     SetValueInteger($vid, $Value);
 
-    /* Solange die Form mit form.json angelegt wird funktioniert das aktualisieren der Form-Konfiguration nicht.. 
-        UpdateFormField() ist ein Werkzeug fuer dynamische Module, aber nur in Kombination mit GetConfigurationForm()                    
-                        // 🛠️ Konfiguration aktualisieren
-                        $label = substr($Ident, strlen("WarnModus_"));
-                        $schutzobjekte = json_decode($this->ReadPropertyString("Schutzobjekte"), true); 
-                        foreach ($schutzobjekte as &$eintrag) {
-                            $cleanLabel = preg_replace('/\W+/', '_', $eintrag["Label"]);
-                            if ($cleanLabel === $label) {
-                                $eintrag["Warnmodus"] = $Value;
-                                IPS_LogMessage("WindMonitorPro", "🔄 Konfiguration aktualisiert: {$eintrag["Label"]} => Warnmodus = $Value");
-                                break;
-                            }
+/* Solange die Form mit form.json angelegt wird funktioniert das aktualisieren der Form-Konfiguration nicht.. 
+    UpdateFormField() ist ein Werkzeug fuer dynamische Module, aber nur in Kombination mit GetConfigurationForm()                    
+                    // 🛠️ Konfiguration aktualisieren
+                    $label = substr($Ident, strlen("WarnModus_"));
+                    $schutzobjekte = json_decode($this->ReadPropertyString("Schutzobjekte"), true); 
+                    foreach ($schutzobjekte as &$eintrag) {
+                        $cleanLabel = preg_replace('/\W+/', '_', $eintrag["Label"]);
+                        if ($cleanLabel === $label) {
+                            $eintrag["Warnmodus"] = $Value;
+                            IPS_LogMessage("WindMonitorPro", "🔄 Konfiguration aktualisiert: {$eintrag["Label"]} => Warnmodus = $Value");
+                            break;
                         }
-
-                        // 📝 Konfiguration zurückschreiben
-                        $this->UpdateFormField("Schutzobjekte", "value", json_encode($schutzobjekte));
-    */
-
-                        return;
                     }
-                }
 
-                // 🚫 Unbekannter Ident
-                throw new Exception("⚠️ Ungültiger Aktion-Identifier: " . $Ident);
-        }
+                    // 📝 Konfiguration zurückschreiben
+                    $this->UpdateFormField("Schutzobjekte", "value", json_encode($schutzobjekte));
+*/
+
+                    return;
+                }
+            }
+
+            // 🚫 Unbekannter Ident
+            throw new Exception("⚠️ Ungültiger Aktion-Identifier: " . $Ident);
     }
+}
 
 /*
     public function RequestAction($Ident, $Value) {
@@ -876,15 +810,7 @@ class windMonitorPro extends IPSModule {
         }
     }
 
-    // Hilfsfunktion zur Prüfung, ob ein Ident bereits vergeben ist
-    private static function IdentExists(string $ident, array $instanceIDs): bool {
-        foreach ($instanceIDs as $id) {
-            if (IPS_GetObject($id)['ObjectIdent'] == $ident) {
-                return true;
-            }
-        }
-        return false;
-    }
+
 
     private function ResetSchutzStatus(): void {
         $objekte = IPS_GetChildrenIDs($this->InstanceID);
@@ -1227,7 +1153,7 @@ class windMonitorPro extends IPSModule {
 
 
 
-    public  function erzeugeSchutzDashboard(array $schutzArray, int $instanceID): string {
+    public static function erzeugeSchutzDashboard(array $schutzArray, int $instanceID): string {
      
         @$updateVarID = @IPS_GetObjectIDByIdent("UTC_ModelRun", $instanceID);
         $updateMBString = ($updateVarID && IPS_VariableExists($updateVarID)) ? GetValueString($updateVarID) : '';
@@ -1293,8 +1219,6 @@ class windMonitorPro extends IPSModule {
     */
 
         foreach ($schutzArray as $objekt) {
-            $html .= $this->ErzeugePrognoseTabelle($objekt, $instanceID);
-/*            
             $label = $objekt["Label"] ?? "–";
             $ident = preg_replace('/\W+/', '_', $label);
             $idstatusStr = @IPS_GetObjectIDByIdent("Status_" . $ident, $instanceID);
@@ -1382,105 +1306,10 @@ class windMonitorPro extends IPSModule {
 
             // Leerzeile
             $html .= "<tr><td colspan='8'>&nbsp;</td></tr>";
-*/            
         }
         $html .= "</table></div>";
         return $html;
     }
-
-    private function ErzeugePrognoseTabelle($objekt, int $instanceID) {   
-        $label = $objekt["Label"] ?? "–";
-        $ident = preg_replace('/\W+/', '_', $label);
-        $idstatusStr = @IPS_GetObjectIDByIdent("Status_" . $ident, $instanceID);
-        if ($idstatusStr === false) {
-            IPS_LogMessage("WindMonitorPro", "Statusvariable für $ident nicht gefunden.");
-            return '';
-        }
-        $statusJson = GetValueString($idstatusStr);
-        $StatusValues = json_decode($statusJson, true);
-            if ($statusJson === '' || !is_array($StatusValues)) {
-                // Fehlerbehandlung: JSON ist ungültig oder ist kein Array
-                return "";
-            }
-
-
-        $hoehe = $StatusValues["Hoehe"] ?? "–";
-        $minWind = $StatusValues["MinWind"] ?? "–";
-        $minGust = $StatusValues["MinGust"] ?? "–";
-        $richtung = $objekt["RichtungsKuerzelListe"] ?? "–"; //Hole aus Schutzobjekt da hier als String abgelegt und so fuer HTML Ausgabe benoetigt wird
-        $zaehlerWind = $StatusValues["countWind"] ?? "–";
-        $zaehlerBoe = $StatusValues["countGust"] ?? "–";
-        $zaehler = $zaehlerWind + $zaehlerBoe;
-
-
-
-        $vid = @IPS_GetObjectIDByIdent("Warnung_" . preg_replace('/\W+/', '_', $label), $instanceID);
-        $vidBoe = @IPS_GetObjectIDByIdent("WarnungBoe_" . preg_replace('/\W+/', '_', $label), $instanceID);
-        $wind = ($vid !== false && IPS_VariableExists($vid)) ? GetValueBoolean($vid) : false;
-        $Boe = ($vidBoe !== false && IPS_VariableExists($vidBoe)) ? GetValueBoolean($vidBoe) : false;
-        $warnung = $wind || $Boe;
-        $status = $warnung ? "⚠️ Aktiv" : "✅ Inaktiv";
-
-        $countID = @IPS_GetObjectIDByIdent("WarnCount_" . preg_replace('/\W+/', '_', $label), $instanceID);
-        //$zaehler = ($countID !== false && IPS_VariableExists($countID)) ? GetValueInteger($countID) : "–";
-
-        // Zeit letzte Warnung und Prognose 
-        $tsID = @IPS_GetObjectIDByIdent("LetzteWarnungTS_" . preg_replace('/\W+/', '_', $label), $instanceID);
-        $tsText = ($tsID !== false && IPS_VariableExists($tsID)) ? date("H:i", GetValueInteger($tsID)) . " Uhr" : "–";
-
-        // Json-Status
-        $vid = @IPS_GetObjectIDByIdent("Status_" . preg_replace('/\W+/', '_', $label), $instanceID);
-        $JsonProperties = $vid ? GetValueString($vid) : "";
-        $properties = json_decode($JsonProperties, true) ?: [];
-        $JsonWindPrognose = $properties['boeVorschau'] ?? "null";
-        $prognose = json_decode($JsonWindPrognose, true) ?: [];
-        $DatumPrognose = $prognose['datum'] ?? '–';
-        $TimePrognose  = $prognose['uhrzeit'] ?? '–';
-        $WindPrognose  = isset($prognose['wert']) && $prognose['wert'] !== null ? number_format($prognose['wert'], 2, ',', '') : '–';
-        $WindDirection = $prognose['richtung'] ?? '–';
-        $RestZeitWarnung = $properties['restzeit'] ?? '–';
-
-        // Wochentag einfügen
-        $dt = DateTime::createFromFormat('d.m.Y', $DatumPrognose);
-        $wochentage = ['So','Mo','Di','Mi','Do','Fr','Sa'];
-        if ($dt) {
-            $dayShort = $wochentage[$dt->format('w')];
-            $datumMitTag = "$dayShort, $DatumPrognose";
-        } else {
-            $datumMitTag = $DatumPrognose;
-        }
-        $DatumPrognose = $datumMitTag;
-
-        // Hauptzeile
-        $html = ''; 
-        $html .= "<tr>
-            <td>$label</td>
-            <td>{$hoehe} m</td>
-            <td>{$minWind} m/s</td>
-            <td>{$minGust} m/s</td>
-            <td>$richtung</td>
-            <td>$status</td>
-            <td>$RestZeitWarnung</td>
-            <td>$zaehler</td>
-        </tr>";
-
-        // Prognosezeile
-        $html .= "<tr>
-            <td colspan='8'>
-                🌬️ Prognose für Limitüberschreitung:
-                am Datum: <b>$DatumPrognose</b>
-                um Uhrzeit: <b>$TimePrognose</b>,
-                mit Wert: <b>$WindPrognose m/s</b>,
-                Dir: <b>$WindDirection</b>
-            </td>
-        </tr>";
-
-        // Leerzeile
-        $html .= "<tr><td colspan='8'>&nbsp;</td></tr>";
-        return $html;
-    }   
-
-  
 
 
 }
