@@ -1262,7 +1262,7 @@ public function RequestAction($Ident, $Value) {
         $html .= "</table></div>";
         return $html;
     }
-    private function ErzeugePrognoseTabelle($objekt, int $instanceID) {   
+    private static function ErzeugePrognoseTabelle($objekt, int $instanceID) {   
         $label = $objekt["Label"] ?? "–";
         $ident = preg_replace('/\W+/', '_', $label);
         $idstatusStr = @IPS_GetObjectIDByIdent("Status_" . $ident, $instanceID);
