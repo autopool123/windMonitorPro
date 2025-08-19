@@ -648,8 +648,8 @@ public function RequestAction($Ident, $Value) {
         //SetValueBoolean($this->GetIDForIdent("WarnungAktiv"), $SammelWarnung);
 
         // Dashboard aktualisieren
-        $html = $this->erzeugeSchutzDashboard($schutzArrayForm, $this->InstanceID);
-        SetValue($this->GetIDForIdent("SchutzDashboardHTML"), $html);
+        //$html = $this->erzeugeSchutzDashboard($schutzArrayForm, $this->InstanceID);
+        //SetValue($this->GetIDForIdent("SchutzDashboardHTML"), $html);
 
         //Rueckmeldung
         IPS_LogMessage("WindMonitorPro", "📁 Datei-Daten gelesen");
@@ -774,8 +774,8 @@ public function RequestAction($Ident, $Value) {
             SetValueBoolean($idSammelWarn, $SammelWarnung);
         }
 
-        $html = $this->erzeugeSchutzDashboard($schutzArrayForm, $this->InstanceID);
-        SetValue($this->GetIDForIdent("SchutzDashboardHTML"), $html);
+        //$html = $this->erzeugeSchutzDashboard($schutzArrayForm, $this->InstanceID);
+        //SetValue($this->GetIDForIdent("SchutzDashboardHTML"), $html);
 
         IPS_LogMessage($logtag, "Eigene Wetterdaten ausgewertet");
     }
