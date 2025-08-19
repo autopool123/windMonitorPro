@@ -168,7 +168,7 @@ class windMonitorPro extends IPSModule {
         $this->RegisterVariableString("WindDirArrow", "Windrichtung (Symbol)", "");
         $this->RegisterVariableInteger("LetzteWarnungTS", "Letzter Warnzeitpunkt", "");
         $this->RegisterVariableBoolean("WarnungAktiv", "Schutz aktiv", "~Alert");
-        $this->RegisterVariableString("SchutzHTML", "Schutzstatus (HTML)", "~HTMLBox");
+        $this->RegisterVariableString("SchutzObjekt", "Show Schutzobjekt", "");
         $this->RegisterVariableString("LetzterFetch", "Letzter API-Abruf", "~TextBox");
         $this->RegisterVariableString("LetzteAuswertungDaten", "Letzte Dateiverarbeitung", "~TextBox");
         $this->RegisterVariableString("NachwirkEnde", "Nachwirkzeit endet um", "~TextBox");
