@@ -1190,7 +1190,7 @@ public function RequestAction($Ident, $Value) {
 
 
 
-    public static function erzeugeSchutzDashboard(array $schutzArray, int $instanceID): string {
+    public function erzeugeSchutzDashboard(array $schutzArray, int $instanceID): string {
      
         @$updateVarID = @IPS_GetObjectIDByIdent("UTC_ModelRun", $instanceID);
         $updateMBString = ($updateVarID && IPS_VariableExists($updateVarID)) ? GetValueString($updateVarID) : '';
@@ -1256,98 +1256,103 @@ public function RequestAction($Ident, $Value) {
     */
 
         foreach ($schutzArray as $objekt) {
-            $label = $objekt["Label"] ?? "–";
-            $ident = preg_replace('/\W+/', '_', $label);
-            $idstatusStr = @IPS_GetObjectIDByIdent("Status_" . $ident, $instanceID);
-            if ($idstatusStr === false) {
-                IPS_LogMessage("WindMonitorPro", "Statusvariable für $ident nicht gefunden.");
-                continue;
-            }
-            $statusJson = GetValueString($idstatusStr);
-            $StatusValues = json_decode($statusJson, true);
-                if ($statusJson === '' || !is_array($StatusValues)) {
-                    // Fehlerbehandlung: JSON ist ungültig oder ist kein Array
-                    return "";
-                }
+            $html .= $this->ErzeugePrognoseTabelle($objekt, $instanceID);
 
-
-            $hoehe = $StatusValues["Hoehe"] ?? "–";
-            $minWind = $StatusValues["MinWind"] ?? "–";
-            $minGust = $StatusValues["MinGust"] ?? "–";
-            $richtung = $objekt["RichtungsKuerzelListe"] ?? "–"; //Hole aus Schutzobjekt da hier als String abgelegt und so fuer HTML Ausgabe benoetigt wird
-            $zaehlerWind = $StatusValues["countWind"] ?? "–";
-            $zaehlerBoe = $StatusValues["countGust"] ?? "–";
-            $zaehler = $zaehlerWind + $zaehlerBoe;
-
-
-
-            $vid = @IPS_GetObjectIDByIdent("Warnung_" . preg_replace('/\W+/', '_', $label), $instanceID);
-            $vidBoe = @IPS_GetObjectIDByIdent("WarnungBoe_" . preg_replace('/\W+/', '_', $label), $instanceID);
-            $wind = ($vid !== false && IPS_VariableExists($vid)) ? GetValueBoolean($vid) : false;
-            $Boe = ($vidBoe !== false && IPS_VariableExists($vidBoe)) ? GetValueBoolean($vidBoe) : false;
-            $warnung = $wind || $Boe;
-            $status = $warnung ? "⚠️ Aktiv" : "✅ Inaktiv";
-
-            $countID = @IPS_GetObjectIDByIdent("WarnCount_" . preg_replace('/\W+/', '_', $label), $instanceID);
-            //$zaehler = ($countID !== false && IPS_VariableExists($countID)) ? GetValueInteger($countID) : "–";
-
-            // Zeit letzte Warnung und Prognose 
-            $tsID = @IPS_GetObjectIDByIdent("LetzteWarnungTS_" . preg_replace('/\W+/', '_', $label), $instanceID);
-            $tsText = ($tsID !== false && IPS_VariableExists($tsID)) ? date("H:i", GetValueInteger($tsID)) . " Uhr" : "–";
-
-            // Json-Status
-            $vid = @IPS_GetObjectIDByIdent("Status_" . preg_replace('/\W+/', '_', $label), $instanceID);
-            $JsonProperties = $vid ? GetValueString($vid) : "";
-            $properties = json_decode($JsonProperties, true) ?: [];
-            $JsonWindPrognose = $properties['boeVorschau'] ?? "null";
-            $prognose = json_decode($JsonWindPrognose, true) ?: [];
-            $DatumPrognose = $prognose['datum'] ?? '–';
-            $TimePrognose  = $prognose['uhrzeit'] ?? '–';
-            $WindPrognose  = isset($prognose['wert']) && $prognose['wert'] !== null ? number_format($prognose['wert'], 2, ',', '') : '–';
-            $WindDirection = $prognose['richtung'] ?? '–';
-            $RestZeitWarnung = $properties['restzeit'] ?? '–';
-
-            // Wochentag einfügen
-            $dt = DateTime::createFromFormat('d.m.Y', $DatumPrognose);
-            $wochentage = ['So','Mo','Di','Mi','Do','Fr','Sa'];
-            if ($dt) {
-                $dayShort = $wochentage[$dt->format('w')];
-                $datumMitTag = "$dayShort, $DatumPrognose";
-            } else {
-                $datumMitTag = $DatumPrognose;
-            }
-            $DatumPrognose = $datumMitTag;
-
-            // Hauptzeile
-            $html .= "<tr>
-                <td>$label</td>
-                <td>{$hoehe} m</td>
-                <td>{$minWind} m/s</td>
-                <td>{$minGust} m/s</td>
-                <td>$richtung</td>
-                <td>$status</td>
-                <td>$RestZeitWarnung</td>
-                <td>$zaehler</td>
-            </tr>";
-
-            // Prognosezeile
-            $html .= "<tr>
-                <td colspan='8'>
-                    🌬️ Prognose für Limitüberschreitung:
-                    am Datum: <b>$DatumPrognose</b>
-                    um Uhrzeit: <b>$TimePrognose</b>,
-                    mit Wert: <b>$WindPrognose m/s</b>,
-                    Dir: <b>$WindDirection</b>
-                </td>
-            </tr>";
-
-            // Leerzeile
-            $html .= "<tr><td colspan='8'>&nbsp;</td></tr>";
         }
         $html .= "</table></div>";
         return $html;
     }
+    private function ErzeugePrognoseTabelle($objekt, int $instanceID) {   
+        $label = $objekt["Label"] ?? "–";
+        $ident = preg_replace('/\W+/', '_', $label);
+        $idstatusStr = @IPS_GetObjectIDByIdent("Status_" . $ident, $instanceID);
+        if ($idstatusStr === false) {
+            IPS_LogMessage("WindMonitorPro", "Statusvariable für $ident nicht gefunden.");
+            return '';
+        }
+        $statusJson = GetValueString($idstatusStr);
+        $StatusValues = json_decode($statusJson, true);
+            if ($statusJson === '' || !is_array($StatusValues)) {
+                // Fehlerbehandlung: JSON ist ungültig oder ist kein Array
+                return "";
+            }
 
+
+        $hoehe = $StatusValues["Hoehe"] ?? "–";
+        $minWind = $StatusValues["MinWind"] ?? "–";
+        $minGust = $StatusValues["MinGust"] ?? "–";
+        $richtung = $objekt["RichtungsKuerzelListe"] ?? "–"; //Hole aus Schutzobjekt da hier als String abgelegt und so fuer HTML Ausgabe benoetigt wird
+        $zaehlerWind = $StatusValues["countWind"] ?? "–";
+        $zaehlerBoe = $StatusValues["countGust"] ?? "–";
+        $zaehler = $zaehlerWind + $zaehlerBoe;
+
+
+
+        $vid = @IPS_GetObjectIDByIdent("Warnung_" . preg_replace('/\W+/', '_', $label), $instanceID);
+        $vidBoe = @IPS_GetObjectIDByIdent("WarnungBoe_" . preg_replace('/\W+/', '_', $label), $instanceID);
+        $wind = ($vid !== false && IPS_VariableExists($vid)) ? GetValueBoolean($vid) : false;
+        $Boe = ($vidBoe !== false && IPS_VariableExists($vidBoe)) ? GetValueBoolean($vidBoe) : false;
+        $warnung = $wind || $Boe;
+        $status = $warnung ? "⚠️ Aktiv" : "✅ Inaktiv";
+
+        $countID = @IPS_GetObjectIDByIdent("WarnCount_" . preg_replace('/\W+/', '_', $label), $instanceID);
+        //$zaehler = ($countID !== false && IPS_VariableExists($countID)) ? GetValueInteger($countID) : "–";
+
+        // Zeit letzte Warnung und Prognose 
+        $tsID = @IPS_GetObjectIDByIdent("LetzteWarnungTS_" . preg_replace('/\W+/', '_', $label), $instanceID);
+        $tsText = ($tsID !== false && IPS_VariableExists($tsID)) ? date("H:i", GetValueInteger($tsID)) . " Uhr" : "–";
+
+        // Json-Status
+        $vid = @IPS_GetObjectIDByIdent("Status_" . preg_replace('/\W+/', '_', $label), $instanceID);
+        $JsonProperties = $vid ? GetValueString($vid) : "";
+        $properties = json_decode($JsonProperties, true) ?: [];
+        $JsonWindPrognose = $properties['boeVorschau'] ?? "null";
+        $prognose = json_decode($JsonWindPrognose, true) ?: [];
+        $DatumPrognose = $prognose['datum'] ?? '–';
+        $TimePrognose  = $prognose['uhrzeit'] ?? '–';
+        $WindPrognose  = isset($prognose['wert']) && $prognose['wert'] !== null ? number_format($prognose['wert'], 2, ',', '') : '–';
+        $WindDirection = $prognose['richtung'] ?? '–';
+        $RestZeitWarnung = $properties['restzeit'] ?? '–';
+
+        // Wochentag einfügen
+        $dt = DateTime::createFromFormat('d.m.Y', $DatumPrognose);
+        $wochentage = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+        if ($dt) {
+            $dayShort = $wochentage[$dt->format('w')];
+            $datumMitTag = "$dayShort, $DatumPrognose";
+        } else {
+            $datumMitTag = $DatumPrognose;
+        }
+        $DatumPrognose = $datumMitTag;
+
+        // Hauptzeile
+        $html = ''; 
+        $html .= "<tr>
+            <td>$label</td>
+            <td>{$hoehe} m</td>
+            <td>{$minWind} m/s</td>
+            <td>{$minGust} m/s</td>
+            <td>$richtung</td>
+            <td>$status</td>
+            <td>$RestZeitWarnung</td>
+            <td>$zaehler</td>
+        </tr>";
+
+        // Prognosezeile
+        $html .= "<tr>
+            <td colspan='8'>
+                🌬️ Prognose für Limitüberschreitung:
+                am Datum: <b>$DatumPrognose</b>
+                um Uhrzeit: <b>$TimePrognose</b>,
+                mit Wert: <b>$WindPrognose m/s</b>,
+                Dir: <b>$WindDirection</b>
+            </td>
+        </tr>";
+
+        // Leerzeile
+        $html .= "<tr><td colspan='8'>&nbsp;</td></tr>";
+        return $html;
+    } 
 
 }
 
