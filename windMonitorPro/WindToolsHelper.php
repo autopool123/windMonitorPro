@@ -8,6 +8,16 @@ class WindToolsHelper
     public static float $referenzhoehe = 80.0;
     public static float $zielHoeheStandard = 10.0;
 
+// Hilfsfunktion zur Prüfung, ob ein Ident bereits vergeben ist
+    private static function IdentExists(string $ident, array $instanceIDs): bool {
+        foreach ($instanceIDs as $id) {
+            if (IPS_GetObject($id)['ObjectIdent'] == $ident) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static function setKonfiguration(float $alpha, float $ref, float $ziel, string $typ = "logarithmisch"): void {
         self::$gelaendeAlpha     = $alpha;
         self::$referenzhoehe     = $ref;
@@ -414,6 +424,7 @@ public static function berechneSchutzstatusMitNachwirkung(
                     'wert' => round($boeInObjHoehe, 2),
                     'richtung' => self::gradZuRichtung($data["winddirection_80m"][$i])
                 ];
+                IPS_LogMessage("ermittleWindAufkommen", self::gradZuRichtung($data["winddirection_80m"][$i]));
                 break;
             }
         }
