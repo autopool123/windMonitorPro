@@ -1279,8 +1279,11 @@ public function RequestAction($Ident, $Value) {
 
 
         $hoehe = $StatusValues["Hoehe"] ?? "–";
-        $minWind = $StatusValues["MinWind"] ?? "–";
-        $minGust = $StatusValues["MinGust"] ?? "–";
+        //$minWind = $StatusValues["MinWind"] ?? "–";
+        $minWind = isset($StatusValues["MinWind"]) ? $StatusValues["MinWind"] * 3.6 : "–";
+
+        //$minGust = $StatusValues["MinGust"] ?? "–";
+        $minGust = isset($StatusValues["MinGust"]) ? $StatusValues["MinGust"] * 3.6 : "–";
         $richtung = $objekt["RichtungsKuerzelListe"] ?? "–"; //Hole aus Schutzobjekt da hier als String abgelegt und so fuer HTML Ausgabe benoetigt wird
         $zaehlerWind = $StatusValues["countWind"] ?? "–";
         $zaehlerBoe = $StatusValues["countGust"] ?? "–";
@@ -1311,6 +1314,7 @@ public function RequestAction($Ident, $Value) {
         $DatumPrognose = $prognose['datum'] ?? '–';
         $TimePrognose  = $prognose['uhrzeit'] ?? '–';
         $WindPrognose  = isset($prognose['wert']) && $prognose['wert'] !== null ? number_format($prognose['wert'], 2, ',', '') : '–';
+        $WindPrognose_kmh  = isset($prognose['wert']) && $prognose['wert'] !== null ? number_format($prognose['wert'] * 3.6, 2, ',', '') : '–';
         $WindDirection = $prognose['richtung'] ?? '–';
         $RestZeitWarnung = $properties['restzeit'] ?? '–';
 
@@ -1330,8 +1334,8 @@ public function RequestAction($Ident, $Value) {
         $html .= "<tr>
             <td>$label</td>
             <td>{$hoehe} m</td>
-            <td>{$minWind} m/s</td>
-            <td>{$minGust} m/s</td>
+            <td>{$minWind} km/h</td>
+            <td>{$minGust} km/h</td>
             <td>$richtung</td>
             <td>$status</td>
             <td>$RestZeitWarnung</td>
@@ -1342,10 +1346,10 @@ public function RequestAction($Ident, $Value) {
         $html .= "<tr>
             <td colspan='8'>
                 🌬️ Prognose Warnung:
-                am Datum: <b>$DatumPrognose</b>
-                um Uhrzeit: <b>$TimePrognose</b>,
-                mit Wert: <b>$WindPrognose m/s</b>,
-                Dir: <b>$WindDirection</b>
+                 Datum: <b>$DatumPrognose</b>
+                um: <b>$TimePrognose</b>,
+                SStärke: <b>$WindPrognose m/s ({$WindPrognose_kmh} km/h)</b>,
+                aus: <b>$WindDirection</b>
             </td>
         </tr>";
 
