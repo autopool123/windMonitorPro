@@ -1318,9 +1318,9 @@ public function RequestAction($Ident, $Value) {
         $properties = json_decode($JsonProperties, true) ?: [];
         $JsonWindPrognose = $properties['boeVorschau'] ?? "null";
         $prognose = json_decode($JsonWindPrognose, true) ?: [];
-        $DatumPrognose = $prognose['datum'] ?? '–';
-        $TimePrognose  = $prognose['uhrzeit'] ?? '–';
-        $WindPrognose  = isset($prognose['wert']) && $prognose['wert'] !== null ? number_format($prognose['wert'], 2, ',', '') : '–';
+        $DatumPrognose = $prognose['datum'] ?? null;
+        $TimePrognose = $prognose['uhrzeit'] ?? null;
+        $WindPrognose = isset($prognose['wert']) && $prognose['wert'] !== null ? number_format($prognose['wert'], 2, ',', '') : null;
         $WindPrognose_kmh  = isset($prognose['wert']) && $prognose['wert'] !== null ? number_format($prognose['wert'] * 3.6, 2, ',', '') : '–';
         $WindDirection = $prognose['richtung'] ?? '–';
         $RestZeitWarnung = $properties['restzeit'] ?? '–';
@@ -1350,7 +1350,7 @@ public function RequestAction($Ident, $Value) {
         </tr>";
 
         // Prognosezeile
-        if (isset($prognose['wert']) && $prognose['wert'] !== null) {
+        if ($WindPrognose !== null && $DatumPrognose !== null) {
             $html .= "<tr>
                 <td colspan='8'>
                     🌬️ Prognose Warnung:
