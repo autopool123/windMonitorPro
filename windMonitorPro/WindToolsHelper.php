@@ -424,7 +424,6 @@ public static function berechneSchutzstatusMitNachwirkung(
                     'wert' => round($boeInObjHoehe, 2),
                     'richtung' => self::gradZuRichtung($data["winddirection_80m"][$i])
                 ];
-                IPS_LogMessage("ermittleWindAufkommen", self::gradZuRichtung($data["winddirection_80m"][$i]));
                 break;
             }
         }

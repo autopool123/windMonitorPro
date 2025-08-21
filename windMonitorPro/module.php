@@ -900,28 +900,6 @@ public function RequestAction($Ident, $Value) {
     }
 
 
-/*
-    private function CreateActionScriptForIdent(string $ident, int $variableID): void
-    {
-        $scriptIdent = "Action_" . $ident;
-
-        // Prüfen, ob Skript bereits existiert
-        $scriptID = @IPS_GetObjectIDByIdent($scriptIdent, $this->InstanceID);
-        if ($scriptID === false) {
-            $scriptID = IPS_CreateScript(0); // PHP-Skript
-            IPS_SetName($scriptID, $scriptIdent);
-            IPS_SetIdent($scriptID, $scriptIdent);
-            IPS_SetParent($scriptID, $this->InstanceID);
-
-            $scriptCode = "<?php\nIPS_RequestAction(" . $this->InstanceID . ", \"" . $ident . "\", \$_IPS['VALUE']);";
-
-            IPS_SetScriptContent($scriptID, $scriptCode);
-        }
-
-        // Aktionsskript zuweisen
-        IPS_SetVariableCustomAction($variableID, $scriptID);
-    }
-*/
     private function EnsureRequiredVariables(array $schutzArrayForm,$formSetup = false): array
 {
     $genutzteIdents = [];
@@ -1295,6 +1273,7 @@ public function RequestAction($Ident, $Value) {
         $zaehlerWind = $StatusValues["countWind"] ?? "–";
         $zaehlerBoe = $StatusValues["countGust"] ?? "–";
         $zaehler = $zaehlerWind + $zaehlerBoe;
+        $RestZeitWarnung = $StatusValues['nachwirk'] ?? '–';
 
 
 
@@ -1323,7 +1302,7 @@ public function RequestAction($Ident, $Value) {
         $WindPrognose = isset($prognose['wert']) && $prognose['wert'] !== null ? number_format($prognose['wert'], 2, ',', '') : null;
         $WindPrognose_kmh  = isset($prognose['wert']) && $prognose['wert'] !== null ? number_format($prognose['wert'] * 3.6, 2, ',', '') : '–';
         $WindDirection = $prognose['richtung'] ?? '–';
-        $RestZeitWarnung = $properties['restzeit'] ?? '–';
+        
 
         // Wochentag einfügen
         $dt = DateTime::createFromFormat('d.m.Y', $DatumPrognose);
