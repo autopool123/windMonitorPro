@@ -398,7 +398,7 @@ public static function berechneSchutzstatusMitNachwirkung(
      * @return string          JSON-String
      */
 
-        $result = ['datum' => null, 'uhrzeit' => null, 'wert' => null];
+        $result = ['datum' => null, 'uhrzeit' => null, 'wert' => null, 'richtung' => null];
 
         if (empty($data["time"]) || empty($data["gust"])) {
             return json_encode($result);
