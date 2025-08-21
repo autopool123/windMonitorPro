@@ -1350,7 +1350,7 @@ public function RequestAction($Ident, $Value) {
         </tr>";
 
         // Prognosezeile
-        if ($WindPrognose !== null && $DatumPrognose !== null) {
+        if ($WindPrognose !== null) {
             $html .= "<tr>
                 <td colspan='8'>
                     🌬️ Prognose Warnung:
