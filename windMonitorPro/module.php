@@ -1341,7 +1341,7 @@ public function RequestAction($Ident, $Value) {
         // Prognosezeile
         $html .= "<tr>
             <td colspan='8'>
-                🌬️ Prognose für Limitüberschreitung:
+                🌬️ Prognose Warnung:
                 am Datum: <b>$DatumPrognose</b>
                 um Uhrzeit: <b>$TimePrognose</b>,
                 mit Wert: <b>$WindPrognose m/s</b>,
