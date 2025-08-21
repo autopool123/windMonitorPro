@@ -1348,7 +1348,7 @@ public function RequestAction($Ident, $Value) {
                 🌬️ Prognose Warnung:
                  Datum: <b>$DatumPrognose</b>
                 um: <b>$TimePrognose</b>,
-                SStärke: <b>$WindPrognose m/s ({$WindPrognose_kmh} km/h)</b>,
+                Stärke: <b>$WindPrognose m/s ({$WindPrognose_kmh} km/h)</b>,
                 aus: <b>$WindDirection</b>
             </td>
         </tr>";
