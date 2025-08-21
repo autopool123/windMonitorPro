@@ -63,6 +63,13 @@ class windMonitorPro extends IPSModule {
         IPS_SetVariableCustomProfile($this->GetIDForIdent("SchutzDashboardHTML"), "~HTMLBox");
 
     }
+
+    public function Destroy()
+    {
+        //Never delete this line!
+        parent::Destroy();
+    }
+
     public function ApplyChanges() {
         parent::ApplyChanges();
 
@@ -1343,26 +1350,23 @@ public function RequestAction($Ident, $Value) {
         </tr>";
 
         // Prognosezeile
-        $html .= "<tr>
-            <td colspan='8'>
-                🌬️ Prognose Warnung:
-                 Datum: <b>$DatumPrognose</b>
-                um: <b>$TimePrognose</b>,
-                Stärke: <b>$WindPrognose m/s ({$WindPrognose_kmh} km/h)</b>,
-                aus: <b>$WindDirection</b>
-            </td>
-        </tr>";
+        if (isset($prognose['wert']) && $prognose['wert'] !== null) {
+            $html .= "<tr>
+                <td colspan='8'>
+                    🌬️ Prognose Warnung:
+                    Datum: <b>$DatumPrognose</b>
+                    um: <b>$TimePrognose</b>,
+                    Stärke: <b>$WindPrognose m/s ({$WindPrognose_kmh} km/h)</b>,
+                    aus: <b>$WindDirection</b>
+                </td>
+            </tr>";
+        }
 
         // Leerzeile
-        $html .= "<tr><td colspan='8'>&nbsp;</td></tr>";
+        //$html .= "<tr><td colspan='8'>&nbsp;</td></tr>";
         return $html;
     } 
 
 }
-
-
-
-
-
 
 ?>
