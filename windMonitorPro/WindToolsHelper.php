@@ -228,6 +228,61 @@ public static function berechneSchutzstatusMitNachwirkung(
         return null;
     }
 
+    public static function getLetztenGueltigenZeitIndex(array $times, DateTimeZone $zone, int $maxAgeMinutes = 15): ?int {
+        $now = new DateTime("now", $zone);
+        $maxAgeInterval = new DateInterval('PT' . $maxAgeMinutes . 'M');
+        $earliestValidTime = (clone $now)->sub($maxAgeInterval);
+
+        $validIndices = [];
+
+        foreach ($times as $i => $t) {
+            $dt = DateTime::createFromFormat('Y-m-d H:i', $t, $zone);
+            if ($dt && $dt <= $now && $dt >= $earliestValidTime) {
+                $validIndices[$i] = $dt;
+            }
+        }
+
+        if (!empty($validIndices)) {
+            // Finde den Index mit dem neuesten gültigen Zeitstempel
+            return array_keys($validIndices, max($validIndices))[0];
+        }
+
+        return null;
+    }
+
+    public static function getZeitIndex(array $times, DateTimeZone $zone, string $modus = 'naechstgroesser', int $maxAgeMinutes = 15): ?int {
+    $now = new DateTime("now", $zone);
+
+    if ($modus === 'naechstgroesser') {
+        foreach ($times as $i => $t) {
+            $dt = DateTime::createFromFormat('Y-m-d H:i', $t, $zone);
+            if ($dt && $dt >= $now) {
+                return $i;
+            }
+        }
+    }
+
+    if ($modus === 'letzterGueltiger') {
+        $maxAgeInterval = new DateInterval('PT' . $maxAgeMinutes . 'M');//PT15M = eine Zeitspanne von 15 Minuten nach ISO 8601-Dauer-Syntax
+        $earliestValidTime = (clone $now)->sub($maxAgeInterval);
+
+        $validIndices = [];
+
+        foreach ($times as $i => $t) {
+            $dt = DateTime::createFromFormat('Y-m-d H:i', $t, $zone);
+            if ($dt && $dt <= $now && $dt >= $earliestValidTime) {
+                $validIndices[$i] = $dt;
+            }
+        }
+
+        if (!empty($validIndices)) {
+            return array_keys($validIndices, max($validIndices))[0];
+        }
+    }
+
+    return null;
+}
+
     public static function extrahiereWetterdaten(array $block, int $index): array {
         return [
             'wind'     => $block['windspeed_80m'][$index] ?? 0,

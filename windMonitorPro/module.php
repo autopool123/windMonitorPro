@@ -481,18 +481,26 @@ public function RequestAction($Ident, $Value) {
         $times = $block['time'];
         //1h Timeblock laden in $timesStd 
         $timesStd = $blockStd['time'];
+
         //naechstliegenden 15 Minuten Zeitzyklus (Index) ermitteln... zum auslesen der Werte-Arrays 
-        $index = WindToolsHelper::getAktuellenZeitIndex($times, $zone);
+        //$modusTarget === 'naechstgroesser';//naechster Zeiteintrag nach -jetzt-
+        $modusTarget = 'letzterGueltiger';//letzer Zeiteintrag der nicht älter als X Minuten zurückliegt
+        $maxAgeMinutes = 15;//Definition X Minuten
+        $index = WindToolsHelper::getZeitIndex($times, $zone, $modusTarget, $maxAgeMinutes);
+        //$index = WindToolsHelper::getAktuellenZeitIndex($times, $zone);//Problem war dass immer der naechst groessere Eintrag geholt wurde
         if ($index === null) {
             IPS_LogMessage($logtag, "❌ Konnte keinen X-Min-Index ermitteln");
             return;
         }
         //naechstliegenden 1Std Zeitzyklus (IndexStd) ermitteln... zum auslesen der Werte-Arrays
-        $indexStd = WindToolsHelper::getAktuellenZeitIndex($timesStd, $zone);
+        $maxAgeMinutes = 60;//Definition X Minuten
+        $indexStd  = WindToolsHelper::getZeitIndex($timesStd, $zone, $modusTarget, $maxAgeMinutes);
+        //$indexStd = WindToolsHelper::getAktuellenZeitIndex($timesStd, $zone);
         if ($indexStd === null) {
             IPS_LogMessage($logtag, "❌ Konnte keinen 1Std-Index ermitteln");
             return;
-        }
+        }        
+
         //TS fuer das naechste 15 Minuten Intervall
         $timeSlot15Min = $times[$index];
         $ModelZeitEU = WindToolsHelper::formatToEuropeanDate($timeSlot15Min);        
