@@ -217,38 +217,6 @@ public static function berechneSchutzstatusMitNachwirkung(
         }
     }
 
-    public static function getAktuellenZeitIndex(array $times, DateTimeZone $zone): ?int {
-        $now = new DateTime("now", $zone);
-        foreach ($times as $i => $t) {
-            $dt = DateTime::createFromFormat('Y-m-d H:i', $t);
-            if ($dt && $dt >= $now) {
-                return $i;
-            }
-        }
-        return null;
-    }
-
-    public static function getLetztenGueltigenZeitIndex(array $times, DateTimeZone $zone, int $maxAgeMinutes = 15): ?int {
-        $now = new DateTime("now", $zone);
-        $maxAgeInterval = new DateInterval('PT' . $maxAgeMinutes . 'M');
-        $earliestValidTime = (clone $now)->sub($maxAgeInterval);
-
-        $validIndices = [];
-
-        foreach ($times as $i => $t) {
-            $dt = DateTime::createFromFormat('Y-m-d H:i', $t, $zone);
-            if ($dt && $dt <= $now && $dt >= $earliestValidTime) {
-                $validIndices[$i] = $dt;
-            }
-        }
-
-        if (!empty($validIndices)) {
-            // Finde den Index mit dem neuesten gültigen Zeitstempel
-            return array_keys($validIndices, max($validIndices))[0];
-        }
-
-        return null;
-    }
 
     public static function getZeitIndex(array $times, DateTimeZone $zone, string $modus = 'naechstgroesser', int $maxAgeMinutes = 15): ?int {
     $now = new DateTime("now", $zone);
