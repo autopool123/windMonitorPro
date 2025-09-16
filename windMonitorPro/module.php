@@ -1258,25 +1258,10 @@ public function RequestAction($Ident, $Value) {
             $html .= $this->ErzeugePrognoseTabelle($objekt, $instanceID);
 
         }
-        $html .= "</table>"; // Tabelle ist fertig
-        $gesamt = count($schutzArray);
-        $maxSeite = floor(($gesamt - 1) / $objekteProSeite); // Rundung bei Rest
-        $html .= "<div style='text-align:center; margin-top:10px;'>";
-
-        if ($seite > 0) {
-            $html .= "<button onclick=\"SetValue($seiteID, " . ($seite - 1) . ")\">◀️ Zurück</button>";
-        }
-        $html .= " Seite " . ($seite + 1) . " von " . ($maxSeite + 1) . " ";
-        if ($seite < $maxSeite) {
-            $html .= "<button onclick=\"SetValue($seiteID, " . ($seite + 1) . ")\">▶️ Weiter</button>";
-        }
-
-        $html .= "</div>"; // Ende Button-Bereich
-
-        $html .= "</div>"; // Ende neo-wrapper
+        $html .= "</table></div>";
         return $html;
     }
-    
+
     private static function ErzeugePrognoseTabelle($objekt, int $instanceID) {   
         $label = $objekt["Label"] ?? "–";
         $ident = preg_replace('/\W+/', '_', $label);
