@@ -58,7 +58,9 @@ class windMonitorPro extends IPSModule {
                 IPS_SetIcon($this->GetIDForIdent($txtIdent), "Alert");
             }
         }
-        //HTML-Box-Schutzobjekte-Info registrieren
+        //HTML-Box-Schutzobjekte-Infobox registrieren
+        $this->RegisterVariableInteger("Seite", "Aktuelle Seite", "");
+        SetValue($this->GetIDForIdent("Seite"), 0); // Startseite
         $this->RegisterVariableString("SchutzDashboardHTML", "🧯 Schutzobjekt-Dashboard");
         IPS_SetVariableCustomProfile($this->GetIDForIdent("SchutzDashboardHTML"), "~HTMLBox");
 
@@ -1184,6 +1186,9 @@ public function RequestAction($Ident, $Value) {
 
 
     public function erzeugeSchutzDashboard(array $schutzArray, int $instanceID): string {
+        $seiteID = @IPS_GetObjectIDByIdent("Seite", $instanceID);
+        $seite = ($seiteID !== false && IPS_VariableExists($seiteID)) ? GetValueInteger($seiteID) : 0;
+        $objekteProSeite = 5;
      
         @$updateVarID = @IPS_GetObjectIDByIdent("UTC_ModelRun", $instanceID);
         $updateMBString = ($updateVarID && IPS_VariableExists($updateVarID)) ? GetValueString($updateVarID) : '';
@@ -1247,14 +1252,31 @@ public function RequestAction($Ident, $Value) {
                 'nachwirk'    => 0,
                 'boeVorschau' => $BoeGefahrVorschau
     */
-
-        foreach ($schutzArray as $objekt) {
+        $start = $seite * $objekteProSeite;
+        $objekteAktuell = array_slice($schutzArray, $start, $objekteProSeite);//AnzeigeArray entsprechend Seite und Anzahl maximaler Schutzobjekte pro Seite fuellen
+        foreach ($objekteAktuell as $objekt) {
             $html .= $this->ErzeugePrognoseTabelle($objekt, $instanceID);
 
         }
-        $html .= "</table></div>";
+        $html .= "</table>"; // Tabelle ist fertig
+        $gesamt = count($schutzArray);
+        $maxSeite = floor(($gesamt - 1) / $objekteProSeite); // Rundung bei Rest
+        $html .= "<div style='text-align:center; margin-top:10px;'>";
+
+        if ($seite > 0) {
+            $html .= "<button onclick=\"SetValue($seiteID, " . ($seite - 1) . ")\">◀️ Zurück</button>";
+        }
+        $html .= " Seite " . ($seite + 1) . " von " . ($maxSeite + 1) . " ";
+        if ($seite < $maxSeite) {
+            $html .= "<button onclick=\"SetValue($seiteID, " . ($seite + 1) . ")\">▶️ Weiter</button>";
+        }
+
+        $html .= "</div>"; // Ende Button-Bereich
+
+        $html .= "</div>"; // Ende neo-wrapper
         return $html;
     }
+    
     private static function ErzeugePrognoseTabelle($objekt, int $instanceID) {   
         $label = $objekt["Label"] ?? "–";
         $ident = preg_replace('/\W+/', '_', $label);
