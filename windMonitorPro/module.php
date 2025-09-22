@@ -885,7 +885,7 @@ public function RequestAction($Ident, $Value) {
 
     $delay = $targetTime - $now;
     $this->SetTimerInterval("ReadTimer", 0); // sicher deaktivieren
-    $this->SetTimer("ReadTimer", $targetTime); // Timer auf Zielzeit setzen
+    $this->SetTimerInterval("ReadTimer", ($targetTime - time()) * 1000); // ✅ Intervall bis zum Zielzeitpunkt
 
     IPS_LogMessage("WindMonitorPro", "🔁 ReadTimer gesetzt auf: " . date("H:i:s", $targetTime));
 }
