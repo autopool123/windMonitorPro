@@ -876,7 +876,7 @@ public function RequestAction($Ident, $Value) {
 
     // Nächster Intervallstart (z. B. 00:15, 00:30, ...)
     $nextSlot = ceil($now / $intervallSec) * $intervallSec;
-    $targetTime = $nextSlot - 30; // 30 Sekunden davor
+    $targetTime = $nextSlot - 15; // 15 Sekunden davor
 
     // Falls Zielzeit schon vorbei ist (z. B. bei später Ausführung), auf nächsten Slot + Intervall setzen
     if ($targetTime <= $now) {
