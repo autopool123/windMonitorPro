@@ -232,7 +232,8 @@ class windMonitorPro extends IPSModule {
         // Timer.Intervalle setzen, Timer aktivieren, wenn Instanzbutton "aktiv" true ist
         if ($this->ReadPropertyBoolean("Aktiv")) {
             $this->SetTimerInterval("FetchTimer", max(15,$fetchMin) * 60 * 1000);
-            $this->SetTimerInterval("ReadTimer", max(15, $readMin) * 60 * 1000);
+            $this->SetNextReadTimer();
+            //$this->SetTimerInterval("ReadTimer", max(15, $readMin) * 60 * 1000);
         } else {
             $this->SetTimerInterval("FetchTimer", 0); // deaktivieren
             $this->SetTimerInterval("ReadTimer",  0); // deaktivieren
@@ -253,7 +254,8 @@ public function RequestAction($Ident, $Value) {
             return $this->UpdateFromMeteoblue();
 
         case "UpdateWind":
-            IPS_LogMessage("WindMonitorPro", "⏱️ RequestAction: $Ident führt jetzt UpdateWind() aus");
+            IPS_LogMessage("WindMonitorPro", "⏱️ RequestAction: $Ident führt jetzt UpdateWind() aus");            
+            $this->SetNextReadTimer(); // Viertelstunden-Timer neu setzen
             return $this->ReadFromFileAndUpdate();
 
         case "AuswertenEigeneStation":
@@ -864,6 +866,29 @@ public function RequestAction($Ident, $Value) {
         }
     }
 
+
+    //Funktion zum starten des Update Timers Viertelstündlich - 30 Sekunden
+    private function SetNextReadTimer()
+{
+    $now = time();
+    $intervallMin = $this->ReadPropertyInteger("ReadIntervall"); // z. B. 15 Minuten
+    $intervallSec = $intervallMin * 60;
+
+    // Nächster Intervallstart (z. B. 00:15, 00:30, ...)
+    $nextSlot = ceil($now / $intervallSec) * $intervallSec;
+    $targetTime = $nextSlot - 30; // 30 Sekunden davor
+
+    // Falls Zielzeit schon vorbei ist (z. B. bei später Ausführung), auf nächsten Slot + Intervall setzen
+    if ($targetTime <= $now) {
+        $targetTime += $intervallSec;
+    }
+
+    $delay = $targetTime - $now;
+    $this->SetTimerInterval("ReadTimer", 0); // sicher deaktivieren
+    $this->SetTimer("ReadTimer", $targetTime); // Timer auf Zielzeit setzen
+
+    IPS_LogMessage("WindMonitorPro", "🔁 ReadTimer gesetzt auf: " . date("H:i:s", $targetTime));
+}
 
 
     private function ResetSchutzStatus(): void {
