@@ -487,8 +487,8 @@ public function RequestAction($Ident, $Value) {
         $timesStd = $blockStd['time'];
 
         //naechstliegenden 15 Minuten Zeitzyklus (Index) ermitteln... zum auslesen der Werte-Arrays 
-        //$modusTarget === 'naechstgroesser';//naechster Zeiteintrag nach -jetzt-
-        $modusTarget = 'letzterGueltiger';//letzer Zeiteintrag der nicht älter als X Minuten zurückliegt
+        //$modusTarget === 'letzterGueltiger';//aktuelle Zeiteintrag im -jetzt-
+        $modusTarget = 'naechstgroesser';//letzer Zeiteintrag der nicht älter als X Minuten zurückliegt
         $maxAgeMinutes = 15;//Definition X Minuten
         $index = WindToolsHelper::getZeitIndex($times, $zone, $modusTarget, $maxAgeMinutes);
         //$index = WindToolsHelper::getAktuellenZeitIndex($times, $zone);//Problem war dass immer der naechst groessere Eintrag geholt wurde
