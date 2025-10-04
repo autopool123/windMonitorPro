@@ -311,6 +311,10 @@ public function RequestAction($Ident, $Value) {
                 $vid = $this->GetIDForIdent($Ident);
                 if ($vid > 0) {
                     SetValueInteger($vid, $Value);
+                    IPS_LogMessage("WindMonitorPro", "⏱️ RequestAction Warnmodus changed: $Ident führt jetzt UpdateWind() aus");            
+                    $this->SetNextReadTimer(); // Viertelstunden-Timer neu setzen
+                    return $this->ReadFromFileAndUpdate();
+                }
 
 /* Solange die Form mit form.json angelegt wird funktioniert das aktualisieren der Form-Konfiguration nicht.. 
     UpdateFormField() ist ein Werkzeug fuer dynamische Module, aber nur in Kombination mit GetConfigurationForm()                    
@@ -330,8 +334,6 @@ public function RequestAction($Ident, $Value) {
                     $this->UpdateFormField("Schutzobjekte", "value", json_encode($schutzobjekte));
 */
 
-                    return;
-                }
             }
 
             // 🚫 Unbekannter Ident
