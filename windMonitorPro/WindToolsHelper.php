@@ -114,6 +114,10 @@ public static function berechneSchutzstatusMitNachwirkung(
 
     // Neue Warnbedingungen prüfen
     $warnmodus = GetValueInteger($idwarnmodus);
+    if ($warnmodus != 1 && $warnmodus != 3) { //wenn kein Warnmodus kann Nachlaufzeit auf 0 gesetzt werden
+        $nachwirkSekunden = 0;    
+        $status['nachwirk'] = "00:00";
+    }
     $warnWind = ($warnmodus == 1 || $warnmodus == 3) && $inSektor && ($windMS >= $thresholdWind);
     $warnGust = ($warnmodus == 1 || $warnmodus == 3) && $inSektor && ($gustMS >= $thresholdGust);
     
@@ -126,7 +130,7 @@ public static function berechneSchutzstatusMitNachwirkung(
         $counterWind++;
         $warnsourceNeu = $warnsource;
         $NeueWindWarn = true;
-        //Beim eintreffen einer neuen Windwarnung darf die Nachwirkzeit einmalig auf 0 gesetzt werden. Grund ist die Aenderung des Warnmodus (Abwahl) soll sofort wirken...
+        //Beim eintreffen einer neuen Windwarnung darf die Nachwirkzeit einmalig auf 0 gesetzt werden. Grund ist die Aenderung des Warnmodus (oder Abwahl) soll sofort wirken...
         if (isset($status['nachwirk'])) {
             $status['nachwirk'] = "00:00";
         }
