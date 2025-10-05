@@ -317,25 +317,6 @@ public function RequestAction($Ident, $Value) {
                     IPS_LogMessage("WindMonitorPro", "Warnmodus changed: $Ident Timer gestartet");            
                     return;
                 }
-
-/* Solange die Form mit form.json angelegt wird funktioniert das aktualisieren der Form-Konfiguration nicht.. 
-    UpdateFormField() ist ein Werkzeug fuer dynamische Module, aber nur in Kombination mit GetConfigurationForm()                    
-                    // 🛠️ Konfiguration aktualisieren
-                    $label = substr($Ident, strlen("WarnModus_"));
-                    $schutzobjekte = json_decode($this->ReadPropertyString("Schutzobjekte"), true); 
-                    foreach ($schutzobjekte as &$eintrag) {
-                        $cleanLabel = preg_replace('/\W+/', '_', $eintrag["Label"]);
-                        if ($cleanLabel === $label) {
-                            $eintrag["Warnmodus"] = $Value;
-                            IPS_LogMessage("WindMonitorPro", "🔄 Konfiguration aktualisiert: {$eintrag["Label"]} => Warnmodus = $Value");
-                            break;
-                        }
-                    }
-
-                    // 📝 Konfiguration zurückschreiben
-                    $this->UpdateFormField("Schutzobjekte", "value", json_encode($schutzobjekte));
-*/
-
             }
 
             // 🚫 Unbekannter Ident
@@ -343,37 +324,6 @@ public function RequestAction($Ident, $Value) {
     }
 }
 
-/*
-    public function RequestAction($Ident, $Value) {
-        // 🔍 Logging für Analysezwecke
-        IPS_LogMessage("WindMonitorPro", "⏱️ RequestAction erhalten: $Ident mit Wert=" . print_r($Value, true));
-        $this->SetValue("LetzteAktion","🔀 RequestAction: $Ident Wert=" . print_r($Value, true) . " (" . date("d-m-Y H:i:s") . ")"    );
-
-        // 🔀 Verteile an Aktion basierend auf Ident
-        switch ($Ident) {
-            case "UpdateMeteoBlue":
-                IPS_LogMessage("WindMonitorPro", "⏱️ RequestAction erhalten: $Ident fuehrt jetzt UpdateFromMeteoblue() aus" );
-                return $this->UpdateFromMeteoblue();
-
-            case "UpdateWind":
-                IPS_LogMessage("WindMonitorPro", "⏱️ RequestAction erhalten: $Ident fuehrt jetzt UpdateWin() aus" );
-                return $this->ReadFromFileAndUpdate();
-
-            case "AuswertenEigeneStation":
-                IPS_LogMessage('WindMonitorPro', "RequestAction erhalten: $Ident fuehrt jetzt AuswertenEigeneStation() aus");
-                return $this->AuswertenEigeneStationinArbeit();
-
-            case "ResetCounter"://Aufruf ueber RequestAction setzt alle Zaehler auf 0 da countValue fix auf 0 gesetzt wird
-                return $this->PresetCounter(null,0);
-
-            case "ResetStatus":
-                return $this->ResetSchutzStatus();
-
-            default:
-                throw new Exception("⚠️ Ungültiger Aktion-Identifier: " . $Ident);
-        }
-    }
-*/
 
     //Funktion MessageSink wird derzeit nicht verwendet. Ist gedacht um auf Aenderungen von Statusvariablen zu reagieren welche aber vorher registriert werden müssen
     public function MessageSink($TimeStamp, $SenderID, $Message, $Data)
