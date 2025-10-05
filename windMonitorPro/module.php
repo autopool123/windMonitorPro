@@ -313,7 +313,7 @@ public function RequestAction($Ident, $Value) {
                 $vid = $this->GetIDForIdent($Ident);
                 if ($vid > 0) {
                     SetValueInteger($vid, $Value);
-                    $this->SetTimerInterval('DelayedUpdate', 5000);
+                    $this->SetTimerInterval('DelayedUpdate', 4000);
                     IPS_LogMessage("WindMonitorPro", "Warnmodus changed: $Ident Timer gestartet");            
                     return;
                 }
