@@ -31,6 +31,8 @@ class windMonitorPro extends IPSModule {
         $this->RegisterTimer("FetchTimer", 0, 'IPS_RequestAction($_IPS[\'TARGET\'], "UpdateMeteoBlue", "");');
         // Timer registrieren Datei-Auswertung
         $this->RegisterTimer("ReadTimer", 0, 'IPS_RequestAction($_IPS[\'TARGET\'], "UpdateWind", "");');
+        // Timer zum entprellen der Warnmodus-Umschaltung - Verhindern Datenaktualisierung während Warnmodusumschaltung noch bedient wird
+        $this->RegisterTimer('DelayedUpdate', 5000, 'MBW_DelayedUpdate($_IPS[\'TARGET\']);');
 
         //Variablen registrieren
         //TimeStamps
@@ -311,9 +313,9 @@ public function RequestAction($Ident, $Value) {
                 $vid = $this->GetIDForIdent($Ident);
                 if ($vid > 0) {
                     SetValueInteger($vid, $Value);
-                    IPS_LogMessage("WindMonitorPro", "⏱️ RequestAction Warnmodus changed: $Ident führt jetzt UpdateWind() aus");            
-                    $this->SetNextReadTimer(); // Viertelstunden-Timer neu setzen
-                    return $this->ReadFromFileAndUpdate();
+                    $this->SetTimerInterval('DelayedUpdate', 5000);
+                    IPS_LogMessage("WindMonitorPro", "Warnmodus changed: $Ident Timer gestartet");            
+                    return;
                 }
 
 /* Solange die Form mit form.json angelegt wird funktioniert das aktualisieren der Form-Konfiguration nicht.. 
@@ -801,7 +803,18 @@ public function RequestAction($Ident, $Value) {
         IPS_LogMessage($logtag, "Eigene Wetterdaten ausgewertet");
     }
 
+    public function DelayedUpdate()
+    {
+        $this->SetTimerInterval('DelayedUpdate', 0); // Single-Shot: Timer wieder aus
 
+        // Jetzt den Viertelstunden-Timer aktualisieren
+        $this->SetNextReadTimer();
+
+        // Jetzt Datenaktualisierung durchführen
+        $this->ReadFromFileAndUpdate();
+        IPS_LogMessage("WindMonitorPro", "Warnmodus changed: Timer UpdateWind() beendet");   
+
+    }
     public function PresetCounter(?string $objekt, int $countValue = 0)
     {
         $logtag = 'WMP_PresetCounter';
